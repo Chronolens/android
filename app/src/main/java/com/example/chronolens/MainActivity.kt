@@ -12,20 +12,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.example.chronolens.models.MediaAsset
-import com.example.chronolens.ui.screens.FullscreenMediaView
-import com.example.chronolens.ui.screens.MediaGridScreen
-import com.example.chronolens.ui.theme.ChronoLensTheme
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
-import com.example.chronolens.viewModels.ViewModelProvider
-import com.google.gson.Gson
-
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,30 +20,7 @@ class MainActivity : ComponentActivity() {
         requestPermissions()
         enableEdgeToEdge()
         setContent {
-            ChronoLensTheme {
-                val navController = rememberNavController() // NavController instance
-                val mediaGridScreenViewModel: MediaGridScreenViewModel = viewModel(factory = ViewModelProvider.Factory)
-                val mediaGridScreenState = mediaGridScreenViewModel.mediaGridState.collectAsState()
-                val fullscreenMediaState = mediaGridScreenViewModel.fullscreenImageState.collectAsState()
-                NavHost(
-                    navController = navController,
-                    startDestination = "mediaGrid" // The starting route for navigation
-                ) {
-                    // Define the MediaGridScreen route
-                    composable("mediaGrid") {
-                        MediaGridScreen(mediaGridScreenViewModel,mediaGridScreenState,navController)
-                    }
-                    // Define the FullscreenMediaView route
-                    composable("fullscreenMediaView") { backStackEntry ->
-                        FullscreenMediaView(
-                            mediaGridScreenViewModel,
-                            mediaGridScreenState,
-                            fullscreenMediaState,
-                            navController = navController,
-                        )
-                    }
-                }
-            }
+            ChronoLens()
         }
     }
 

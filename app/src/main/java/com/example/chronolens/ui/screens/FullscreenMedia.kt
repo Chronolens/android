@@ -1,5 +1,6 @@
 package com.example.chronolens.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -35,7 +36,6 @@ fun FullscreenMediaView(
 ) {
 
     val mediaAsset = fullscreenMediaState.value.currentMedia
-
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween,

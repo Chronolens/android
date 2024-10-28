@@ -19,6 +19,7 @@ class SyncManager(
         var remoteAssets: List<RemoteMedia> = if (lastSync == 0L) {
             // Full Sync
             val remote = mediaGridRepository.apiSyncFullRemote()
+            Log.i("REMOTES",remote.size.toString())
             mediaGridRepository.dbUpsertRemoteAssets(remote)
             remote
         } else {
