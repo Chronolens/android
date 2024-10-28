@@ -1,5 +1,6 @@
 package com.example.chronolens.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -43,6 +44,7 @@ import com.example.chronolens.viewModels.MediaGridState
 @Composable
 fun MediaGridScreen(viewModel: MediaGridScreenViewModel,state: State<MediaGridState>,navController: NavController) {
 
+    Log.i("MEDIA",state.value.media.toString())
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
         modifier = Modifier.fillMaxSize(),

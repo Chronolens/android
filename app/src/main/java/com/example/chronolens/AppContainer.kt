@@ -3,10 +3,12 @@ package com.example.chronolens
 import android.content.ContentResolver
 import android.content.Context
 import com.example.chronolens.repositories.MediaGridRepository
+import com.example.chronolens.repositories.UserRepository
 
 
 interface AppContainer {
     val mediaGridRepository: MediaGridRepository
+    val userRepository: UserRepository
 }
 
 class ChronoLensAppContainer(private val context: Context) : AppContainer {
@@ -24,4 +26,10 @@ class ChronoLensAppContainer(private val context: Context) : AppContainer {
             contentResolver
         )
     }
+
+    override val userRepository: UserRepository by lazy {
+        UserRepository(apiServiceClient,sharedPreferences)
+    }
+
+
 }
