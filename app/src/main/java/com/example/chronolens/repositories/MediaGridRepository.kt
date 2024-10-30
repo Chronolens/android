@@ -3,7 +3,7 @@ package com.example.chronolens.repositories
 import android.content.ContentResolver
 import android.content.SharedPreferences
 import android.util.Log
-import com.example.chronolens.APIService
+import com.example.chronolens.utils.APIUtils
 import com.example.chronolens.database.Checksum
 import com.example.chronolens.database.ChecksumDao
 import com.example.chronolens.database.RemoteAssetDao
@@ -17,34 +17,33 @@ import kotlinx.coroutines.withContext
 class MediaGridRepository(
     private val checksumDao: ChecksumDao,
     private val remoteAssetDao: RemoteAssetDao,
-    private val apiServiceClient: APIService,
     val sharedPreferences: SharedPreferences,
     val contentResolver: ContentResolver
 ) {
 
     suspend fun apiUploadFileStream(localMedia: LocalMedia) {
         val responseCode =
-            apiServiceClient.uploadFileStream(sharedPreferences, localMedia)
+            APIUtils.uploadFileStream(sharedPreferences, localMedia)
         Log.i("LOG RESPONSECODE", responseCode.toString())
     }
 
     suspend fun apiSyncFullRemote(): List<RemoteMedia> {
-        return apiServiceClient.syncFullRemote(sharedPreferences)
+        return APIUtils.syncFullRemote(sharedPreferences)
     }
 
     suspend fun apiSyncPartialRemote(lastSync: Long): Pair<List<RemoteMedia>, List<String>> {
-        return apiServiceClient.syncPartialRemote(sharedPreferences, lastSync)
+        return APIUtils.syncPartialRemote(sharedPreferences, lastSync)
     }
 
     suspend fun apiGetPreview(id: String): String {
         return withContext(Dispatchers.IO) {
-            apiServiceClient.getPreview(sharedPreferences, id)
+            APIUtils.getPreview(sharedPreferences, id)
         }
     }
 
     suspend fun apiGetFullImage(id: String): String {
         return withContext(Dispatchers.IO) {
-            apiServiceClient.getFullImage(sharedPreferences, id)
+            APIUtils.getFullImage(sharedPreferences, id)
         }
     }
 
@@ -58,7 +57,7 @@ class MediaGridRepository(
     }
 
     suspend fun dbGetChecksumsFromList(ids: List<String>): List<Checksum> {
-        val batchSize = 100
+        val batchSize = 500
         val results = mutableListOf<Checksum>()
         ids.chunked(batchSize).forEach { chunk ->
             // Run the query for each chunk and add the results to the final list

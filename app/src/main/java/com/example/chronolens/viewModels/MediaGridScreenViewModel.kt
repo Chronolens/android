@@ -39,10 +39,9 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     var localAssets: List<LocalMedia> = mutableListOf()
 
     // Initialize sync manager and fetch assets
-    // TODO: move the declaration so this is not initialized right away
     fun init() {
         viewModelScope.launch{
-            remoteAssets = syncManager.getAssetStructure()
+            remoteAssets = syncManager.getRemoteAssets()
             mergeMediaAssets()
             loadLocalAssets()
         }
@@ -50,7 +49,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     private fun loadLocalAssets() {
         viewModelScope.launch(Dispatchers.IO) {
-            val localMedia = syncManager.getAllLocalMedia()
+            val localMedia = syncManager.getLocalAssets()
             val localMediaIds = localMedia.map { it.id }
             val checksums = mediaGridRepository.dbGetChecksumsFromList(localMediaIds)
             Log.i("LOG", "Already calculated checksums length: ${checksums.size}")

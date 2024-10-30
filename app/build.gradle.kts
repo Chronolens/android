@@ -56,6 +56,9 @@ dependencies {
     // To use Kotlin Symbol Processing (KSP)
     ksp("androidx.room:room-compiler:$room_version")
 
+    implementation(libs.androidx.work.runtime.ktx)
+
+
     // optional - Kotlin Extensions and Coroutines support for Room
     implementation("androidx.room:room-ktx:$room_version")
     implementation("io.coil-kt.coil3:coil-compose:3.0.0-rc01")

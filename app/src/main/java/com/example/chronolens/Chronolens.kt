@@ -18,6 +18,7 @@ import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.UserLoginState
 import com.example.chronolens.viewModels.UserViewModel
 import com.example.chronolens.viewModels.ViewModelProvider
+import com.example.chronolens.viewModels.WorkManagerViewModel
 
 @Composable
 fun ChronoLens() {
@@ -32,6 +33,8 @@ fun ChronoLens() {
         val mediaGridScreenState = mediaGridScreenViewModel.mediaGridState.collectAsState()
         val fullscreenMediaState =
             mediaGridScreenViewModel.fullscreenImageState.collectAsState()
+        val workManagerViewModel: WorkManagerViewModel =
+            viewModel(factory = ViewModelProvider.Factory)
 
 
         NavHost(
@@ -43,7 +46,8 @@ fun ChronoLens() {
                 MediaGridScreen(
                     viewModel = mediaGridScreenViewModel,
                     state = mediaGridScreenState,
-                    navController = navController
+                    navController = navController,
+                    work = workManagerViewModel
                 )
             }
             // Define the FullscreenMediaView route

@@ -15,3 +15,7 @@ object Json {
         const val UPLOADED = "uploaded"
         const val DELETED = "deleted"
 }
+
+object Workmanager {
+        const val BACKGROUND_UPLOAD_WORK_NAME = "BACKGROUND_UPLOAD_WORK_NAME"
+}
