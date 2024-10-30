@@ -6,19 +6,18 @@ import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.repositories.MediaGridRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 
 class SyncManager(
     private val mediaGridRepository: MediaGridRepository
 ) {
-    suspend fun getAssetStructure(): List<RemoteMedia> {
+    suspend fun getRemoteAssets(): List<RemoteMedia> {
         val lastSync = mediaGridRepository.sharedPreferences.getLong("last_sync", 0L)
 
         var remoteAssets: List<RemoteMedia> = if (lastSync == 0L) {
             // Full Sync
             val remote = mediaGridRepository.apiSyncFullRemote()
+            Log.i("REMOTES", remote.size.toString())
             mediaGridRepository.dbUpsertRemoteAssets(remote)
             remote
         } else {
@@ -33,7 +32,7 @@ class SyncManager(
         return remoteAssets
     }
 
-    fun getAllLocalMedia(): List<LocalMedia> {
+    fun getLocalAssets(): List<LocalMedia> {
         val projection = arrayOf(
             MediaStore.Images.Media._ID,           // MediaStore ID
             MediaStore.Images.Media.DATA,          // File path

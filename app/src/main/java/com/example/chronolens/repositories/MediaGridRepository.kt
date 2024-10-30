@@ -3,7 +3,7 @@ package com.example.chronolens.repositories
 import android.content.ContentResolver
 import android.content.SharedPreferences
 import android.util.Log
-import com.example.chronolens.APIService
+import com.example.chronolens.utils.APIUtils
 import com.example.chronolens.database.Checksum
 import com.example.chronolens.database.ChecksumDao
 import com.example.chronolens.database.RemoteAssetDao
@@ -17,42 +17,33 @@ import kotlinx.coroutines.withContext
 class MediaGridRepository(
     private val checksumDao: ChecksumDao,
     private val remoteAssetDao: RemoteAssetDao,
-    private val apiServiceClient: APIService,
     val sharedPreferences: SharedPreferences,
     val contentResolver: ContentResolver
 ) {
 
-    private val base_url = "http://10.0.0.10:8080"
-
-    suspend fun apiLogin(username: String, password: String): Int? {
-        return withContext(Dispatchers.IO) {
-            apiServiceClient.login(sharedPreferences, username, password, base_url)
-        }
-    }
-
     suspend fun apiUploadFileStream(localMedia: LocalMedia) {
         val responseCode =
-            apiServiceClient.uploadFileStream(sharedPreferences, localMedia, base_url)
+            APIUtils.uploadFileStream(sharedPreferences, localMedia)
         Log.i("LOG RESPONSECODE", responseCode.toString())
     }
 
-    fun apiSyncFullRemote(): List<RemoteMedia> {
-        return apiServiceClient.syncFullRemote(sharedPreferences, base_url)
+    suspend fun apiSyncFullRemote(): List<RemoteMedia> {
+        return APIUtils.syncFullRemote(sharedPreferences)
     }
 
-    fun apiSyncPartialRemote(lastSync: Long): Pair<List<RemoteMedia>, List<String>> {
-        return apiServiceClient.syncPartialRemote(sharedPreferences, lastSync, base_url)
+    suspend fun apiSyncPartialRemote(lastSync: Long): Pair<List<RemoteMedia>, List<String>> {
+        return APIUtils.syncPartialRemote(sharedPreferences, lastSync)
     }
 
     suspend fun apiGetPreview(id: String): String {
         return withContext(Dispatchers.IO) {
-            apiServiceClient.getPreview(sharedPreferences, id, base_url)
+            APIUtils.getPreview(sharedPreferences, id)
         }
     }
 
     suspend fun apiGetFullImage(id: String): String {
         return withContext(Dispatchers.IO) {
-            apiServiceClient.getFullImage(sharedPreferences, id, base_url)
+            APIUtils.getFullImage(sharedPreferences, id)
         }
     }
 
@@ -98,10 +89,7 @@ class MediaGridRepository(
     }
 
 
-    suspend fun getOrComputeChecksum(
-        id: String,
-        path: String,
-    ): String {
+    suspend fun getOrComputeChecksum(id: String, path: String): String {
         var checksum = checksumDao.getChecksum(id)?.checksum
 
         if (checksum == null) {

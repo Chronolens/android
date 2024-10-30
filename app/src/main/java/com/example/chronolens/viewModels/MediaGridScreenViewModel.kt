@@ -39,10 +39,9 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     var localAssets: List<LocalMedia> = mutableListOf()
 
     // Initialize sync manager and fetch assets
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            mediaGridRepository.apiLogin("javardo", "123")
-            remoteAssets = syncManager.getAssetStructure()
+    fun init() {
+        viewModelScope.launch{
+            remoteAssets = syncManager.getRemoteAssets()
             mergeMediaAssets()
             loadLocalAssets()
         }
@@ -50,7 +49,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     private fun loadLocalAssets() {
         viewModelScope.launch(Dispatchers.IO) {
-            val localMedia = syncManager.getAllLocalMedia()
+            val localMedia = syncManager.getLocalAssets()
             val localMediaIds = localMedia.map { it.id }
             val checksums = mediaGridRepository.dbGetChecksumsFromList(localMediaIds)
             Log.i("LOG", "Already calculated checksums length: ${checksums.size}")
@@ -91,10 +90,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         // Merge local and remote assets
         _mediaGridState.update { currState ->
             currState.copy(
-                media = syncManager.mergeAssets(
-                    localAssets,
-                    remoteAssets
-                )
+                media = syncManager.mergeAssets(localAssets, remoteAssets)
             )
         }
     }
@@ -108,8 +104,8 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-    fun uploadMedia(localMedia: LocalMedia){
-        viewModelScope.launch(Dispatchers.IO){
+    fun uploadMedia(localMedia: LocalMedia) {
+        viewModelScope.launch(Dispatchers.IO) {
             mediaGridRepository.apiUploadFileStream(localMedia)
         }
     }

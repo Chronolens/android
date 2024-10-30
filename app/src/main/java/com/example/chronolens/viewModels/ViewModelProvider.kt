@@ -11,6 +11,12 @@ object ViewModelProvider {
         initializer {
             MediaGridScreenViewModel(inventoryApplication().container.mediaGridRepository)
         }
+        initializer {
+            UserViewModel(inventoryApplication().container.userRepository)
+        }
+        initializer {
+            WorkManagerViewModel(inventoryApplication().container.workManagerRepository)
+        }
     }
 }
 
