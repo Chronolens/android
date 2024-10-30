@@ -1,4 +1,4 @@
-package com.example.chronolens
+package com.example.chronolens.utils
 
 import android.provider.MediaStore
 import android.util.Log
@@ -9,7 +9,7 @@ import com.example.chronolens.repositories.MediaGridRepository
 
 
 class SyncManager(
-    private val mediaGridRepository: MediaGridRepository
+    val mediaGridRepository: MediaGridRepository
 ) {
     suspend fun getRemoteAssets(): List<RemoteMedia> {
         val lastSync = mediaGridRepository.sharedPreferences.getLong("last_sync", 0L)
@@ -76,6 +76,7 @@ class SyncManager(
         }
 
         localMediaInfo.sortByDescending { it.timestamp }
+        // TODO: fix timestamps
         Log.i("LOG FIRST", localMediaInfo.take(2).map { it.timestamp }.toString())
         Log.i("LOG LAST", localMediaInfo.takeLast(2).map { it.timestamp }.toString())
         return localMediaInfo

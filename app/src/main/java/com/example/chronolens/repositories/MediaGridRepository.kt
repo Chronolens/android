@@ -88,7 +88,6 @@ class MediaGridRepository(
         }
     }
 
-
     suspend fun getOrComputeChecksum(id: String, path: String): String {
         var checksum = checksumDao.getChecksum(id)?.checksum
 
@@ -97,6 +96,13 @@ class MediaGridRepository(
             val checksumDb = Checksum(id, checksum)
             checksumDao.insertChecksum(checksumDb)
         }
+        return checksum
+    }
+
+    suspend fun computeAndStoreChecksum(id: String, path: String): String {
+        val checksum = ChecksumUtils().computeChecksum(path)
+        val checksumDb = Checksum(id, checksum)
+        checksumDao.insertChecksum(checksumDb)
         return checksum
     }
 }

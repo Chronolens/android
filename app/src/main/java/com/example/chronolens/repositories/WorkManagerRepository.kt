@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
-import com.example.chronolens.SyncManager
+import com.example.chronolens.utils.SyncManager
 import com.example.chronolens.utils.Workmanager
 import com.example.chronolens.workers.BackgroundChecksumWorker
 
