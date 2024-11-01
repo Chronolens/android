@@ -17,8 +17,8 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
 
         val syncManager = WorkManagerRepository.syncManager
         if (syncManager != null) {
-            Log.i("WORKER", "SLEEPING...")
-            delay(3000)
+            //Log.i("WORKER", "SLEEPING...")
+            //delay(3000)
             Log.i("WORKER", "STARTING CHECKSUMS")
             val mediaGridRepository = syncManager.mediaGridRepository
 

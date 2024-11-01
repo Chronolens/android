@@ -2,11 +2,9 @@ package com.example.chronolens
 
 import android.content.ContentResolver
 import android.content.Context
-import android.provider.MediaStore
 import com.example.chronolens.repositories.MediaGridRepository
 import com.example.chronolens.repositories.UserRepository
 import com.example.chronolens.repositories.WorkManagerRepository
-import com.example.chronolens.workers.MediaStoreObserver
 
 
 interface AppContainer {
@@ -37,18 +35,18 @@ class ChronoLensAppContainer(private val context: Context) : AppContainer {
         WorkManagerRepository(context,mediaGridRepository)
     }
 
-    private val mediaObserver = MediaStoreObserver(context) {
-        // Trigger the checksum job
-        workManagerRepository.backgroundSync()
-    }
-
-    init {
-        // Register observer to listen for media changes (new photos)
-        context.contentResolver.registerContentObserver(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            true,
-            mediaObserver
-        )
-    }
+//    private val mediaObserver = MediaStoreObserver(context) {
+//        // Trigger the checksum job
+//        workManagerRepository.backgroundSync()
+//    }
+//
+//    init {
+//        // Register observer to listen for media changes (new photos)
+//        context.contentResolver.registerContentObserver(
+//            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+//            true,
+//            mediaObserver
+//        )
+//    }
 
 }
