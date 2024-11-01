@@ -6,7 +6,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.repositories.WorkManagerRepository
-import com.example.chronolens.utils.ChecksumUtils
 import kotlinx.coroutines.delay
 
 private const val TAG = "UploadWorker"
@@ -19,7 +18,7 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
         val syncManager = WorkManagerRepository.syncManager
         if (syncManager != null) {
             Log.i("WORKER", "SLEEPING...")
-            delay(5000)
+            delay(3000)
             Log.i("WORKER", "STARTING CHECKSUMS")
             val mediaGridRepository = syncManager.mediaGridRepository
 
@@ -33,28 +32,32 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
 
             var calculated = 0
             var notCalculated = 0
+            val mediaToUpload = mutableListOf<LocalMedia>()
 
-            val calculatedLocalMedia = mutableListOf<LocalMedia>()
-            for (media in localMedia.filter { !remoteAssets.contains(it.checksum) }) {
+            for (media in localMedia) {
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {
                     // Already calculated
-                    media.checksum = checksum
-                    calculatedLocalMedia.add(media)
+                    if(!remoteAssets.contains(checksum)){
+                        media.checksum = checksum
+                        mediaToUpload.add(media)
+                    }
                     calculated++
                 } else {
                     // To be calculated
                     media.checksum =
                         mediaGridRepository.computeAndStoreChecksum(media.id, media.path)
-                    calculatedLocalMedia.add(media)
+                    if(!remoteAssets.contains(media.checksum)) {
+                        mediaToUpload.add(media)
+                    }
                     notCalculated++
                 }
             }
             Log.i("WORKER", "Calculated:${calculated} | Not Calculated:${notCalculated}")
 
-            Log.i("WORKER", "STARTING ${calculatedLocalMedia.size} UPLOADS")
+            Log.i("WORKER", "STARTING ${mediaToUpload.size} UPLOADS")
             //In this list every media is guaranteed to have checksum
-            calculatedLocalMedia.forEach {
+            mediaToUpload.forEach {
                 Log.i("WORKER", it.checksum.toString())
                 mediaGridRepository.apiUploadFileStream(it)
             }
