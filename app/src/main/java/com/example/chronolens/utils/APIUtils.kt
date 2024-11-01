@@ -16,14 +16,15 @@ import kotlin.io.path.Path
 
 // TODO: error checking ALL OVER THIS CLASS
 class APIUtils {
-    companion object{
+    companion object {
 
-        fun checkLogin(sharedPreferences: SharedPreferences) {
+        suspend fun checkLogin(sharedPreferences: SharedPreferences) {
             checkValidToken(sharedPreferences)
 
         }
 
-        private fun checkValidToken(sharedPreferences: SharedPreferences) {
+        // TODO: Handle case where token is valid but expires while in the middle of app usage?
+        private suspend fun checkValidToken(sharedPreferences: SharedPreferences) = withContext(Dispatchers.IO) {
             val oldAccessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
             val oldExpiresAt = sharedPreferences.getLong(Prefs.EXPIRES_AT, -1L)
             val oldRefreshToken = sharedPreferences.getString(Prefs.REFRESH_TOKEN, "")
@@ -33,8 +34,8 @@ class APIUtils {
             if (System.currentTimeMillis() >= oldExpiresAt) {
                 val url = URL("$oldServer/refresh")
                 val payload = JSONObject().apply {
-                    put("access_token", oldAccessToken)
-                    put("refresh_token", oldRefreshToken)
+                    put(Json.ACCESS_TOKEN, oldAccessToken)
+                    put(Json.REFRESH_TOKEN, oldRefreshToken)
                 }
                 val body = payload.toString()
                 val connection = (url.openConnection() as HttpURLConnection).apply {
@@ -67,11 +68,12 @@ class APIUtils {
                     connection.disconnect()
                 }
 
+            // TODO: Validade token?
             } else {
 
 
             }
-
+        // TODO: return bool?
 
         }
 
@@ -83,20 +85,22 @@ class APIUtils {
             password: String
         ): Int? = withContext(Dispatchers.IO) {
             val url = URL("$server/login")
+            Log.i("LOGIN",url.toString())
             val payload = JSONObject().apply {
                 put("username", username)
                 put("password", password)
             }
             val body = payload.toString()
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Accept", "application/json")
-                requestMethod = "POST"
-                doOutput = true
-                outputStream.write(body.toByteArray())
-            }
+            var connection: HttpURLConnection? = null
 
             try {
+                connection = (url.openConnection() as HttpURLConnection).apply {
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    requestMethod = "POST"
+                    doOutput = true
+                    outputStream.write(body.toByteArray())
+                }
                 val responseCode = connection.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     val response = connection.inputStream.bufferedReader().readText()
@@ -106,6 +110,7 @@ class APIUtils {
                     val refreshToken = jsonResponse.getString(Json.REFRESH_TOKEN)
 
                     sharedPreferences.edit().putString(Prefs.SERVER, server).apply()
+                    sharedPreferences.edit().putString(Prefs.USERNAME, username).apply()
                     sharedPreferences.edit().putString(Prefs.ACCESS_TOKEN, token).apply()
                     sharedPreferences.edit().putLong(Prefs.EXPIRES_AT, expiresAt).apply()
                     sharedPreferences.edit().putString(Prefs.REFRESH_TOKEN, refreshToken).apply()
@@ -115,7 +120,7 @@ class APIUtils {
                 e.printStackTrace()
                 null
             } finally {
-                connection.disconnect()
+                connection?.disconnect()
             }
         }
 

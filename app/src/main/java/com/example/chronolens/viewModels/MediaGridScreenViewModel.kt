@@ -35,8 +35,8 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     val fullscreenImageState: StateFlow<FullscreenImageState> = _fullscreenImageState.asStateFlow()
 
     private val syncManager = SyncManager(mediaGridRepository)
-    var remoteAssets: List<RemoteMedia> = mutableListOf()
-    var localAssets: List<LocalMedia> = mutableListOf()
+    private var remoteAssets: List<RemoteMedia> = mutableListOf()
+    private var localAssets: List<LocalMedia> = mutableListOf()
 
     // Initialize sync manager and fetch assets
     fun init() {

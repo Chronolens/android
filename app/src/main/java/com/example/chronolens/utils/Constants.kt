@@ -6,6 +6,7 @@ object Prefs {
         const val REFRESH_TOKEN = "REFRESH_TOKEN"
         const val EXPIRES_AT = "EXPIRES_AT"
         const val LAST_SYNC = "LAST_SYNC"
+        const val USERNAME = "USERNAME"
 }
 
 object Json {

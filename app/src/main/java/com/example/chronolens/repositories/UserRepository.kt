@@ -9,7 +9,7 @@ class UserRepository(
     val sharedPreferences: SharedPreferences,
 ) {
 
-    fun checkLogin(){
+    suspend fun checkLogin(){
         APIUtils.checkLogin(sharedPreferences)
     }
 
