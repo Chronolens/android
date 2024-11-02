@@ -52,7 +52,6 @@ fun MediaGridScreen(
     work: WorkManagerViewModel
 ) {
 
-    Log.i("MEDIA", state.value.media.toString())
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
         modifier = Modifier.fillMaxSize(),

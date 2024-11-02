@@ -24,7 +24,6 @@ class MediaGridRepository(
     suspend fun apiUploadFileStream(localMedia: LocalMedia) {
         val responseCode =
             APIUtils.uploadFileStream(sharedPreferences, localMedia)
-        Log.i("LOG RESPONSECODE", responseCode.toString())
     }
 
     suspend fun apiSyncFullRemote(): List<RemoteMedia> {

@@ -47,7 +47,6 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
         return userRepository.sharedPreferences.getString(Prefs.USERNAME, "")!!
     }
 
-    // TODO: Check for code and change userLoginState
     fun login(server: String, username: String, password: String) {
         Log.i("LOGIN","$server | $username | $password")
         viewModelScope.launch {

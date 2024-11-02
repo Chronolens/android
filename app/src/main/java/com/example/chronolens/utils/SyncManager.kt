@@ -17,7 +17,6 @@ class SyncManager(
         var remoteAssets: List<RemoteMedia> = if (lastSync == 0L) {
             // Full Sync
             val remote = mediaGridRepository.apiSyncFullRemote()
-            Log.i("REMOTES", remote.size.toString())
             mediaGridRepository.dbUpsertRemoteAssets(remote)
             remote
         } else {
@@ -46,6 +45,8 @@ class SyncManager(
         )
 
         val localMediaInfo = mutableListOf<LocalMedia>()
+
+
         cursor?.use {
             val idColumn = it.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
             val pathColumn = it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
@@ -60,7 +61,12 @@ class SyncManager(
                     if (dateTakenColumn != -1) it.getLong(dateTakenColumn) else null // Get the DATE_TAKEN value, can be null
                 val mimeType = cursor.getString(mimeTypeColumn)
 
-                val finalTimestamp = dateTaken ?: (it.getLong(dateModifiedColumn) * 1000)
+                val finalTimestamp: Long = if (dateTaken == null || dateTaken == 0L) {
+                    it.getLong(dateModifiedColumn) * 1000
+                } else {
+                    dateTaken
+                }
+
 
                 localMediaInfo.add(
                     LocalMedia(
@@ -76,9 +82,6 @@ class SyncManager(
         }
 
         localMediaInfo.sortByDescending { it.timestamp }
-        // TODO: fix timestamps
-        Log.i("LOG FIRST", localMediaInfo.take(2).map { it.timestamp }.toString())
-        Log.i("LOG LAST", localMediaInfo.takeLast(2).map { it.timestamp }.toString())
         return localMediaInfo
     }
 

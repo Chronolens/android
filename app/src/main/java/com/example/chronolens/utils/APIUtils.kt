@@ -85,7 +85,6 @@ class APIUtils {
             password: String
         ): Int? = withContext(Dispatchers.IO) {
             val url = URL("$server/login")
-            Log.i("LOGIN",url.toString())
             val payload = JSONObject().apply {
                 put("username", username)
                 put("password", password)
@@ -176,7 +175,6 @@ class APIUtils {
             sharedPreferences: SharedPreferences
         ): List<RemoteMedia> = withContext(Dispatchers.IO) {
             val server = sharedPreferences.getString(Prefs.SERVER, "")
-            Log.i("SERVER!!", server ?: "NULL")
             val accessToken =
                 sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
                     ?: return@withContext emptyList()
