@@ -124,6 +124,7 @@ class APIUtils {
         }
 
         // Upload file using stream
+        // TODO: get response code to change icon
         suspend fun uploadFileStream(
             sharedPreferences: SharedPreferences,
             asset: LocalMedia

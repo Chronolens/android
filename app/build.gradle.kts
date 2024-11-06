@@ -66,6 +66,9 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.0-rc01")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
     implementation ("com.google.code.gson:gson:2.10.1")
+    implementation("androidx.core:core-ktx:1.10.1")
+    implementation(libs.guava)
+
     implementation (libs.androidx.navigation.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

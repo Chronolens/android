@@ -51,34 +51,10 @@ fun MediaGridScreen(
     work: WorkManagerViewModel
 ) {
 
-    var periodicVisible by remember { mutableStateOf<Boolean>(false) }
-    var oneTimeVisible by remember { mutableStateOf<Boolean>(false) }
-
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
         modifier = Modifier.fillMaxSize(),
     ) {
-        item {
-            Button(onClick = work::periodicBackgroundSync) {
-                Text("Free candy")
-            }
-        }
-        item {
-            Button(onClick = work::cancelPeriodicBackgroundSync) {
-                Text("Cancel Free candy")
-            }
-        }
-        item {
-            Button(onClick = work::oneTimeBackgroundSync) {
-                Text("Free candy NOW!")
-            }
-        }
-
-        item {
-            Button(onClick = work::cancelOneTimeBackgroundSync) {
-                Text("Cancel Free candy NOW!")
-            }
-        }
         items(state.value.media) { asset ->
             ImageItem(viewModel,asset) {
                 viewModel.updateCurrentAsset(asset)

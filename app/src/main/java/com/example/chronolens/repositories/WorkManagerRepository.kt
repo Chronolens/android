@@ -30,6 +30,7 @@ class WorkManagerRepository(
 
     // TODO: make it dynamic with user prefs
     // TODO: set initial delay so that it doesn't execute right away
+    // TODO: using onetime+periodic for initial setup?
     fun periodicBackgroundSync() {
 
         val constraints = Constraints.Builder()
