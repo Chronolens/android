@@ -1,6 +1,5 @@
 package com.example.chronolens.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.TransformableState
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -88,7 +87,7 @@ fun FullscreenMediaView(
                 .padding(vertical = 48.dp, horizontal = 16.dp)
                 .align(Alignment.BottomCenter),
             horizontalArrangement = Arrangement.SpaceBetween
-            
+
         ) {
             IconButton(
                 onClick = { println("Menu button pressed") }
@@ -112,6 +111,12 @@ fun FullscreenMediaView(
             DeleteOrTransferIcon(mediaAsset)
         }
     }
+}
+
+// TODO: temporary only
+@Composable
+fun metadataDisplay(){
+
 }
 
 @Composable

@@ -34,19 +34,4 @@ class ChronoLensAppContainer(private val context: Context) : AppContainer {
     override val workManagerRepository: WorkManagerRepository by lazy {
         WorkManagerRepository(context,mediaGridRepository)
     }
-
-//    private val mediaObserver = MediaStoreObserver(context) {
-//        // Trigger the checksum job
-//        workManagerRepository.backgroundSync()
-//    }
-//
-//    init {
-//        // Register observer to listen for media changes (new photos)
-//        context.contentResolver.registerContentObserver(
-//            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-//            true,
-//            mediaObserver
-//        )
-//    }
-
 }

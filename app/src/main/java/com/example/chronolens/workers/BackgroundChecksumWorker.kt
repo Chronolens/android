@@ -1,11 +1,16 @@
 package com.example.chronolens.workers
 
+import android.app.NotificationManager
 import android.content.Context
-import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.repositories.WorkManagerRepository
+import com.example.chronolens.utils.showFinishedNotification
+import com.example.chronolens.utils.showUploadNotification
+import com.example.chronolens.utils.showSyncNotification
+import com.example.chronolens.utils.updateSyncNotificationProgress
+import com.example.chronolens.utils.updateUploadNotificationProgress
 import kotlinx.coroutines.delay
 
 private const val TAG = "UploadWorker"
@@ -16,12 +21,15 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
     override suspend fun doWork(): Result {
 
         val syncManager = WorkManagerRepository.syncManager
-        if (syncManager != null) {
-            //Log.i("WORKER", "SLEEPING...")
-            //delay(3000)
-            Log.i("WORKER", "STARTING CHECKSUMS")
-            val mediaGridRepository = syncManager.mediaGridRepository
+        val notificationManager =
+            applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+        if (syncManager != null) {
+
+            // Sync Phase
+            showSyncNotification(applicationContext)
+//            delay(6000)
+            val mediaGridRepository = syncManager.mediaGridRepository
             val localMedia: List<LocalMedia> = syncManager.getLocalAssets()
             val localMediaIds: List<String> = localMedia.map { it.id }
             val remoteAssets: Set<String> =
@@ -30,38 +38,51 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
                 mediaGridRepository.dbGetChecksumsFromList(localMediaIds)
                     .associate { it.localId to it.checksum }
 
-            var calculated = 0
-            var notCalculated = 0
             val mediaToUpload = mutableListOf<LocalMedia>()
+            var calculated = 0
+
+            updateSyncNotificationProgress(applicationContext, 0, localMedia.size)
 
             for (media in localMedia) {
+//                delay(1000)
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {
-                    // Already calculated
-                    if(!remoteAssets.contains(checksum)){
+                    if (!remoteAssets.contains(checksum)) {
                         media.checksum = checksum
                         mediaToUpload.add(media)
                     }
-                    calculated++
                 } else {
-                    // To be calculated
                     media.checksum =
                         mediaGridRepository.computeAndStoreChecksum(media.id, media.path)
-                    if(!remoteAssets.contains(media.checksum)) {
+                    if (!remoteAssets.contains(media.checksum)) {
                         mediaToUpload.add(media)
                     }
-                    notCalculated++
                 }
+                calculated++
+                updateSyncNotificationProgress(applicationContext, calculated, localMedia.size)
             }
-            Log.i("WORKER", "Calculated:${calculated} | Not Calculated:${notCalculated}")
 
-            Log.i("WORKER", "STARTING ${mediaToUpload.size} UPLOADS")
-            //In this list every media is guaranteed to have checksum
-            mediaToUpload.forEach {
-                Log.i("WORKER", it.checksum.toString())
-                mediaGridRepository.apiUploadFileStream(it)
+            notificationManager.cancel(1)
+
+            // No media to upload
+            if (mediaToUpload.isEmpty()) {
+                return Result.success()
             }
-            Log.i("WORKER", "FINISHED ALL!")
+
+            showUploadNotification(applicationContext, 0, mediaToUpload.size)
+
+            // Upload Phase Logic
+            var uploaded = 0
+            mediaToUpload.forEach {
+//                delay(2000)
+                mediaGridRepository.apiUploadFileStream(it)
+                uploaded++
+                updateUploadNotificationProgress(applicationContext, uploaded, mediaToUpload.size)
+            }
+
+            notificationManager.cancel(2)
+            showFinishedNotification(applicationContext,uploaded)
+
             return Result.success()
         } else {
             return Result.failure()

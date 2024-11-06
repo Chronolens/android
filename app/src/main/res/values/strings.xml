@@ -1,3 +1,14 @@
 <resources>
-    <string name="app_name">chronolens</string>
+    <string name="app_name" translatable="false">Chronolens</string>
+    <string name="notification_sync_message">Syncing</string>
+    <string name="notification_sync_message_init">Syncing Data</string>
+    <string name="notification_sync_message_progress">Syncing assets (%d/%d)</string>
+    <string name="notification_upload_message">Uploading</string>
+    <string name="notification_upload_message_init">Uploading Assets</string>
+    <string name="notification_upload_message_progress">Uploading assets (%d/%d)</string>
+    <string name="notification_finished">Finished</string>
+    <plurals name="notification_finished_message">
+        <item quantity="one">Uploaded %d item</item>
+        <item quantity="other">Uploaded %d items</item>
+    </plurals>
 </resources>
