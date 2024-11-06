@@ -140,9 +140,24 @@ fun LoadFullImage(mediaAsset: MediaAsset, viewModel: MediaGridScreenViewModel) {
 
     val doubleTapModifier = Modifier.pointerInput(Unit) {
         detectTapGestures(
-            onDoubleTap = {
-                scale.value = if (scale.value > defaultZoom) defaultZoom else maxZoom
-                offset.value = Offset.Zero
+            onDoubleTap = { tapOffset ->
+                val imageWidth = screenWidth.toPx() * scale.value
+                val imageHeight = screenHeight.toPx() * scale.value
+
+                if (scale.value > defaultZoom) {
+                    scale.value = defaultZoom
+                    offset.value = Offset.Zero
+                } else {
+                    scale.value = maxZoom
+
+                    val maxXOffset = with(density) { (screenWidth * (scale.value - 1)).toPx() / 2 }
+                    val maxYOffset = with(density) { (screenHeight * (scale.value - 1)).toPx() / 2 }
+
+                    offset.value = Offset(
+                        x = (screenWidth.toPx() / 2 - (tapOffset.x * scale.value - imageWidth / 2)).coerceIn(-maxXOffset, maxXOffset),
+                        y = (screenHeight.toPx() / 2 - (tapOffset.y * scale.value - imageHeight / 2)).coerceIn(-maxYOffset, maxYOffset)
+                    )
+                }
             }
         )
     }
@@ -207,7 +222,6 @@ fun ZoomableImage(
         )
     }
 }
-
 
 
 
