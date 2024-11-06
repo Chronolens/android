@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -65,18 +66,18 @@ fun LoginScreen(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    val gradientBrush = Brush.horizontalGradient(
-        colors = listOf(
-            colorScheme.primary,
-            colorScheme.secondary
-        )
+    val brush = Brush.linearGradient(
+        colors = listOf(colorScheme.primary, colorScheme.secondary),
+        start = Offset(0f, 0f),
+        end = Offset(1000f, 2000f)
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(brush = gradientBrush)
-    ) {
+            .background(brush)
+
+) {
         when (userState.value.userLoginState) {
             UserLoginState.Loading -> DisplayLoading()
             UserLoginState.LoggedIn -> grantAccess()
@@ -86,6 +87,7 @@ fun LoginScreen(
         }
     }
 }
+
 
 
 
@@ -106,7 +108,7 @@ fun LoginPrompt(
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
             .fillMaxSize()
-            .background(color = colorScheme.background)
+            .background(color = Color.Transparent)
             .padding(16.dp)
     ) {
         Image(
@@ -115,7 +117,7 @@ fun LoginPrompt(
             modifier = Modifier.size(200.dp)
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         CustomTextField(
             value = server,
@@ -126,7 +128,7 @@ fun LoginPrompt(
             imeAction = ImeAction.Next
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         CustomTextField(
             value = username,
@@ -137,7 +139,7 @@ fun LoginPrompt(
             imeAction = ImeAction.Next
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         CustomTextField(
             value = password,
@@ -159,7 +161,10 @@ fun LoginPrompt(
             },
             enabled = userState.value.userLoginState != UserLoginState.Loading,
             shape = RoundedCornerShape(4.dp),
-            modifier = Modifier.align(Alignment.CenterHorizontally),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .align(Alignment.CenterHorizontally),
             colors = defaultButtonColors()
         ) {
             if (userState.value.userLoginState == UserLoginState.Loading) {
@@ -234,8 +239,7 @@ fun CustomTextField(
 
         HorizontalDivider(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 0.dp),
+                .fillMaxWidth(),
             thickness = 2.dp,
             color = if (isError) Color.Red else colorScheme.onBackground.copy(alpha = 0.7f)
         )
