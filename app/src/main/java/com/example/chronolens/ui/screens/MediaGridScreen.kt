@@ -15,8 +15,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -40,15 +42,25 @@ import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
+import com.example.chronolens.viewModels.WorkManagerViewModel
 
 @Composable
-fun MediaGridScreen(viewModel: MediaGridScreenViewModel,state: State<MediaGridState>,navController: NavController) {
+fun MediaGridScreen(
+    viewModel: MediaGridScreenViewModel,
+    state: State<MediaGridState>,
+    navController: NavController,
+    work: WorkManagerViewModel
+) {
 
-    Log.i("MEDIA",state.value.media.toString())
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
         modifier = Modifier.fillMaxSize(),
     ) {
+        item {
+            Button(onClick = work::backgroundSync) {
+                Text("Free candy")
+            }
+        }
         items(state.value.media) { asset ->
             ImageItem(viewModel,asset) {
                 viewModel.updateCurrentAsset(asset)
@@ -59,7 +71,11 @@ fun MediaGridScreen(viewModel: MediaGridScreenViewModel,state: State<MediaGridSt
 }
 
 @Composable
-fun ImageItem(viewModel: MediaGridScreenViewModel, mediaAsset: MediaAsset, onClick:(MediaAsset) -> Unit) {
+fun ImageItem(
+    viewModel: MediaGridScreenViewModel,
+    mediaAsset: MediaAsset,
+    onClick: (MediaAsset) -> Unit
+) {
     Box(
         modifier = Modifier
             .padding(2.dp)
@@ -86,11 +102,11 @@ fun ImageItem(viewModel: MediaGridScreenViewModel, mediaAsset: MediaAsset, onCli
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clickable{
+                        .clickable {
                             onClick(mediaAsset)
                         },
 
-                )
+                    )
                 if (localAsset.remoteId != null) {
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
@@ -119,7 +135,7 @@ fun ImageItem(viewModel: MediaGridScreenViewModel, mediaAsset: MediaAsset, onCli
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
-                            .clickable{
+                            .clickable {
                                 onClick(mediaAsset)
                             },
                     )

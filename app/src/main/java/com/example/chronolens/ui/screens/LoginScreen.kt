@@ -1,5 +1,6 @@
 package com.example.chronolens.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,7 +61,7 @@ fun LoginPrompt(
 ) {
 
     var server by remember { mutableStateOf(viewModel.getServer()) }
-    var username by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf(viewModel.getUsername()) }
     var password by remember { mutableStateOf("") }
 
     Column {
