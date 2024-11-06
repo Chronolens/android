@@ -14,7 +14,9 @@ object ViewModelProvider {
         initializer {
             UserViewModel(inventoryApplication().container.userRepository)
         }
-
+        initializer {
+            WorkManagerViewModel(inventoryApplication().container.workManagerRepository)
+        }
     }
 }
 
