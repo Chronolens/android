@@ -1,43 +1,42 @@
 package com.example.chronolens.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.ButtonDefaults
 
 
 private val DarkColorScheme = darkColorScheme(
     primary = dark_red,
     secondary = dark_blue,
-    tertiary = light_green,
+    tertiary = light_blue,
     background = Color.Black,
     surface = Color.Black,
     onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
     onBackground = Color.White,
-    onSurface = Color.White
+    onSurface = Color.White,
+    primaryContainer = buttonPrimary, // button container color i think
+    onPrimaryContainer = buttonOnPrimary,
+    secondaryContainer = buttonSecondary,
+    onSecondaryContainer = buttonOnSecondary
 )
+
+
+@Composable
+fun defaultButtonColors() = ButtonDefaults.buttonColors(
+    containerColor = MaterialTheme.colorScheme.primaryContainer,
+    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+)
+
 
 @Composable
 fun ChronoLensTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            dynamicDarkColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> DarkColorScheme
-    }
-
+    val colorScheme = DarkColorScheme
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,

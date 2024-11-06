@@ -12,3 +12,8 @@ val light_red = Color(0xFF5555FF)
 val light_blue = Color(0x84EDFFFF)
 val light_yellow = Color(0xFFECADFF)
 val light_pink = Color(0xFD93FFFF)
+
+val buttonPrimary = Color(0xFFFFFFFF)
+val buttonOnPrimary = Color.Black
+val buttonSecondary = Color.Black
+val buttonOnSecondary = Color(0xFFFFFFFF)
