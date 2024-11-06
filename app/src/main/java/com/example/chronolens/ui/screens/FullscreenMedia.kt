@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -102,6 +103,11 @@ fun FullscreenMediaView(
 
 }
 
+// TODO: temporary only
+@Composable
+fun metadataDisplay(){
+
+}
 
 @Composable
 fun LoadFullImage(mediaAsset: MediaAsset, viewModel: MediaGridScreenViewModel) {

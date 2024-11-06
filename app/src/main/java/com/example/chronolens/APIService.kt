@@ -120,6 +120,7 @@ class APIService {
         }
     }
 
+    // TODO: upload metadata or let server figure it out?
     // Upload file using stream
     suspend fun uploadFileStream(
         sharedPreferences: SharedPreferences,

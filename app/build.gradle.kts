@@ -48,6 +48,7 @@ android {
 
 dependencies {
 
+    implementation(libs.androidx.exifinterface)
     val room_version = "2.6.1"
 
     implementation("androidx.room:room-runtime:$room_version")

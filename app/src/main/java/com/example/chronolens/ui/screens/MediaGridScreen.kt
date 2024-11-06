@@ -1,6 +1,5 @@
 package com.example.chronolens.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -52,13 +51,32 @@ fun MediaGridScreen(
     work: WorkManagerViewModel
 ) {
 
+    var periodicVisible by remember { mutableStateOf<Boolean>(false) }
+    var oneTimeVisible by remember { mutableStateOf<Boolean>(false) }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
         modifier = Modifier.fillMaxSize(),
     ) {
         item {
-            Button(onClick = work::backgroundSync) {
+            Button(onClick = work::periodicBackgroundSync) {
                 Text("Free candy")
+            }
+        }
+        item {
+            Button(onClick = work::cancelPeriodicBackgroundSync) {
+                Text("Cancel Free candy")
+            }
+        }
+        item {
+            Button(onClick = work::oneTimeBackgroundSync) {
+                Text("Free candy NOW!")
+            }
+        }
+
+        item {
+            Button(onClick = work::cancelOneTimeBackgroundSync) {
+                Text("Cancel Free candy NOW!")
             }
         }
         items(state.value.media) { asset ->
