@@ -18,7 +18,7 @@ private val DarkColorScheme = darkColorScheme(
     onTertiary = Color.White,
     onBackground = Color.White,
     onSurface = Color.White,
-    primaryContainer = buttonPrimary, // button container color i think
+    primaryContainer = buttonPrimary,
     onPrimaryContainer = buttonOnPrimary,
     secondaryContainer = buttonSecondary,
     onSecondaryContainer = buttonOnSecondary
@@ -28,7 +28,7 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun defaultButtonColors() = ButtonDefaults.buttonColors(
     containerColor = MaterialTheme.colorScheme.primaryContainer,
-    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    contentColor = MaterialTheme.colorScheme.secondaryContainer
 )
 
 
