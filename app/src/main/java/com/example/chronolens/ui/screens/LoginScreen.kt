@@ -52,6 +52,10 @@ import com.example.chronolens.viewModels.UserViewModel
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 
+
+
+
+
 @Composable
 fun LoginScreen(
     viewModel: UserViewModel,
@@ -104,6 +108,7 @@ fun LoginPrompt(
             .fillMaxSize()
             .background(color = Color.Transparent)
             .padding(16.dp)
+            .padding(bottom = 200.dp)
     ) {
         Image(
             painter = painterResource(id = R.drawable.large_logo),
@@ -112,7 +117,7 @@ fun LoginPrompt(
         )
 
         Spacer(modifier = Modifier.height(12.dp))
-        
+
         CustomTextField(
             value = server,
             onValueChange = { server = it },
@@ -255,6 +260,7 @@ fun DisplayLoading() {
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
+            .padding(bottom = 200.dp)
     ) {
 
         Image(
