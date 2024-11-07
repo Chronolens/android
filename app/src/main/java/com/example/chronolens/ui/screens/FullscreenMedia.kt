@@ -1,10 +1,12 @@
 package com.example.chronolens.ui.screens
 
 import android.util.Log
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.TransformableState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
@@ -40,6 +42,16 @@ import com.example.chronolens.viewModels.FullscreenImageState
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
 
+
+// TODO: This is not using full quality image as we can verify zooming in, perhaps it creates
+// a image with the initial width we give it and then it loses detail since it resizes the image?
+
+
+// TODO: Restrict photo vertical position while zooming in with double tap
+
+
+val boxHeight = 300.dp
+
 @Composable
 fun FullscreenMediaView(
     viewModel: MediaGridScreenViewModel,
@@ -48,12 +60,21 @@ fun FullscreenMediaView(
     navController: NavHostController
 ) {
     val mediaAsset = fullscreenMediaState.value.currentMedia
+    var isBoxVisible by remember { mutableStateOf(false) }
+
+
+    // Offset for the sliding box, animates to 0.dp when isBoxVisible is true, and 300.dp otherwise.
+    val boxOffsetY by animateDpAsState(targetValue = if (isBoxVisible) 0.dp else boxHeight)
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
     ) {
-        LoadFullImage(mediaAsset!!, viewModel)
 
+        // The full image component
+        LoadFullImage(mediaAsset!!, viewModel, { isBoxVisible = false }, { isBoxVisible = true })
+
+        // Top icons (Back and Bookmark buttons)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -62,18 +83,14 @@ fun FullscreenMediaView(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(
-                onClick = { navController.navigateUp() }
-            ) {
+            IconButton(onClick = { navController.navigateUp() }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = Color.White
                 )
             }
-            IconButton(
-                onClick = { println("Bookmark button pressed") }
-            ) {
+            IconButton(onClick = { println("Bookmark button pressed") }) {
                 Icon(
                     imageVector = Icons.Default.FavoriteBorder,
                     contentDescription = "Bookmark",
@@ -82,26 +99,22 @@ fun FullscreenMediaView(
             }
         }
 
+        // Bottom icons (Menu, Share, etc.)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 48.dp, horizontal = 16.dp)
                 .align(Alignment.BottomCenter),
             horizontalArrangement = Arrangement.SpaceBetween
-            
         ) {
-            IconButton(
-                onClick = { println("Menu button pressed") }
-            ) {
+            IconButton(onClick = { println("Menu button pressed") }) {
                 Icon(
                     imageVector = Icons.Default.Menu,
                     contentDescription = "Menu",
                     tint = Color.White
                 )
             }
-            IconButton(
-                onClick = { println("Share button pressed") }
-            ) {
+            IconButton(onClick = { println("Share button pressed") }) {
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = "Share",
@@ -111,11 +124,27 @@ fun FullscreenMediaView(
             CloudIcon(mediaAsset, viewModel)
             DeleteOrTransferIcon(mediaAsset)
         }
+
+        // The sliding box that appears based on isBoxVisible state
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(boxHeight)
+                .align(Alignment.BottomCenter)
+                .offset(y = boxOffsetY)
+                .background(Color.Gray)
+        )
     }
 }
 
+
 @Composable
-fun LoadFullImage(mediaAsset: MediaAsset, viewModel: MediaGridScreenViewModel) {
+fun LoadFullImage(
+    mediaAsset: MediaAsset,
+    viewModel: MediaGridScreenViewModel,
+    hideBox: () -> Unit,
+    showBox: () -> Unit
+) {
     val scale = remember { mutableStateOf(1f) }
     val offset = remember { mutableStateOf(Offset(0f, 0f)) }
 
@@ -124,6 +153,7 @@ fun LoadFullImage(mediaAsset: MediaAsset, viewModel: MediaGridScreenViewModel) {
     val density = LocalDensity.current
 
     val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
+
         scale.value = (scale.value * zoomChange).coerceIn(1f, 4f)
 
         val maxXOffset = with(density) { (screenWidth * (scale.value - 1)).toPx() / 2 }
@@ -133,11 +163,13 @@ fun LoadFullImage(mediaAsset: MediaAsset, viewModel: MediaGridScreenViewModel) {
             x = (offset.value.x + panChange.x * scale.value).coerceIn(-maxXOffset, maxXOffset),
             y = (offset.value.y + panChange.y * scale.value).coerceIn(-maxYOffset, maxYOffset)
         )
+
     }
 
     val maxZoom = 2f
     val defaultZoom = 1f
 
+    // Double-tap gesture for zoom
     val doubleTapModifier = Modifier.pointerInput(Unit) {
         detectTapGestures(
             onDoubleTap = { tapOffset ->
@@ -154,13 +186,35 @@ fun LoadFullImage(mediaAsset: MediaAsset, viewModel: MediaGridScreenViewModel) {
                     val maxYOffset = with(density) { (screenHeight * (scale.value - 1)).toPx() / 2 }
 
                     offset.value = Offset(
-                        x = (screenWidth.toPx() / 2 - (tapOffset.x * scale.value - imageWidth / 2)).coerceIn(-maxXOffset, maxXOffset),
-                        y = (screenHeight.toPx() / 2 - (tapOffset.y * scale.value - imageHeight / 2)).coerceIn(-maxYOffset, maxYOffset)
+                        x = (screenWidth.toPx() / 2 - (tapOffset.x * scale.value - imageWidth / 2)).coerceIn(
+                            -maxXOffset,
+                            maxXOffset
+                        ),
+                        y = (screenHeight.toPx() / 2 - (tapOffset.y * scale.value - imageHeight / 2)).coerceIn(
+                            -maxYOffset,
+                            maxYOffset
+                        )
                     )
                 }
             }
         )
     }
+
+    // Separate vertical drag modifier to handle swipe gestures when fully zoomed out
+    val verticalDragModifier = Modifier.pointerInput(Unit) {
+        detectVerticalDragGestures(
+            onVerticalDrag = { _, dragAmount ->
+                if (scale.value == defaultZoom) {  // Only allow swipe gestures when fully zoomed out
+                    if (dragAmount < -10) {
+                        showBox()
+                    } else if (dragAmount > 10) {
+                        hideBox()
+                    }
+                }
+            }
+        )
+    }
+
 
     if (mediaAsset is RemoteMedia) {
         var imageUrl by remember { mutableStateOf<String?>(null) }
@@ -174,7 +228,7 @@ fun LoadFullImage(mediaAsset: MediaAsset, viewModel: MediaGridScreenViewModel) {
                 scale = scale.value,
                 offset = offset.value,
                 transformableState = transformableState,
-                doubleTapModifier = doubleTapModifier
+                modifier = verticalDragModifier.then(doubleTapModifier)
             )
         } else {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -187,7 +241,8 @@ fun LoadFullImage(mediaAsset: MediaAsset, viewModel: MediaGridScreenViewModel) {
             scale = scale.value,
             offset = offset.value,
             transformableState = transformableState,
-            doubleTapModifier = doubleTapModifier
+
+            modifier = doubleTapModifier.then(verticalDragModifier)
         )
     }
 }
@@ -198,13 +253,21 @@ fun ZoomableImage(
     scale: Float,
     offset: Offset,
     transformableState: TransformableState,
-    doubleTapModifier: Modifier
+    modifier: Modifier
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .then(doubleTapModifier)
+            .graphicsLayer(
+                scaleX = scale,
+                scaleY = scale,
+                translationX = offset.x,
+                translationY = offset.y
+            )
+            .transformable(state = transformableState)
+            .then(modifier)
+
     ) {
         AsyncImage(
             model = url,
@@ -212,18 +275,10 @@ fun ZoomableImage(
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .align(Alignment.Center)
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offset.x,
-                    translationY = offset.y
-                )
-                .transformable(state = transformableState)
+
         )
     }
 }
-
-
 
 
 @Composable
