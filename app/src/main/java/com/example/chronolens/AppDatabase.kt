@@ -8,7 +8,6 @@ import com.example.chronolens.database.Checksum
 import com.example.chronolens.database.ChecksumDao
 import com.example.chronolens.database.RemoteAssetDao
 import com.example.chronolens.database.RemoteAssetDb
-import kotlinx.coroutines.InternalCoroutinesApi
 
 @Database(entities = [Checksum::class, RemoteAssetDb::class], version = 1)
 abstract class AppDatabase : RoomDatabase() {
@@ -19,7 +18,6 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        @OptIn(InternalCoroutinesApi::class)
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(

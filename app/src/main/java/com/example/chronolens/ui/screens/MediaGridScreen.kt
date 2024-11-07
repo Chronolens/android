@@ -1,6 +1,5 @@
 package com.example.chronolens.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -56,11 +55,6 @@ fun MediaGridScreen(
         columns = GridCells.Fixed(4),
         modifier = Modifier.fillMaxSize(),
     ) {
-        item {
-            Button(onClick = work::backgroundSync) {
-                Text("Free candy")
-            }
-        }
         items(state.value.media) { asset ->
             ImageItem(viewModel,asset) {
                 viewModel.updateCurrentAsset(asset)

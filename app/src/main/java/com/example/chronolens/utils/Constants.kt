@@ -17,6 +17,16 @@ object Json {
         const val DELETED = "deleted"
 }
 
-object Workmanager {
-        const val BACKGROUND_UPLOAD_WORK_NAME = "BACKGROUND_UPLOAD_WORK_NAME"
+object Work {
+        const val PERIODIC_BACKGROUND_UPLOAD_WORK_NAME = "PERIODIC_BACKGROUND_UPLOAD_WORK_NAME"
+        const val ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME = "ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME"
+}
+
+object Notifications {
+        const val SYNC_CHANNEL_ID = "SYNC_CHANNEL_ID"
+        const val UPLOAD_CHANNEL_ID = "UPLOAD_CHANNEL_ID"
+        const val FINISHED_CHANNEL_ID = "FINISHED_CHANNEL_ID"
+        const val SYNC_PROGRESS = "Sync Progress"
+        const val UPLOAD_PROGRESS = "Upload Progress"
+        const val FINISHED = "Finished"
 }
