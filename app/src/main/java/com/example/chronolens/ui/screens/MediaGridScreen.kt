@@ -64,11 +64,6 @@ fun MediaGridScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        item {
-            Button(onClick = work::backgroundSync) {
-                Text("Free candy")
-            }
-        }
         items(state.value.media) { asset ->
             ImageItem(viewModel,asset) {
                 viewModel.updateCurrentAsset(asset)
