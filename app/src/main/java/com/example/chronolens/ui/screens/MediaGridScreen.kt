@@ -1,5 +1,7 @@
 package com.example.chronolens.ui.screens
 
+import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -17,6 +19,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,13 +32,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.size.Scale
+import com.example.chronolens.R
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
@@ -53,7 +60,9 @@ fun MediaGridScreen(
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
     ) {
         items(state.value.media) { asset ->
             ImageItem(viewModel,asset) {
@@ -70,9 +79,11 @@ fun ImageItem(
     mediaAsset: MediaAsset,
     onClick: (MediaAsset) -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Box(
         modifier = Modifier
-            .padding(2.dp)
+            .padding(1.dp)
             .fillMaxWidth()
             .aspectRatio(1f), // Maintain a square aspect ratio
         contentAlignment = Alignment.Center,
@@ -103,13 +114,14 @@ fun ImageItem(
                     )
                 if (localAsset.remoteId != null) {
                     Icon(
-                        imageVector = Icons.Default.CheckCircle,
+                        imageVector = ImageVector.vectorResource(id = R.drawable.cloudcheck),
                         contentDescription = null,
-                        tint = Color.Blue,
+                        tint = colorScheme.tertiary,
                         modifier = Modifier
-                            .size(16.dp)
+                            .size(24.dp)
                             .clip(CircleShape)
                             .align(Alignment.TopEnd)
+                            .padding(horizontal = 4.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -134,13 +146,14 @@ fun ImageItem(
                             },
                     )
                     Icon(
-                        imageVector = Icons.Default.FavoriteBorder,
+                        imageVector = ImageVector.vectorResource(id = R.drawable.cloud),
                         contentDescription = null,
-                        tint = Color.Blue,
+                        tint = colorScheme.tertiary,
                         modifier = Modifier
-                            .size(16.dp)
+                            .size(24.dp)
                             .clip(CircleShape)
                             .align(Alignment.TopEnd)
+                            .padding(horizontal = 4.dp, vertical = 4.dp)
                     )
                 } else {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
