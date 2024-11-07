@@ -173,6 +173,7 @@ fun LoadFullImage(
 
 
 
+// TODO: detectTransformGestures is not fine grain enough, we will need to listen to raw events and apply the calculations manually
 
 @Composable
 private fun ImageDisplay (
@@ -202,37 +203,36 @@ private fun ImageDisplay (
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .pointerInput(Unit){
+                detectTapGestures(
+                    onDoubleTap = { tapOffset ->
+                        zoom = if (zoom > 1f) 1f else 2f
+                        offset = calculateDoubleTapOffset(zoom, size, tapOffset)
+                    }
+                )
+
+            }
+            .pointerInput(Unit) {
+                detectTransformGestures { centroid, pan, gestureZoom, _ ->
+                    offset = offset.calculateNewOffset(
+                        centroid, pan, zoom, gestureZoom, size
+                    )
+                    zoom = maxOf(1f, zoom * gestureZoom)
+
+                }
+            }
+            .graphicsLayer {
+                translationX = -offset.x * zoom
+                translationY = -offset.y * zoom
+                scaleX = zoom; scaleY = zoom
+                transformOrigin = TransformOrigin(0f, 0f)
+            }
             .then(verticalDragModifier)
     ){
         Image(
             painter = rememberAsyncImagePainter(photoURI),
             contentDescription = "",
             modifier = modifier
-                .pointerInput(Unit){
-                    detectTapGestures(
-                        onDoubleTap = { tapOffset ->
-                            zoom = if (zoom > 1f) 1f else 2f
-                            offset = calculateDoubleTapOffset(zoom, size, tapOffset)
-                        }
-                    )
-
-                }
-                .pointerInput(Unit) {
-                    detectTransformGestures { centroid, pan, gestureZoom, _ ->
-                        offset = offset.calculateNewOffset(
-                            centroid, pan, zoom, gestureZoom, size
-                        )
-                        zoom = maxOf(1f, zoom * gestureZoom)
-
-                    }
-                }
-                .graphicsLayer {
-                    translationX = -offset.x * zoom
-                    translationY = -offset.y * zoom
-                    scaleX = zoom; scaleY = zoom
-                    transformOrigin = TransformOrigin(0f, 0f)
-                }
-                .then(verticalDragModifier)
                 .align(Alignment.Center)
                 .clipToBounds()
         )
