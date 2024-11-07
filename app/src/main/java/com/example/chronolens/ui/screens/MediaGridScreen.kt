@@ -32,13 +32,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.size.Scale
+import com.example.chronolens.R
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
@@ -80,6 +84,8 @@ fun ImageItem(
     mediaAsset: MediaAsset,
     onClick: (MediaAsset) -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Box(
         modifier = Modifier
             .padding(1.dp)
@@ -113,13 +119,14 @@ fun ImageItem(
                     )
                 if (localAsset.remoteId != null) {
                     Icon(
-                        imageVector = Icons.Default.CheckCircle,
+                        imageVector = ImageVector.vectorResource(id = R.drawable.cloudcheck),
                         contentDescription = null,
-                        tint = Color.Blue,
+                        tint = colorScheme.tertiary,
                         modifier = Modifier
-                            .size(16.dp)
+                            .size(24.dp)
                             .clip(CircleShape)
                             .align(Alignment.TopEnd)
+                            .padding(horizontal = 4.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -144,13 +151,14 @@ fun ImageItem(
                             },
                     )
                     Icon(
-                        imageVector = Icons.Default.FavoriteBorder,
+                        imageVector = ImageVector.vectorResource(id = R.drawable.cloud),
                         contentDescription = null,
-                        tint = Color.Blue,
+                        tint = colorScheme.tertiary,
                         modifier = Modifier
-                            .size(16.dp)
+                            .size(24.dp)
                             .clip(CircleShape)
                             .align(Alignment.TopEnd)
+                            .padding(horizontal = 4.dp, vertical = 4.dp)
                     )
                 } else {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
