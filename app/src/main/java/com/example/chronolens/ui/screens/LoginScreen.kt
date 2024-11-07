@@ -1,6 +1,5 @@
 package com.example.chronolens.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,14 +19,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -40,13 +35,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.chronolens.R
 import com.example.chronolens.ui.theme.defaultButtonColors
 import com.example.chronolens.viewModels.UserLoginState
@@ -57,6 +50,7 @@ import com.example.chronolens.viewModels.UserViewModel
 
 
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 
 @Composable
 fun LoginScreen(
@@ -118,7 +112,7 @@ fun LoginPrompt(
         )
 
         Spacer(modifier = Modifier.height(12.dp))
-
+        
         CustomTextField(
             value = server,
             onValueChange = { server = it },
@@ -217,6 +211,7 @@ fun CustomTextField(
                 imeAction = imeAction
             ),
             textStyle = typography.bodyLarge.copy(color = colorScheme.onBackground),
+            cursorBrush = SolidColor(colorScheme.onPrimary),
             decorationBox = { innerTextField ->
                 Box(
                     modifier = Modifier
@@ -259,7 +254,6 @@ fun DisplayLoading() {
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
             .fillMaxSize()
-            .background(color = colorScheme.background)
             .padding(16.dp)
     ) {
 
@@ -271,7 +265,7 @@ fun DisplayLoading() {
 
         CircularProgressIndicator(
             modifier = Modifier.width(64.dp),
-            color = colorScheme.primary
+            color = colorScheme.tertiary
         )
     }
 }

@@ -1,6 +1,7 @@
 package com.example.chronolens.ui.screens
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,7 +56,9 @@ fun MediaGridScreen(
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
     ) {
         item {
             Button(onClick = work::backgroundSync) {
@@ -78,7 +82,7 @@ fun ImageItem(
 ) {
     Box(
         modifier = Modifier
-            .padding(2.dp)
+            .padding(1.dp)
             .fillMaxWidth()
             .aspectRatio(1f), // Maintain a square aspect ratio
         contentAlignment = Alignment.Center,
