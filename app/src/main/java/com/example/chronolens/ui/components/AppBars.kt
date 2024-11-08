@@ -24,11 +24,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.chronolens.ChronolensNav
+import com.example.chronolens.utils.ChronolensNav
+import com.example.chronolens.utils.noBottomBar
+import com.example.chronolens.utils.noTopBar
 import com.example.chronolens.viewModels.UserLoginState
 
+//TODO: beautify here
 @Composable
 fun ChronolensBottomBar(
     currentScreen: ChronolensNav,
@@ -36,7 +40,7 @@ fun ChronolensBottomBar(
 ) {
     val modifier = Modifier.scale(1.2f)
 
-    if (currentScreen != ChronolensNav.Login) {
+    if (!noBottomBar.contains(currentScreen)) {
         BottomAppBar(
             modifier = Modifier
                 .fillMaxWidth()
@@ -136,12 +140,11 @@ fun ChronolensTopAppBar(
 
 ) {
 
-    if (userLoginState != UserLoginState.Loading) {
+    if (userLoginState != UserLoginState.Loading && !noTopBar.contains(currentScreen)) {
         TopAppBar(
             title = { Text(text = currentScreen.name) },
-//             TODO: colours here
             colors = TopAppBarDefaults.mediumTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
+                containerColor = Color.Transparent
             ),
             modifier = modifier,
             navigationIcon = {
