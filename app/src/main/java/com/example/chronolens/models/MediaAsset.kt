@@ -1,6 +1,6 @@
 package com.example.chronolens.models
 
-import android.os.Parcelable
+import com.example.chronolens.utils.Json
 import org.json.JSONObject
 
 
@@ -38,9 +38,9 @@ data class RemoteMedia(
 
     companion object {
         fun fromJson(obj: JSONObject): RemoteMedia {
-            val id = obj.getString("id")
-            val checksum = obj.getString("hash")
-            val timestamp = obj.getLong("created_at")
+            val id = obj.getString(Json.ID)
+            val checksum = obj.getString(Json.HASH)
+            val timestamp = obj.getLong(Json.CREATED_AT)
 
             return RemoteMedia(id, checksum, timestamp);
         }
