@@ -131,7 +131,7 @@ class APIUtils {
         ): Int = withContext(Dispatchers.IO) {
             val server = sharedPreferences.getString(Prefs.SERVER, "")
             val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-            val url = URL("$server/image/upload")
+            val url = URL("$server/media/upload")
 
             val mimeType = asset.mimeType
             val path = Path(asset.path)

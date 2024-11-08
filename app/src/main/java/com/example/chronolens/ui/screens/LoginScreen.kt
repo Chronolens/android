@@ -2,6 +2,7 @@ package com.example.chronolens.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,37 +46,39 @@ import com.example.chronolens.ui.theme.defaultButtonColors
 import com.example.chronolens.viewModels.UserLoginState
 import com.example.chronolens.viewModels.UserState
 import com.example.chronolens.viewModels.UserViewModel
-
-
-
-
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
-
-
-
-
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 
 @Composable
 fun LoginScreen(
     viewModel: UserViewModel,
     userState: State<UserState>,
-    grantAccess: () -> Unit
+    grantAccess: () -> Unit,
+    modifier: Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    val brush = Brush.linearGradient(
-        colors = listOf(colorScheme.primary, colorScheme.secondary),
-        start = Offset(0f, 0f),
-        end = Offset(1000f, 2000f)
-    )
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
+    val brush = with(LocalDensity.current) {
+        Brush.linearGradient(
+            colors = listOf(colorScheme.primary, colorScheme.secondary),
+            start = Offset(0f, 0f),
+            end = Offset(screenWidth.toPx(), screenHeight.toPx())
+        )
+    }
+
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(brush)
 
-) {
+    ) {
         when (userState.value.userLoginState) {
             UserLoginState.Loading -> DisplayLoading()
             UserLoginState.LoggedIn -> grantAccess()
@@ -85,9 +88,6 @@ fun LoginScreen(
         }
     }
 }
-
-
-
 
 
 @Composable
@@ -107,13 +107,14 @@ fun LoginPrompt(
         modifier = Modifier
             .fillMaxSize()
             .background(color = Color.Transparent)
-            .padding(16.dp)
-            .padding(bottom = 200.dp)
+            .padding(start = 16.dp, end = 16.dp)
+            //.padding(bottom = 100.dp)
     ) {
+        Spacer(modifier = Modifier.weight(1f))
         Image(
             painter = painterResource(id = R.drawable.large_logo),
             contentDescription = stringResource(R.string.app_name),
-            modifier = Modifier.size(200.dp)
+            modifier = Modifier.fillMaxWidth(0.7f).border(2.dp,Color.White)//size(200.dp)
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -166,12 +167,14 @@ fun LoginPrompt(
                 .align(Alignment.CenterHorizontally),
             colors = defaultButtonColors()
         ) {
-            if (userState.value.userLoginState == UserLoginState.Loading) {
-                Icon(imageVector = Icons.Filled.Refresh, contentDescription = null)
-            } else {
-                Text("Log In", color = colorScheme.secondaryContainer, style = MaterialTheme.typography.bodyMedium)
-            }
+
+            Text(
+                "Log In",
+                color = colorScheme.secondaryContainer,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
+        Spacer(modifier = Modifier.weight(1.5f))
     }
 }
 
@@ -245,9 +248,6 @@ fun CustomTextField(
         )
     }
 }
-
-
-
 
 
 @Composable

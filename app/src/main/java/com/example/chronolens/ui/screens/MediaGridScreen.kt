@@ -42,6 +42,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.size.Scale
+import com.example.chronolens.ChronolensNav
 import com.example.chronolens.R
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
@@ -55,19 +56,20 @@ fun MediaGridScreen(
     viewModel: MediaGridScreenViewModel,
     state: State<MediaGridState>,
     navController: NavController,
-    work: WorkManagerViewModel
+    work: WorkManagerViewModel,
+    modifier: Modifier
 ) {
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
         items(state.value.media) { asset ->
             ImageItem(viewModel,asset) {
                 viewModel.updateCurrentAsset(asset)
-                navController.navigate("fullscreenMediaView")
+                navController.navigate(ChronolensNav.FullScreenMedia.name)
             }
         }
     }
