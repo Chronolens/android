@@ -61,7 +61,6 @@ fun FullscreenMediaView(
     var isBoxVisible by remember { mutableStateOf(false) }
 
 
-    // Offset for the sliding box, animates to 0.dp when isBoxVisible is true, and 300.dp otherwise.
     val boxOffsetY by animateDpAsState(targetValue = if (isBoxVisible) 0.dp else boxHeight)
 
     Box(
@@ -70,10 +69,9 @@ fun FullscreenMediaView(
             .background(Color.Black)
     ) {
 
-        // The full image component
         LoadFullImage(mediaAsset!!, viewModel, { isBoxVisible = false }, { isBoxVisible = true })
 
-        // Top icons (Back and Bookmark buttons)
+        // Top "Bar" - hovering return and favorite buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -98,8 +96,8 @@ fun FullscreenMediaView(
             }
         }
 
-        // Bottom icons (Menu, Share, etc.)
-        Row(
+        // Bottom "Bar" - metadata - share - upload - delete // TODO: Change metadata and deletes positions maybe
+         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 48.dp, horizontal = 16.dp)
@@ -124,7 +122,7 @@ fun FullscreenMediaView(
             DeleteOrTransferIcon(mediaAsset)
         }
 
-        // The sliding box that appears based on isBoxVisible state
+        // Metadata sliding box
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -199,18 +197,18 @@ private fun ImageDisplay (
         )
     }
 
-
     Box(
         modifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit){
                 detectTapGestures(
                     onDoubleTap = { tapOffset ->
+                        Log.d("ImageDisplay", "Double-tap coordinates: x=${tapOffset.x}, y=${tapOffset.y}")
+
                         zoom = if (zoom > 1f) 1f else 2f
                         offset = calculateDoubleTapOffset(zoom, size, tapOffset)
                     }
                 )
-
             }
             .pointerInput(Unit) {
                 detectTransformGestures { centroid, pan, gestureZoom, _ ->
@@ -218,7 +216,6 @@ private fun ImageDisplay (
                         centroid, pan, zoom, gestureZoom, size
                     )
                     zoom = maxOf(1f, zoom * gestureZoom)
-
                 }
             }
             .graphicsLayer {
@@ -227,6 +224,8 @@ private fun ImageDisplay (
                 scaleX = zoom; scaleY = zoom
                 transformOrigin = TransformOrigin(0f, 0f)
             }
+
+            .clipToBounds()
             .then(verticalDragModifier)
     ){
         Image(
@@ -234,10 +233,8 @@ private fun ImageDisplay (
             contentDescription = "",
             modifier = modifier
                 .align(Alignment.Center)
-                .clipToBounds()
         )
     }
-
 }
 
 
@@ -264,11 +261,15 @@ fun calculateDoubleTapOffset(
     size: IntSize,
     tapOffset: Offset
 ): Offset {
-    val newOffset = Offset(tapOffset.x, tapOffset.y)
-    return Offset(
-        newOffset.x.coerceIn(0f, (size.width / zoom) * (zoom - 1f)),
-        newOffset.y.coerceIn(0f, (size.height / zoom) * (zoom - 1f))
-    )
+    val targetOffsetX = tapOffset.x - (size.width / (2 * zoom))
+    val targetOffsetY = tapOffset.y - (size.height / (2 * zoom))
+
+    val constrainedOffsetX = targetOffsetX.coerceIn(0f, size.width * (zoom - 1) / zoom)
+    val constrainedOffsetY = targetOffsetY.coerceIn(0f, size.height * (zoom - 1) / zoom)
+
+    Log.d("ImageDisplay", "Calculated Offset: x=$constrainedOffsetX, y=$constrainedOffsetY")
+
+    return Offset(constrainedOffsetX, constrainedOffsetY)
 }
 
 
