@@ -61,7 +61,8 @@ fun FullscreenMediaView(
     viewModel: MediaGridScreenViewModel,
     mediaGridState: State<MediaGridState>,
     fullscreenMediaState: State<FullscreenImageState>,
-    navController: NavHostController
+    navController: NavHostController,
+    modifier: Modifier
 ) {
     val mediaAsset = fullscreenMediaState.value.currentMedia
     var isBoxVisible by remember { mutableStateOf(false) }
@@ -70,7 +71,7 @@ fun FullscreenMediaView(
     val boxOffsetY by animateDpAsState(targetValue = if (isBoxVisible) 0.dp else boxHeight)
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
@@ -107,7 +108,7 @@ fun FullscreenMediaView(
          Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 48.dp, horizontal = 16.dp)
+                .padding(vertical = 32.dp, horizontal = 16.dp)
                 .align(Alignment.BottomCenter),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
