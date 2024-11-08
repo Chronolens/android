@@ -1,6 +1,5 @@
 package com.example.chronolens.ui.screens
 
-import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
@@ -9,19 +8,18 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +39,7 @@ import com.example.chronolens.R
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
+import com.example.chronolens.utils.loadExifData
 import com.example.chronolens.viewModels.FullscreenImageState
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
@@ -54,8 +53,6 @@ import com.example.chronolens.viewModels.MediaGridState
 
 
 val boxHeight = 300.dp
-
-@SuppressLint("UseOfNonLambdaOffsetOverload")
 @Composable
 fun FullscreenMediaView(
     viewModel: MediaGridScreenViewModel,
@@ -66,20 +63,22 @@ fun FullscreenMediaView(
 ) {
     val mediaAsset = fullscreenMediaState.value.currentMedia
     var isBoxVisible by remember { mutableStateOf(false) }
-
+    var metadata by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
 
     val boxOffsetY by animateDpAsState(targetValue = if (isBoxVisible) 0.dp else boxHeight)
+
+    if (mediaAsset is LocalMedia) {
+        metadata = loadExifData(mediaAsset.path)
+    }
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
-
         LoadFullImage(mediaAsset!!, viewModel, { isBoxVisible = false }, { isBoxVisible = true }, isBoxVisible)
 
-
-        // Top "Bar" - hovering return and favorite buttons
+        // Top Bar with navigation buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -104,8 +103,8 @@ fun FullscreenMediaView(
             }
         }
 
-        // Bottom "Bar" - metadata - share - upload - delete // TODO: Change metadata and deletes positions maybe
-         Row(
+        // Bottom Bar with actions
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 32.dp, horizontal = 16.dp)
@@ -132,7 +131,6 @@ fun FullscreenMediaView(
 
         val colorScheme = MaterialTheme.colorScheme
 
-
         val brush = Brush.horizontalGradient(
             colors = listOf(
                 colorScheme.primary,
@@ -140,7 +138,7 @@ fun FullscreenMediaView(
             )
         )
 
-        // metadata sliding box, perhaps we might change to drawer or sheet
+        // Metadata sliding box
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -148,7 +146,9 @@ fun FullscreenMediaView(
                 .align(Alignment.BottomCenter)
                 .offset(y = boxOffsetY)
                 .background(brush)
-        )
+        ) {
+            MetadataDisplay(metadata)
+        }
     }
 }
 
@@ -367,5 +367,60 @@ fun DeleteOrTransferIcon(asset: MediaAsset) {
                 modifier = Modifier.size(24.dp)
             )
         }
+    }
+}
+
+
+
+
+
+@Composable
+fun MetadataDisplay(metadata: Map<String, String?>) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        item{
+            Text(
+                text = "Metadata",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White
+            )
+        }
+        items(metadata.entries.toList()) { (key, value) ->
+            MetadataItem(key, value)
+        }
+        item{
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Map area",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+fun MetadataItem(key: String, value: String?) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = key,
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color.White,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value ?: "N/A",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
