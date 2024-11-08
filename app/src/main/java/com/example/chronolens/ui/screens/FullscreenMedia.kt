@@ -1,5 +1,6 @@
 package com.example.chronolens.ui.screens
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
@@ -20,19 +21,23 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
+import com.example.chronolens.R
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
@@ -50,6 +55,7 @@ import com.example.chronolens.viewModels.MediaGridState
 
 val boxHeight = 300.dp
 
+@SuppressLint("UseOfNonLambdaOffsetOverload")
 @Composable
 fun FullscreenMediaView(
     viewModel: MediaGridScreenViewModel,
@@ -69,7 +75,8 @@ fun FullscreenMediaView(
             .background(Color.Black)
     ) {
 
-        LoadFullImage(mediaAsset!!, viewModel, { isBoxVisible = false }, { isBoxVisible = true })
+        LoadFullImage(mediaAsset!!, viewModel, { isBoxVisible = false }, { isBoxVisible = true }, isBoxVisible)
+
 
         // Top "Bar" - hovering return and favorite buttons
         Row(
@@ -104,13 +111,7 @@ fun FullscreenMediaView(
                 .align(Alignment.BottomCenter),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = { println("Menu button pressed") }) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Menu",
-                    tint = Color.White
-                )
-            }
+            DeleteOrTransferIcon(mediaAsset)
             IconButton(onClick = { println("Share button pressed") }) {
                 Icon(
                     imageVector = Icons.Default.Share,
@@ -119,17 +120,33 @@ fun FullscreenMediaView(
                 )
             }
             CloudIcon(mediaAsset, viewModel)
-            DeleteOrTransferIcon(mediaAsset)
+            IconButton(onClick = { println("Menu button pressed") }) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu",
+                    tint = Color.White
+                )
+            }
         }
 
-        // Metadata sliding box
+        val colorScheme = MaterialTheme.colorScheme
+
+
+        val brush = Brush.horizontalGradient(
+            colors = listOf(
+                colorScheme.primary,
+                colorScheme.secondary
+            )
+        )
+
+        // metadata sliding box, perhaps we might change to drawer or sheet
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(boxHeight)
                 .align(Alignment.BottomCenter)
                 .offset(y = boxOffsetY)
-                .background(Color.Gray)
+                .background(brush)
         )
     }
 }
@@ -140,7 +157,8 @@ fun LoadFullImage(
     mediaAsset: MediaAsset,
     viewModel: MediaGridScreenViewModel,
     hideBox: () -> Unit,
-    showBox: () -> Unit
+    showBox: () -> Unit,
+    isBoxVisible: Boolean
 ) {
 
     if (mediaAsset is RemoteMedia) {
@@ -153,7 +171,8 @@ fun LoadFullImage(
             ImageDisplay(
                 photoURI = imageUrl!!,
                 hideBox = hideBox,
-                showBox = showBox
+                showBox = showBox,
+                isBoxVisible = isBoxVisible
             )
         } else {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -164,7 +183,8 @@ fun LoadFullImage(
         ImageDisplay(
             photoURI = mediaAsset.path,
             hideBox = hideBox,
-            showBox = showBox
+            showBox = showBox,
+            isBoxVisible = isBoxVisible
         )
     }
 }
@@ -174,19 +194,25 @@ fun LoadFullImage(
 // TODO: detectTransformGestures is not fine grain enough, we will need to listen to raw events and apply the calculations manually
 
 @Composable
-private fun ImageDisplay (
-    photoURI : String,
+private fun ImageDisplay(
+    photoURI: String,
     modifier: Modifier = Modifier,
     hideBox: () -> Unit,
-    showBox: () -> Unit){
-
+    showBox: () -> Unit,
+    isBoxVisible: Boolean
+) {
     var offset by remember { mutableStateOf(Offset.Zero) }
     var zoom by remember { mutableStateOf(1f) }
+
+    if (isBoxVisible) {
+        zoom = 1f
+        offset = Offset.Zero
+    }
 
     val verticalDragModifier = Modifier.pointerInput(Unit) {
         detectVerticalDragGestures(
             onVerticalDrag = { _, dragAmount ->
-                if (zoom == 1f) {  // Only allow swipe gestures when fully zoomed out
+                if (zoom == 1f) {
                     if (dragAmount < -10) {
                         showBox()
                     } else if (dragAmount > 10) {
@@ -197,45 +223,49 @@ private fun ImageDisplay (
         )
     }
 
+    val transformGestureModifier = if (!isBoxVisible) Modifier.pointerInput(Unit) {
+        detectTransformGestures { centroid, pan, gestureZoom, _ ->
+            offset = offset.calculateNewOffset(
+                centroid, pan, zoom, gestureZoom, size
+            )
+            zoom = maxOf(1f, zoom * gestureZoom)
+        }
+    } else Modifier
+
+    val tapGestureModifier = if (!isBoxVisible) Modifier.pointerInput(Unit) {
+        detectTapGestures(
+            onDoubleTap = { tapOffset ->
+                Log.d("ImageDisplay", "Double-tap coordinates: x=${tapOffset.x}, y=${tapOffset.y}")
+
+                zoom = if (zoom > 1f) 1f else 2f
+                offset = calculateDoubleTapOffset(zoom, size, tapOffset)
+            }
+        )
+    } else Modifier
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit){
-                detectTapGestures(
-                    onDoubleTap = { tapOffset ->
-                        Log.d("ImageDisplay", "Double-tap coordinates: x=${tapOffset.x}, y=${tapOffset.y}")
-
-                        zoom = if (zoom > 1f) 1f else 2f
-                        offset = calculateDoubleTapOffset(zoom, size, tapOffset)
-                    }
-                )
-            }
-            .pointerInput(Unit) {
-                detectTransformGestures { centroid, pan, gestureZoom, _ ->
-                    offset = offset.calculateNewOffset(
-                        centroid, pan, zoom, gestureZoom, size
-                    )
-                    zoom = maxOf(1f, zoom * gestureZoom)
-                }
-            }
+            .then(tapGestureModifier)
+            .then(transformGestureModifier)
             .graphicsLayer {
                 translationX = -offset.x * zoom
                 translationY = -offset.y * zoom
                 scaleX = zoom; scaleY = zoom
                 transformOrigin = TransformOrigin(0f, 0f)
             }
-
             .clipToBounds()
             .then(verticalDragModifier)
-    ){
+    ) {
         Image(
             painter = rememberAsyncImagePainter(photoURI),
             contentDescription = "",
-            modifier = modifier
-                .align(Alignment.Center)
+            modifier = modifier.align(Alignment.Center)
         )
     }
 }
+
+
 
 
 
@@ -280,9 +310,10 @@ fun CloudIcon(asset: MediaAsset, viewModel: MediaGridScreenViewModel) {
     if (asset is LocalMedia) {
         if (asset.remoteId != null) {
             Icon(
-                imageVector = Icons.Default.CheckCircle,
+                painter = painterResource(id = R.drawable.cloudcheck),
                 contentDescription = "Uploaded",
-                tint = Color.White
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
             )
         } else {
             IconButton(onClick = {
@@ -290,9 +321,10 @@ fun CloudIcon(asset: MediaAsset, viewModel: MediaGridScreenViewModel) {
                 viewModel.uploadMedia(asset)
             }) {
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowUp,
+                    painter = painterResource(id = R.drawable.uploadsimple),
                     contentDescription = "Upload",
-                    tint = Color.White
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -301,9 +333,10 @@ fun CloudIcon(asset: MediaAsset, viewModel: MediaGridScreenViewModel) {
             println("Remove from cloud not implemented yet")
         }) {
             Icon(
-                imageVector = Icons.Default.CheckCircle,
+                painter = painterResource(id = R.drawable.cloud),
                 contentDescription = "Cloud",
-                tint = Color.White
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
             )
         }
     }
@@ -316,9 +349,10 @@ fun DeleteOrTransferIcon(asset: MediaAsset) {
             println("Downloading not implemented yet")
         }) {
             Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
+                painter = painterResource(id = R.drawable.cloud),
                 contentDescription = "Download",
-                tint = Color.White
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
             )
         }
     } else if (asset is LocalMedia) {
@@ -326,9 +360,10 @@ fun DeleteOrTransferIcon(asset: MediaAsset) {
             println("Deleting not implemented yet")
         }) {
             Icon(
-                imageVector = Icons.Default.Delete,
+                painter = painterResource(id = R.drawable.trashsimple),
                 contentDescription = "Delete",
-                tint = Color.White
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
             )
         }
     }
