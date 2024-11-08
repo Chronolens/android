@@ -1,14 +1,18 @@
 package com.example.chronolens.utils
 
 import android.content.SharedPreferences
-import android.util.Log
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.RemoteMedia
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Headers
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.BufferedOutputStream
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -24,58 +28,59 @@ class APIUtils {
         }
 
         // TODO: Handle case where token is valid but expires while in the middle of app usage?
-        private suspend fun checkValidToken(sharedPreferences: SharedPreferences) = withContext(Dispatchers.IO) {
-            val oldAccessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-            val oldExpiresAt = sharedPreferences.getLong(Prefs.EXPIRES_AT, -1L)
-            val oldRefreshToken = sharedPreferences.getString(Prefs.REFRESH_TOKEN, "")
-            val oldServer = sharedPreferences.getString(Prefs.SERVER, "")
+        private suspend fun checkValidToken(sharedPreferences: SharedPreferences) =
+            withContext(Dispatchers.IO) {
+                val oldAccessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
+                val oldExpiresAt = sharedPreferences.getLong(Prefs.EXPIRES_AT, -1L)
+                val oldRefreshToken = sharedPreferences.getString(Prefs.REFRESH_TOKEN, "")
+                val oldServer = sharedPreferences.getString(Prefs.SERVER, "")
 
-            // Expired token
-            if (System.currentTimeMillis() >= oldExpiresAt) {
-                val url = URL("$oldServer/refresh")
-                val payload = JSONObject().apply {
-                    put(Json.ACCESS_TOKEN, oldAccessToken)
-                    put(Json.REFRESH_TOKEN, oldRefreshToken)
-                }
-                val body = payload.toString()
-                val connection = (url.openConnection() as HttpURLConnection).apply {
-                    setRequestProperty("Content-Type", "application/json")
-                    setRequestProperty("Accept", "application/json")
-                    requestMethod = "POST"
-                    doOutput = true
-                    outputStream.write(body.toByteArray())
-                }
-
-                try {
-                    val responseCode = connection.responseCode
-                    if (responseCode == HttpURLConnection.HTTP_OK) {
-                        val response = connection.inputStream.bufferedReader().readText()
-                        val jsonResponse = JSONObject(response)
-                        val token = jsonResponse.getString(Json.ACCESS_TOKEN)
-                        val expiresAt = jsonResponse.getLong(Json.EXPIRES_AT)
-                        val refreshToken = jsonResponse.getString(Json.REFRESH_TOKEN)
-
-                        sharedPreferences.edit().putString(Prefs.ACCESS_TOKEN, token).apply()
-                        sharedPreferences.edit().putLong(Prefs.EXPIRES_AT, expiresAt).apply()
-                        sharedPreferences.edit().putString(Prefs.REFRESH_TOKEN, refreshToken)
-                            .apply()
+                // Expired token
+                if (System.currentTimeMillis() >= oldExpiresAt) {
+                    val url = URL("$oldServer/refresh")
+                    val payload = JSONObject().apply {
+                        put(Json.ACCESS_TOKEN, oldAccessToken)
+                        put(Json.REFRESH_TOKEN, oldRefreshToken)
+                    }
+                    val body = payload.toString()
+                    val connection = (url.openConnection() as HttpURLConnection).apply {
+                        setRequestProperty("Content-Type", "application/json")
+                        setRequestProperty("Accept", "application/json")
+                        requestMethod = "POST"
+                        doOutput = true
+                        outputStream.write(body.toByteArray())
                     }
 
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                    try {
+                        val responseCode = connection.responseCode
+                        if (responseCode == HttpURLConnection.HTTP_OK) {
+                            val response = connection.inputStream.bufferedReader().readText()
+                            val jsonResponse = JSONObject(response)
+                            val token = jsonResponse.getString(Json.ACCESS_TOKEN)
+                            val expiresAt = jsonResponse.getLong(Json.EXPIRES_AT)
+                            val refreshToken = jsonResponse.getString(Json.REFRESH_TOKEN)
 
-                } finally {
-                    connection.disconnect()
+                            sharedPreferences.edit().putString(Prefs.ACCESS_TOKEN, token).apply()
+                            sharedPreferences.edit().putLong(Prefs.EXPIRES_AT, expiresAt).apply()
+                            sharedPreferences.edit().putString(Prefs.REFRESH_TOKEN, refreshToken)
+                                .apply()
+                        }
+
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+
+                    } finally {
+                        connection.disconnect()
+                    }
+
+                    // TODO: Validade token?
+                } else {
+
+
                 }
-
-            // TODO: Validade token?
-            } else {
-
+                // TODO: return bool?
 
             }
-        // TODO: return bool?
-
-        }
 
         // Login function
         suspend fun login(
@@ -123,55 +128,47 @@ class APIUtils {
             }
         }
 
-        // Upload file using stream
         // TODO: get response code to change icon
-        suspend fun uploadFileStream(
+        // TODO: use already calculated checksum if possible
+        suspend fun uploadMedia(
             sharedPreferences: SharedPreferences,
             asset: LocalMedia
         ): Int = withContext(Dispatchers.IO) {
-            val server = sharedPreferences.getString(Prefs.SERVER, "")
-            val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-            val url = URL("$server/media/upload")
+            val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return@withContext 0
+            val jwtToken =
+                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext 0
+            val url = "$server/image/upload"
 
+            val file = File(Path(asset.path).toUri())
             val mimeType = asset.mimeType
-            val path = Path(asset.path)
-            val file = File(path.toUri())
             val checksum = ChecksumUtils().computeChecksum(asset.path)
 
-            val connection = url.openConnection() as HttpURLConnection
-            connection.doOutput = true
+            // Create OkHttpClient instance
+            val client = OkHttpClient()
 
-            connection.apply {
-                setRequestProperty("Authorization", "Bearer $jwtToken")
-                setRequestProperty("Content-Type", mimeType)
-                setRequestProperty("Content-Digest", "sha-1=:$checksum:")
-                setRequestProperty("Timestamp", asset.timestamp.toString())
-                requestMethod = "POST"
-                doOutput = true
-            }
+            // Create multipart request body
+            val requestBody = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addPart(
+                    headers = Headers.headersOf("name",checksum),
+                    body = file.asRequestBody(mimeType.toMediaTypeOrNull())
+                )
+                .build()
 
-            connection.connect()
-            try {
-                // Stream file data to connection
-                file.inputStream().use { input ->
-                    BufferedOutputStream(connection.outputStream).use { output ->
-                        val buffer = ByteArray(4096)
-                        var bytesRead: Int
-                        while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
-                        }
-                        output.flush() // Make sure all data is sent out
-                    }
-                }
-                return@withContext connection.responseCode
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                connection.disconnect()
+            // Create request
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", "Bearer $jwtToken")
+                .header("Timestamp", asset.timestamp.toString())
+                .post(requestBody)
+                .build()
+
+            // Execute request
+            client.newCall(request).execute().use { response ->
+                return@withContext response.code
             }
-            0
         }
-
+        
         suspend fun syncFullRemote(
             sharedPreferences: SharedPreferences
         ): List<RemoteMedia> = withContext(Dispatchers.IO) {
