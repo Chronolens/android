@@ -103,8 +103,7 @@ fun ChronoLens() {
                         grantAccess = {
                             mediaGridScreenViewModel.init()
                             navController.navigate(ChronolensNav.MediaGrid.name) {
-                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                launchSingleTop = true
+                                popUpTo(0) { inclusive = true }
                             }
                         },
                         modifier = Modifier

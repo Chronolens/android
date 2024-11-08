@@ -33,6 +33,7 @@ import com.example.chronolens.utils.noTopBar
 import com.example.chronolens.viewModels.UserLoginState
 
 //TODO: beautify here
+
 @Composable
 fun ChronolensBottomBar(
     currentScreen: ChronolensNav,
@@ -56,7 +57,7 @@ fun ChronolensBottomBar(
                 Button(
                     onClick = {
                         nav.navigate(ChronolensNav.MediaGrid.name) {
-                            popUpTo(nav.graph.startDestinationId) { inclusive = true }
+                            popUpTo(0) { inclusive = true } // Clears entire back stack
                             launchSingleTop = true
                         }
                     },
@@ -74,7 +75,7 @@ fun ChronolensBottomBar(
                 Button(
                     onClick = {
                         nav.navigate(ChronolensNav.Albums.name) {
-                            popUpTo(nav.graph.startDestinationId) { inclusive = true }
+                            popUpTo(0) { inclusive = true }
                             launchSingleTop = true
                         }
                     },
@@ -92,7 +93,7 @@ fun ChronolensBottomBar(
                 Button(
                     onClick = {
                         nav.navigate(ChronolensNav.Search.name) {
-                            popUpTo(nav.graph.startDestinationId) { inclusive = true }
+                            popUpTo(0) { inclusive = true }
                             launchSingleTop = true
                         }
                     },
@@ -110,7 +111,7 @@ fun ChronolensBottomBar(
                 Button(
                     onClick = {
                         nav.navigate(ChronolensNav.Settings.name) {
-                            popUpTo(nav.graph.startDestinationId) { inclusive = true }
+                            popUpTo(0) { inclusive = true }
                             launchSingleTop = true
                         }
                     },

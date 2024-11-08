@@ -69,7 +69,10 @@ fun MediaGridScreen(
         items(state.value.media) { asset ->
             ImageItem(viewModel,asset) {
                 viewModel.updateCurrentAsset(asset)
-                navController.navigate(ChronolensNav.FullScreenMedia.name)
+                navController.navigate(ChronolensNav.FullScreenMedia.name) {
+                    popUpTo(ChronolensNav.FullScreenMedia.name) { inclusive = true }
+                    launchSingleTop = true
+                }
             }
         }
     }
