@@ -9,7 +9,6 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -45,13 +44,10 @@ import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
 
 
-// TODO: This is not using full quality image as we can verify zooming in, perhaps it creates
-// a image with the initial width we give it and then it loses detail since it resizes the image?
-
 
 // TODO: Restrict photo vertical position while zooming in with double tap
 
-
+// TODO: METADATA SLIDING BOX SWIPE IS TAKING OVER ZOOMING GESTURES
 
 @Composable
 fun FullscreenMediaView(
@@ -394,9 +390,7 @@ fun MetadataDisplay(metadata: Map<String, String?>) {
         }
 
         item {
-            // Date and time as header
             val dateTime = metadata["dateTime"]
-            // Parse and format date and time to "DD/MM/YYYY - HH:MM:SS"
             val readableDate = dateTime?.let {
                 val (date, time) = it.split(" ")
                 val dateParts = date.split(":")
@@ -435,17 +429,15 @@ fun MetadataDisplay(metadata: Map<String, String?>) {
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 PhotoGPSInfo(metadata["latitude"], metadata["longitude"])
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Map area",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
             }
         }
 
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Map area",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.White
-            )
-        }
 
 //        // list all metadata
 //        metadata.forEach { (key, value) ->
@@ -464,7 +456,7 @@ fun PhotoGPSInfo(latitude: String?, longitude: String?) {
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically // Ensure vertical centering
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             painter = painterResource(id = R.drawable.mappin),
@@ -513,7 +505,7 @@ fun CameraDetails(
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically // Ensure vertical centering
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             painter = painterResource(id = R.drawable.devicemobilecamera),
@@ -552,7 +544,7 @@ fun PhotoDetails(
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically // Ensure vertical centering
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             painter = painterResource(id = R.drawable.imagesquare),
