@@ -42,7 +42,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.size.Scale
-import com.example.chronolens.ChronolensNav
+import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.R
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
@@ -69,7 +69,10 @@ fun MediaGridScreen(
         items(state.value.media) { asset ->
             ImageItem(viewModel,asset) {
                 viewModel.updateCurrentAsset(asset)
-                navController.navigate(ChronolensNav.FullScreenMedia.name)
+                navController.navigate(ChronolensNav.FullScreenMedia.name) {
+                    popUpTo(ChronolensNav.FullScreenMedia.name) { inclusive = true }
+                    launchSingleTop = true
+                }
             }
         }
     }
