@@ -114,7 +114,7 @@ fun LoginPrompt(
         Image(
             painter = painterResource(id = R.drawable.large_logo),
             contentDescription = stringResource(R.string.app_name),
-            modifier = Modifier.fillMaxWidth(0.7f).border(2.dp,Color.White)//size(200.dp)
+            modifier = Modifier.fillMaxWidth(0.7f)
         )
 
         Spacer(modifier = Modifier.height(12.dp))
