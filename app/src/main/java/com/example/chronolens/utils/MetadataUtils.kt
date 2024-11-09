@@ -1,6 +1,7 @@
 package com.example.chronolens.utils
 
 import android.media.ExifInterface
+import java.io.File
 
 fun loadExifData(path: String): Map<String, String?> {
     val exif = ExifInterface(path)
@@ -8,7 +9,15 @@ fun loadExifData(path: String): Map<String, String?> {
     val latitude = if (exif.getLatLong(latLong)) latLong[0].toString() else null
     val longitude = if (exif.getLatLong(latLong)) latLong[1].toString() else null
 
+    val file = File(path)
+    val fileName = file.name
+    val fileSize = file.length().toString()
+
     return mapOf(
+        "fileName" to fileName,
+        "fileSize" to fileSize,
+        "filePath" to path,
+
         "imageWidth" to exif.getAttribute(ExifInterface.TAG_IMAGE_WIDTH),
         "imageHeight" to exif.getAttribute(ExifInterface.TAG_IMAGE_LENGTH),
         "orientation" to exif.getAttribute(ExifInterface.TAG_ORIENTATION),
@@ -18,7 +27,6 @@ fun loadExifData(path: String): Map<String, String?> {
         // Camera Information
         "make" to exif.getAttribute(ExifInterface.TAG_MAKE),
         "model" to exif.getAttribute(ExifInterface.TAG_MODEL),
-//            "lensSpecification" to exif.getAttribute(ExifInterface.TAG_LENS_SPECIFICATION),
 
         // Exposure Information
         "exposureTime" to exif.getAttribute(ExifInterface.TAG_EXPOSURE_TIME),
@@ -47,6 +55,6 @@ fun loadExifData(path: String): Map<String, String?> {
         "dateTimeDigitized" to exif.getAttribute(ExifInterface.TAG_DATETIME_DIGITIZED),
         "subsecTime" to exif.getAttribute(ExifInterface.TAG_SUBSEC_TIME),
         "subsecTimeOriginal" to exif.getAttribute(ExifInterface.TAG_SUBSEC_TIME_ORIGINAL),
-        "subsecTimeDigitized" to exif.getAttribute(ExifInterface.TAG_SUBSEC_TIME_DIGITIZED),
+        "subsecTimeDigitized" to exif.getAttribute(ExifInterface.TAG_SUBSEC_TIME_DIGITIZED)
     )
 }
