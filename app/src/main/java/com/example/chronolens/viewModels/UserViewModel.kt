@@ -54,6 +54,7 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
                 currState.copy(userLoginState = UserLoginState.Loading)
             }
             val code: Int? = userRepository.apiLogin(server, username, password)
+            Log.i("LOGIN","$code")
             when (code) {
                 200 -> _userState.update { currState ->
                     currState.copy(

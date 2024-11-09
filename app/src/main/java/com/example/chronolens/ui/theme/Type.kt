@@ -36,6 +36,13 @@ val Typography = Typography(
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp
     ),
+    labelMedium = TextStyle(
+        fontFamily = outfitFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp
+    ),
     bodyMedium = TextStyle(
         fontFamily = outfitFamily,
         fontWeight = FontWeight.SemiBold,
