@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
-import com.example.chronolens.SyncManager
+import com.example.chronolens.utils.SyncManager
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
@@ -35,14 +35,13 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     val fullscreenImageState: StateFlow<FullscreenImageState> = _fullscreenImageState.asStateFlow()
 
     private val syncManager = SyncManager(mediaGridRepository)
-    var remoteAssets: List<RemoteMedia> = mutableListOf()
-    var localAssets: List<LocalMedia> = mutableListOf()
+    private var remoteAssets: List<RemoteMedia> = mutableListOf()
+    private var localAssets: List<LocalMedia> = mutableListOf()
 
     // Initialize sync manager and fetch assets
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            mediaGridRepository.apiLogin("javardo", "123")
-            remoteAssets = syncManager.getAssetStructure()
+    fun init() {
+        viewModelScope.launch {
+            remoteAssets = syncManager.getRemoteAssets()
             mergeMediaAssets()
             loadLocalAssets()
         }
@@ -50,7 +49,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     private fun loadLocalAssets() {
         viewModelScope.launch(Dispatchers.IO) {
-            val localMedia = syncManager.getAllLocalMedia()
+            val localMedia = syncManager.getLocalAssets()
             val localMediaIds = localMedia.map { it.id }
             val checksums = mediaGridRepository.dbGetChecksumsFromList(localMediaIds)
             Log.i("LOG", "Already calculated checksums length: ${checksums.size}")
@@ -91,10 +90,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         // Merge local and remote assets
         _mediaGridState.update { currState ->
             currState.copy(
-                media = syncManager.mergeAssets(
-                    localAssets,
-                    remoteAssets
-                )
+                media = syncManager.mergeAssets(localAssets, remoteAssets)
             )
         }
     }
@@ -108,9 +104,14 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-    fun uploadMedia(localMedia: LocalMedia){
-        viewModelScope.launch(Dispatchers.IO){
-            mediaGridRepository.apiUploadFileStream(localMedia)
+    fun uploadMedia(localMedia: LocalMedia) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val remoteId: String? = mediaGridRepository.apiUploadFileStream(localMedia)
+            _fullscreenImageState.update { currState ->
+                currState.copy(
+                    currentMedia = localMedia.copy(remoteId = remoteId)
+                )
+            }
         }
     }
 

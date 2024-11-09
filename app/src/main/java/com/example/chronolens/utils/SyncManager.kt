@@ -1,19 +1,17 @@
-package com.example.chronolens
+package com.example.chronolens.utils
 
+import android.media.ExifInterface
 import android.provider.MediaStore
-import android.util.Log
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.repositories.MediaGridRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
-
+// TODO: we can get thumbnail bytes from exif or mediaStore directly
 class SyncManager(
-    private val mediaGridRepository: MediaGridRepository
+    val mediaGridRepository: MediaGridRepository
 ) {
-    suspend fun getAssetStructure(): List<RemoteMedia> {
+    suspend fun getRemoteAssets(): List<RemoteMedia> {
         val lastSync = mediaGridRepository.sharedPreferences.getLong("last_sync", 0L)
 
         var remoteAssets: List<RemoteMedia> = if (lastSync == 0L) {
@@ -33,7 +31,7 @@ class SyncManager(
         return remoteAssets
     }
 
-    fun getAllLocalMedia(): List<LocalMedia> {
+    fun getLocalAssets(): List<LocalMedia> {
         val projection = arrayOf(
             MediaStore.Images.Media._ID,           // MediaStore ID
             MediaStore.Images.Media.DATA,          // File path
@@ -47,6 +45,8 @@ class SyncManager(
         )
 
         val localMediaInfo = mutableListOf<LocalMedia>()
+
+
         cursor?.use {
             val idColumn = it.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
             val pathColumn = it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
@@ -61,7 +61,11 @@ class SyncManager(
                     if (dateTakenColumn != -1) it.getLong(dateTakenColumn) else null // Get the DATE_TAKEN value, can be null
                 val mimeType = cursor.getString(mimeTypeColumn)
 
-                val finalTimestamp = dateTaken ?: (it.getLong(dateModifiedColumn) * 1000)
+                val finalTimestamp: Long = if (dateTaken == null || dateTaken == 0L) {
+                    it.getLong(dateModifiedColumn) * 1000
+                } else {
+                    dateTaken
+                }
 
                 localMediaInfo.add(
                     LocalMedia(
@@ -77,8 +81,6 @@ class SyncManager(
         }
 
         localMediaInfo.sortByDescending { it.timestamp }
-        Log.i("LOG FIRST", localMediaInfo.take(2).map { it.timestamp }.toString())
-        Log.i("LOG LAST", localMediaInfo.takeLast(2).map { it.timestamp }.toString())
         return localMediaInfo
     }
 
@@ -114,4 +116,7 @@ class SyncManager(
         mediaAssets.sortByDescending { it.timestamp }
         return mediaAssets
     }
+
+
+
 }
