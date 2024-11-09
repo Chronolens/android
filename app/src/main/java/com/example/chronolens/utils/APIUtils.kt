@@ -1,6 +1,7 @@
 package com.example.chronolens.utils
 
 import android.content.SharedPreferences
+import android.util.Log
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.RemoteMedia
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +12,8 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.internal.http.HttpMethod
+import okhttp3.internal.http2.Http2
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -24,7 +27,6 @@ class APIUtils {
 
         suspend fun checkLogin(sharedPreferences: SharedPreferences) {
             checkValidToken(sharedPreferences)
-
         }
 
         // TODO: Handle case where token is valid but expires while in the middle of app usage?
@@ -128,34 +130,30 @@ class APIUtils {
             }
         }
 
-        // TODO: get response code to change icon
         // TODO: use already calculated checksum if possible
         suspend fun uploadMedia(
             sharedPreferences: SharedPreferences,
             asset: LocalMedia
-        ): Int = withContext(Dispatchers.IO) {
-            val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return@withContext 0
+        ): String? = withContext(Dispatchers.IO) {
+            val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return@withContext null
             val jwtToken =
-                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext 0
+                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext null
             val url = "$server/image/upload"
 
             val file = File(Path(asset.path).toUri())
             val mimeType = asset.mimeType
             val checksum = ChecksumUtils().computeChecksum(asset.path)
 
-            // Create OkHttpClient instance
             val client = OkHttpClient()
-
-            // Create multipart request body
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addPart(
-                    headers = Headers.headersOf("name",checksum),
-                    body = file.asRequestBody(mimeType.toMediaTypeOrNull())
+                .addFormDataPart(
+                    checksum,
+                    file.name,
+                    file.asRequestBody(mimeType.toMediaTypeOrNull())
                 )
                 .build()
 
-            // Create request
             val request = Request.Builder()
                 .url(url)
                 .header("Authorization", "Bearer $jwtToken")
@@ -163,12 +161,20 @@ class APIUtils {
                 .post(requestBody)
                 .build()
 
-            // Execute request
-            client.newCall(request).execute().use { response ->
-                return@withContext response.code
+            try {
+                client.newCall(request).execute().use { response ->
+                    Log.i("UPLOAD", response.code.toString())
+                    if (response.code == 200) {
+                        return@withContext response.body?.string()
+                    } else {
+                        return@withContext null
+                    }
+                }
+            } catch (e: Exception) {
+                return@withContext null
             }
         }
-        
+
         suspend fun syncFullRemote(
             sharedPreferences: SharedPreferences
         ): List<RemoteMedia> = withContext(Dispatchers.IO) {

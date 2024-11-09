@@ -40,7 +40,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     // Initialize sync manager and fetch assets
     fun init() {
-        viewModelScope.launch{
+        viewModelScope.launch {
             remoteAssets = syncManager.getRemoteAssets()
             mergeMediaAssets()
             loadLocalAssets()
@@ -106,7 +106,12 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     fun uploadMedia(localMedia: LocalMedia) {
         viewModelScope.launch(Dispatchers.IO) {
-            mediaGridRepository.apiUploadFileStream(localMedia)
+            val remoteId: String? = mediaGridRepository.apiUploadFileStream(localMedia)
+            _fullscreenImageState.update { currState ->
+                currState.copy(
+                    currentMedia = localMedia.copy(remoteId = remoteId)
+                )
+            }
         }
     }
 
