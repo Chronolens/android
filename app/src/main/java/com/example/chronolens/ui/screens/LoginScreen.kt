@@ -74,9 +74,10 @@ fun LoginScreen(
 
 
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(brush)
+            .then(modifier)
 
     ) {
         when (userState.value.userLoginState) {
@@ -108,7 +109,6 @@ fun LoginPrompt(
             .fillMaxSize()
             .background(color = Color.Transparent)
             .padding(start = 16.dp, end = 16.dp)
-            //.padding(bottom = 100.dp)
     ) {
         Spacer(modifier = Modifier.weight(1f))
         Image(

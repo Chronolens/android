@@ -1,18 +1,14 @@
 package com.example.chronolens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -57,6 +53,7 @@ fun ChronoLens() {
         val navigationBarPadding =
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
+
         Scaffold(
             topBar = {
                 ChronolensTopAppBar(
@@ -69,7 +66,8 @@ fun ChronoLens() {
             bottomBar = {
                 ChronolensBottomBar(
                     currentScreen = currentScreen,
-                    nav = navController
+                    nav = navController,
+                    navigationBarPadding = navigationBarPadding
                 )
             }
         )
@@ -78,6 +76,7 @@ fun ChronoLens() {
                 navController = navController,
                 startDestination = ChronolensNav.Login.name
             ) {
+
                 composable(ChronolensNav.MediaGrid.name) {
                     MediaGridScreen(
                         viewModel = mediaGridScreenViewModel,
@@ -85,7 +84,6 @@ fun ChronoLens() {
                         navController = navController,
                         work = workManagerViewModel,
                         modifier = Modifier
-                            .padding(bottom = navigationBarPadding)
                             .padding(innerPadding)
                     )
                 }
@@ -96,7 +94,6 @@ fun ChronoLens() {
                         fullscreenMediaState = fullscreenMediaState,
                         navController = navController,
                         modifier = Modifier
-                            .padding(bottom = navigationBarPadding)
                             .padding(innerPadding)
                     )
                 }
