@@ -52,7 +52,7 @@ import com.example.chronolens.viewModels.MediaGridState
 // TODO: Restrict photo vertical position while zooming in with double tap
 
 
-val boxHeight = 300.dp
+
 @Composable
 fun FullscreenMediaView(
     viewModel: MediaGridScreenViewModel,
@@ -61,11 +61,14 @@ fun FullscreenMediaView(
     navController: NavHostController,
     modifier: Modifier
 ) {
+    val boxHeight = 300.dp
+
     val mediaAsset = fullscreenMediaState.value.currentMedia
     var isBoxVisible by remember { mutableStateOf(false) }
     var metadata by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
 
-    val boxOffsetY by animateDpAsState(targetValue = if (isBoxVisible) 0.dp else boxHeight)
+    val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val boxOffsetY by animateDpAsState(targetValue = if (isBoxVisible) 0.dp else boxHeight + systemNavBarHeight)
 
     if (mediaAsset is LocalMedia) {
         metadata = loadExifData(mediaAsset.path)
@@ -379,7 +382,7 @@ fun MetadataDisplay(metadata: Map<String, String?>) {
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(top = 16.dp, start = 16.dp, end = 16.dp)
     ) {
         item{
             Text(
