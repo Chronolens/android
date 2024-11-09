@@ -1,6 +1,5 @@
 package com.example.chronolens.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -13,14 +12,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -31,22 +25,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.size.Scale
-import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.R
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
+import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
 import com.example.chronolens.viewModels.WorkManagerViewModel
@@ -62,9 +54,10 @@ fun MediaGridScreen(
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.background)
+            .then(modifier),
     ) {
         items(state.value.media) { asset ->
             ImageItem(viewModel,asset) {
@@ -90,7 +83,7 @@ fun ImageItem(
         modifier = Modifier
             .padding(1.dp)
             .fillMaxWidth()
-            .aspectRatio(1f), // Maintain a square aspect ratio
+            .aspectRatio(1f),
         contentAlignment = Alignment.Center,
     ) {
 
@@ -102,8 +95,8 @@ fun ImageItem(
             val context = LocalContext.current
             val model = ImageRequest.Builder(context)
                 .data(localAsset.path)
-                .size(120) // Load a smaller size
-                .scale(Scale.FILL) // Adjust the scaling if needed
+                .size(120)
+                .scale(Scale.FILL)
                 .build()
             Box {
                 AsyncImage(
@@ -133,10 +126,10 @@ fun ImageItem(
         } else if (mediaAsset is RemoteMedia) {
             val remoteAsset: RemoteMedia = mediaAsset
             var imageUrl by remember { mutableStateOf<String?>(null) }
-            // Fetch the URL asynchronously when the component is first drawn
+
             LaunchedEffect(mediaAsset) {
                 val url = viewModel.getRemoteAssetPreviewUrl(remoteAsset.id)
-                imageUrl = url // Set the state once the URL is fetched
+                imageUrl = url
             }
             Box {
                 if (imageUrl != null) {

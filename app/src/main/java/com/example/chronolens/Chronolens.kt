@@ -53,6 +53,7 @@ fun ChronoLens() {
         val navigationBarPadding =
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
+
         Scaffold(
             topBar = {
                 ChronolensTopAppBar(
@@ -65,7 +66,8 @@ fun ChronoLens() {
             bottomBar = {
                 ChronolensBottomBar(
                     currentScreen = currentScreen,
-                    nav = navController
+                    nav = navController,
+                    navigationBarPadding = navigationBarPadding
                 )
             }
         )
@@ -74,6 +76,7 @@ fun ChronoLens() {
                 navController = navController,
                 startDestination = ChronolensNav.Login.name
             ) {
+
                 composable(ChronolensNav.MediaGrid.name) {
                     MediaGridScreen(
                         viewModel = mediaGridScreenViewModel,
@@ -81,7 +84,6 @@ fun ChronoLens() {
                         navController = navController,
                         work = workManagerViewModel,
                         modifier = Modifier
-                            .padding(bottom = navigationBarPadding)
                             .padding(innerPadding)
                     )
                 }
@@ -92,7 +94,6 @@ fun ChronoLens() {
                         fullscreenMediaState = fullscreenMediaState,
                         navController = navController,
                         modifier = Modifier
-                            .padding(bottom = navigationBarPadding)
                             .padding(innerPadding)
                     )
                 }
