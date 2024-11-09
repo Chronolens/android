@@ -1,14 +1,18 @@
 package com.example.chronolens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -74,42 +78,50 @@ fun ChronoLens() {
 //                )
 //            }
 //        )
-//        { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = ChronolensNav.Login.name
-            ) {
-                composable(ChronolensNav.MediaGrid.name) {
-                    MediaGridScreen(
-                        viewModel = mediaGridScreenViewModel,
-                        state = mediaGridScreenState,
-                        navController = navController,
-                        work = workManagerViewModel,
-                        modifier = Modifier.padding(bottom = navigationBarPadding)
-                    )
-                }
-                composable(ChronolensNav.FullScreenMedia.name) {
-                    FullscreenMediaView(
-                        viewModel = mediaGridScreenViewModel,
-                        mediaGridState = mediaGridScreenState,
-                        fullscreenMediaState = fullscreenMediaState,
-                        navController = navController,
-                        modifier = Modifier.padding(bottom = navigationBarPadding)
-                    )
-                }
-                composable(ChronolensNav.Login.name) {
-                    LoginScreen(
-                        viewModel = userViewModel,
-                        userState = userState,
-                        grantAccess = {
-                            mediaGridScreenViewModel.init()
-                            navController.navigate(ChronolensNav.MediaGrid.name)
-                        },
-                        modifier = Modifier.padding(bottom = navigationBarPadding)
-                    )
-                }
+        val theme = MaterialTheme.colorScheme
 
+        val gradientBrush = Brush.linearGradient(
+            colors = listOf(theme.primary, theme.secondary),
+            start = Offset(0f, 0f),
+            end = Offset(1080f, 0f)
+        )
+        val commonModifier = Modifier
+            .background(gradientBrush)
+            .padding(bottom = navigationBarPadding)
+
+        NavHost(
+            navController = navController,
+            startDestination = ChronolensNav.Login.name
+        ) {
+            composable(ChronolensNav.MediaGrid.name) {
+                MediaGridScreen(
+                    viewModel = mediaGridScreenViewModel,
+                    state = mediaGridScreenState,
+                    navController = navController,
+                    work = workManagerViewModel,
+                    modifier = commonModifier
+                )
+            }
+            composable(ChronolensNav.FullScreenMedia.name) {
+                FullscreenMediaView(
+                    viewModel = mediaGridScreenViewModel,
+                    mediaGridState = mediaGridScreenState,
+                    fullscreenMediaState = fullscreenMediaState,
+                    navController = navController,
+                    modifier = commonModifier
+                )
+            }
+            composable(ChronolensNav.Login.name) {
+                LoginScreen(
+                    viewModel = userViewModel,
+                    userState = userState,
+                    grantAccess = {
+                        mediaGridScreenViewModel.init()
+                        navController.navigate(ChronolensNav.MediaGrid.name)
+                    },
+                    modifier = commonModifier
+                )
             }
         }
-    //}
+    }
 }
