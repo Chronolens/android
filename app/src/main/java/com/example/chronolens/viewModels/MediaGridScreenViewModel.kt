@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class MediaGridState(
-    val media: List<MediaAsset> = listOf(),
+    val media: List<MediaAsset> = listOf()
 )
 
 data class FullscreenImageState(
@@ -112,6 +112,9 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                     currentMedia = localMedia.copy(remoteId = remoteId)
                 )
             }
+            if (remoteId != null) {
+                updateMediaList(remoteId,localMedia.checksum!!)
+            }
         }
     }
 
@@ -122,5 +125,24 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     suspend fun getRemoteAssetFullImageUrl(id: String): String {
         return mediaGridRepository.apiGetFullImage(id)
     }
+
+    // TODO: is it worth to "mergeMediaAssets()" or to do this??
+    private fun updateMediaList(remoteId: String, checksum: String) {
+        viewModelScope.launch {
+
+            val mediaList = _mediaGridState.value.media.toMutableList()
+            val index = mediaList.indexOfFirst { it.checksum == checksum && it is LocalMedia }
+
+            if (index != -1) {
+                val media = mediaList[index] as LocalMedia
+                mediaList[index] = media.copy(remoteId = remoteId)
+            }
+
+            _mediaGridState.update { currState ->
+                currState.copy(media = mediaList)
+            }
+        }
+    }
+
 
 }
