@@ -2,7 +2,6 @@ package com.example.chronolens.repositories
 
 import android.content.ContentResolver
 import android.content.SharedPreferences
-import android.util.Log
 import com.example.chronolens.utils.APIUtils
 import com.example.chronolens.database.Checksum
 import com.example.chronolens.database.ChecksumDao
