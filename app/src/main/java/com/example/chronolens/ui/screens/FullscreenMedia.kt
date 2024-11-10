@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -42,13 +43,16 @@ import com.example.chronolens.utils.loadExifData
 import com.example.chronolens.viewModels.FullscreenImageState
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
-
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 // TODO: Restrict photo vertical position while zooming in with double tap
 
 // TODO: METADATA SLIDING BOX SWIPE IS TAKING OVER ZOOMING GESTURES
 
+// TODO: Move the photo slightly up when the metadata box is visible
 @Composable
 fun FullscreenMediaView(
     viewModel: MediaGridScreenViewModel,
@@ -75,13 +79,19 @@ fun FullscreenMediaView(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        LoadFullImage(mediaAsset!!, viewModel, { isBoxVisible = false }, { isBoxVisible = true }, isBoxVisible)
+        LoadFullImage(
+            mediaAsset!!,
+            viewModel,
+            { isBoxVisible = false },
+            { isBoxVisible = true },
+            isBoxVisible
+        )
 
-        // Top Bar with navigation buttons
+        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 32.dp, horizontal = 16.dp)
+                .padding(horizontal = 24.dp, vertical = 12.dp)
                 .align(Alignment.TopCenter),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -93,7 +103,7 @@ fun FullscreenMediaView(
                     tint = Color.White
                 )
             }
-            IconButton(onClick = { println("Bookmark button pressed") }) {
+            IconButton(onClick = { Log.i("FullscreenMediaView", "Bookmark button pressed") }) {
                 Icon(
                     imageVector = Icons.Default.FavoriteBorder,
                     contentDescription = "Bookmark",
@@ -102,28 +112,44 @@ fun FullscreenMediaView(
             }
         }
 
-        // Bottom Bar with actions
+        // Bottom Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 32.dp, horizontal = 16.dp)
+                .padding(horizontal = 24.dp, vertical = 4.dp)
                 .align(Alignment.BottomCenter),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            DeleteOrTransferIcon(mediaAsset)
-            IconButton(onClick = { println("Share button pressed") }) {
+            IconButton(onClick = { Log.i("FullscreenMediaView", "Delete or transfer button pressed") }) {
+                DeleteOrTransferIcon(mediaAsset)
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            IconButton(onClick = { Log.i("FullscreenMediaView", "Share button pressed") }) {
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = "Share",
-                    tint = Color.White
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
             }
-            CloudIcon(mediaAsset, viewModel)
-            IconButton(onClick = { println("Menu button pressed") }) {
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            IconButton(onClick = { Log.i("FullscreenMediaView", "Cloud button pressed") }) {
+                CloudIcon(mediaAsset, viewModel)
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            IconButton(onClick = { Log.i("FullscreenMediaView", "Menu button pressed") }) {
                 Icon(
                     imageVector = Icons.Default.Menu,
                     contentDescription = "Menu",
-                    tint = Color.White
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -137,7 +163,6 @@ fun FullscreenMediaView(
             )
         )
 
-        // Metadata sliding box
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -146,7 +171,7 @@ fun FullscreenMediaView(
                 .offset(y = boxOffsetY)
                 .background(brush)
         ) {
-            MetadataDisplay(metadata)
+            MetadataDisplay(metadata, mediaAsset.timestamp)
         }
     }
 }
@@ -175,7 +200,7 @@ fun LoadFullImage(
                 isBoxVisible = isBoxVisible
             )
         } else {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { // TODO DOES NOTHING?
                 CircularProgressIndicator()
             }
         }
@@ -188,7 +213,6 @@ fun LoadFullImage(
         )
     }
 }
-
 
 
 // TODO: detectTransformGestures is not fine grain enough, we will need to listen to raw events and apply the calculations manually
@@ -266,10 +290,6 @@ private fun ImageDisplay(
 }
 
 
-
-
-
-
 fun Offset.calculateNewOffset(
     centroid: Offset,
     pan: Offset,
@@ -302,24 +322,29 @@ fun calculateDoubleTapOffset(
     return Offset(constrainedOffsetX, constrainedOffsetY)
 }
 
-
-
-
 @Composable
 fun CloudIcon(asset: MediaAsset, viewModel: MediaGridScreenViewModel) {
     if (asset is LocalMedia) {
         if (asset.remoteId != null) {
-            Icon(
-                painter = painterResource(id = R.drawable.cloudcheck),
-                contentDescription = "Uploaded",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
+            IconButton(
+                onClick = {
+                    Log.i("CloudIcon", "Remove from cloud not implemented yet")
+                },
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.cloudcheck),
+                    contentDescription = "Uploaded",
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         } else {
-            IconButton(onClick = {
-                println("Uploading local asset: ${asset.path}")
-                viewModel.uploadMedia(asset)
-            }) {
+            IconButton(
+                onClick = {
+                    Log.i("CloudIcon", "Uploading local asset: ${asset.path}")
+                    viewModel.uploadMedia(asset)
+                }
+            ) {
                 Icon(
                     painter = painterResource(id = R.drawable.uploadsimple),
                     contentDescription = "Upload",
@@ -329,13 +354,15 @@ fun CloudIcon(asset: MediaAsset, viewModel: MediaGridScreenViewModel) {
             }
         }
     } else if (asset is RemoteMedia) {
-        IconButton(onClick = {
-            println("Remove from cloud not implemented yet")
-        }) {
+        IconButton(
+            onClick = {
+                Log.i("CloudIcon", "Remove from cloud not implemented yet")
+            }
+        ) {
             Icon(
                 painter = painterResource(id = R.drawable.cloud),
                 contentDescription = "Cloud",
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -346,10 +373,10 @@ fun CloudIcon(asset: MediaAsset, viewModel: MediaGridScreenViewModel) {
 fun DeleteOrTransferIcon(asset: MediaAsset) {
     if (asset is RemoteMedia) {
         IconButton(onClick = {
-            println("Downloading not implemented yet")
+            Log.i("DeleteOrTransferIcon", "Downloading not implemented yet")
         }) {
             Icon(
-                painter = painterResource(id = R.drawable.cloud),
+                painter = painterResource(id = R.drawable.downloadsimple),
                 contentDescription = "Download",
                 tint = Color.White,
                 modifier = Modifier.size(24.dp)
@@ -357,7 +384,7 @@ fun DeleteOrTransferIcon(asset: MediaAsset) {
         }
     } else if (asset is LocalMedia) {
         IconButton(onClick = {
-            println("Deleting not implemented yet")
+            Log.i("DeleteOrTransferIcon", "Deleting not implemented yet")
         }) {
             Icon(
                 painter = painterResource(id = R.drawable.trashsimple),
@@ -370,58 +397,67 @@ fun DeleteOrTransferIcon(asset: MediaAsset) {
 }
 
 
-
-
 @Composable
-fun MetadataDisplay(metadata: Map<String, String?>) {
+fun MetadataDisplay(metadata: Map<String, String?>, timestamp: Long) {
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp, start = 16.dp, end = 16.dp)
     ) {
+        item {
+            val formattedDate = SimpleDateFormat("dd MMMM yyyy - HH:mm", Locale.getDefault())
+                .format(Date(timestamp))
+
+            Text(
+                text = formattedDate,
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.White
+            )
+        }
+
+
+
         if (metadata.isEmpty()) {
             item {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "No details available",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onTertiary
                 )
             }
         }
 
-        item {
-            val dateTime = metadata["dateTime"]
-            val readableDate = dateTime?.let {
-                val (date, time) = it.split(" ")
-                val dateParts = date.split(":")
-                val formattedDate = "${dateParts[2]}/${dateParts[1]}/${dateParts[0]}"
-                "$formattedDate - $time"
-            }
 
-            if (readableDate != null) {
-                Text(
-                    text = readableDate,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color.White
-                )
-            }
-        }
+
 
         if (metadata["make"] != null
             || metadata["model"] != null
             || metadata["exposureTime"] != null
             || metadata["fNumber"] != null
-            || metadata["iso"] != null) {
+            || metadata["iso"] != null
+        ) {
             item {
                 Spacer(modifier = Modifier.height(4.dp))
-                CameraDetails(metadata["make"], metadata["model"], metadata["exposureTime"], metadata["fNumber"], metadata["iso"])
+                CameraDetails(
+                    metadata["make"],
+                    metadata["model"],
+                    metadata["exposureTime"],
+                    metadata["fNumber"],
+                    metadata["iso"]
+                )
             }
         }
 
         if (metadata["imageWidth"] != null || metadata["imageHeight"] != null || metadata["fileName"] != null || metadata["fileSize"] != null) {
             item {
                 Spacer(modifier = Modifier.height(4.dp))
-                PhotoDetails(metadata["imageWidth"], metadata["imageHeight"], metadata["fileName"], metadata["fileSize"])
+                PhotoDetails(
+                    metadata["imageWidth"],
+                    metadata["imageHeight"],
+                    metadata["fileName"],
+                    metadata["fileSize"]
+                )
             }
         }
 
@@ -449,6 +485,7 @@ fun MetadataDisplay(metadata: Map<String, String?>) {
 //        }
     }
 }
+
 @Composable
 fun PhotoGPSInfo(latitude: String?, longitude: String?) {
     Row(
@@ -462,7 +499,7 @@ fun PhotoGPSInfo(latitude: String?, longitude: String?) {
             painter = painterResource(id = R.drawable.mappin),
             contentDescription = "Map",
             tint = Color.White,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(32.dp)
         )
         Column(
             modifier = Modifier.weight(1f)
@@ -511,7 +548,7 @@ fun CameraDetails(
             painter = painterResource(id = R.drawable.devicemobilecamera),
             contentDescription = "Phone",
             tint = Color.White,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(32.dp)
         )
         Column(
             modifier = Modifier.weight(1f)
@@ -550,7 +587,7 @@ fun PhotoDetails(
             painter = painterResource(id = R.drawable.imagesquare),
             contentDescription = "Photo",
             tint = Color.White,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(32.dp)
         )
         Column(
             modifier = Modifier.weight(1f)
