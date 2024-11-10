@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -53,7 +54,6 @@ fun ChronoLens() {
         val navigationBarPadding =
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-
         Scaffold(
             topBar = {
                 ChronolensTopAppBar(
@@ -84,7 +84,8 @@ fun ChronoLens() {
                         navController = navController,
                         work = workManagerViewModel,
                         modifier = Modifier
-                            .padding(innerPadding)
+                            .padding(innerPadding),
+                        refreshPaddingValues = innerPadding.calculateTopPadding() - 20.dp
                     )
                 }
                 composable(ChronolensNav.FullScreenMedia.name) {

@@ -10,6 +10,7 @@ import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.repositories.MediaGridRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +18,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class MediaGridState(
-    val media: List<MediaAsset> = listOf()
+    val media: List<MediaAsset> = listOf(),
+    val isLoading: Boolean = true
 )
 
 data class FullscreenImageState(
@@ -40,10 +42,16 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     // Initialize sync manager and fetch assets
     fun init() {
+        loadMediaGrid()
+    }
+
+    fun loadMediaGrid() {
         viewModelScope.launch {
+            setIsLoading()
             remoteAssets = syncManager.getRemoteAssets()
             mergeMediaAssets()
             loadLocalAssets()
+            setIsLoaded()
         }
     }
 
@@ -86,8 +94,8 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
+    // Merge local and remote assets
     private fun mergeMediaAssets() {
-        // Merge local and remote assets
         _mediaGridState.update { currState ->
             currState.copy(
                 media = syncManager.mergeAssets(localAssets, remoteAssets)
@@ -96,7 +104,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
     fun updateCurrentAsset(mediaAsset: MediaAsset) {
-        // Merge local and remote assets
         _fullscreenImageState.update { currState ->
             currState.copy(
                 currentMedia = mediaAsset
@@ -113,7 +120,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                 )
             }
             if (remoteId != null) {
-                updateMediaList(remoteId,localMedia.checksum!!)
+                updateMediaList(remoteId, localMedia.checksum!!)
             }
         }
     }
@@ -144,5 +151,20 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+    private fun setIsLoading() {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(isLoading = true)
+            }
+        }
+    }
+
+    private fun setIsLoaded() {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(isLoading = false)
+            }
+        }
+    }
 
 }
