@@ -66,7 +66,7 @@ fun MediaGridScreen(
 ) {
     val pullRefreshState = rememberPullRefreshState(
         refreshing = state.value.isLoading,
-        onRefresh = viewModel::loadMediaGrid,
+        onRefresh = viewModel::refreshMediaGrid,
         refreshingOffset = refreshPaddingValues,
         refreshThreshold = refreshPaddingValues
     )
@@ -93,7 +93,6 @@ fun MediaGridScreen(
             }
         }
 
-        // Add the PullRefreshIndicator with animation
         PullRefreshIndicator(
             refreshing = state.value.isLoading,
             state = pullRefreshState,

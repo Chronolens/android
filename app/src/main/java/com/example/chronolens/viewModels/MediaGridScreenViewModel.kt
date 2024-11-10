@@ -44,15 +44,21 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     private var localAssets: List<LocalMedia> = mutableListOf()
 
     fun init() {
-        loadMediaGrid()
+        viewModelScope.launch {
+            loadMediaGrid()
+        }
     }
 
-    fun loadMediaGrid() {
+    private suspend fun loadMediaGrid() {
+        remoteAssets = syncManager.getRemoteAssets()
+        mergeMediaAssets()
+        loadLocalAssets()
+    }
+
+    fun refreshMediaGrid() {
         viewModelScope.launch {
             setIsLoading()
-            remoteAssets = syncManager.getRemoteAssets()
-            mergeMediaAssets()
-            loadLocalAssets()
+            loadMediaGrid()
             setIsLoaded()
         }
     }
