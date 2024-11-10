@@ -91,7 +91,6 @@ class APIUtils {
             username: String,
             password: String
         ): Int? = withContext(Dispatchers.IO) {
-            val url = URL("$server/login")
             val payload = JSONObject().apply {
                 put("username", username)
                 put("password", password)
@@ -100,6 +99,7 @@ class APIUtils {
             var connection: HttpURLConnection? = null
 
             try {
+                val url = URL("$server/login")
                 connection = (url.openConnection() as HttpURLConnection).apply {
                     setRequestProperty("Content-Type", "application/json")
                     setRequestProperty("Accept", "application/json")

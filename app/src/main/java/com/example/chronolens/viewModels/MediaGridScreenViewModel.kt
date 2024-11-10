@@ -15,9 +15,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import android.graphics.Bitmap
+import android.media.ExifInterface
+import java.io.File
+import java.io.IOException
 
 data class MediaGridState(
     val media: List<MediaAsset> = listOf(),
+    val isLoading: Boolean = true
 )
 
 data class FullscreenImageState(
@@ -27,7 +32,7 @@ data class FullscreenImageState(
 
 
 class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
-    // List to hold the final merged images
+
     private val _mediaGridState = MutableStateFlow(MediaGridState())
     val mediaGridState: StateFlow<MediaGridState> = _mediaGridState.asStateFlow()
 
@@ -38,12 +43,23 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     private var remoteAssets: List<RemoteMedia> = mutableListOf()
     private var localAssets: List<LocalMedia> = mutableListOf()
 
-    // Initialize sync manager and fetch assets
     fun init() {
         viewModelScope.launch {
-            remoteAssets = syncManager.getRemoteAssets()
-            mergeMediaAssets()
-            loadLocalAssets()
+            loadMediaGrid()
+        }
+    }
+
+    private suspend fun loadMediaGrid() {
+        remoteAssets = syncManager.getRemoteAssets()
+        mergeMediaAssets()
+        loadLocalAssets()
+    }
+
+    fun refreshMediaGrid() {
+        viewModelScope.launch {
+            setIsLoading()
+            loadMediaGrid()
+            setIsLoaded()
         }
     }
 
@@ -68,7 +84,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                 }
             }
 
-            // Update the state with assets that have checksums
             localAssets = localMediaCalculated.toList()
             mergeMediaAssets()
             localMediaCalculated.clear()
@@ -76,18 +91,18 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             for (media in localMediaNotCalculated) {
                 val checksum = mediaGridRepository.getOrComputeChecksum(media.id, media.path)
                 media.checksum = checksum
-                // Update state in the main thread
+                media.thumbnail = loadExifThumbnail(media)
                 localMediaCalculated += media
             }
             localAssets += localMediaCalculated
-            // Finally, merge local and remote assets
+
             mergeMediaAssets()
         }
     }
 
 
+    // Merge local and remote assets
     private fun mergeMediaAssets() {
-        // Merge local and remote assets
         _mediaGridState.update { currState ->
             currState.copy(
                 media = syncManager.mergeAssets(localAssets, remoteAssets)
@@ -96,7 +111,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
     fun updateCurrentAsset(mediaAsset: MediaAsset) {
-        // Merge local and remote assets
         _fullscreenImageState.update { currState ->
             currState.copy(
                 currentMedia = mediaAsset
@@ -112,6 +126,9 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                     currentMedia = localMedia.copy(remoteId = remoteId)
                 )
             }
+            if (remoteId != null) {
+                updateMediaList(remoteId, localMedia.checksum!!)
+            }
         }
     }
 
@@ -121,6 +138,52 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     suspend fun getRemoteAssetFullImageUrl(id: String): String {
         return mediaGridRepository.apiGetFullImage(id)
+    }
+
+    // TODO: is it worth to "mergeMediaAssets()" or to do this??
+    private fun updateMediaList(remoteId: String, checksum: String) {
+        viewModelScope.launch {
+
+            val mediaList = _mediaGridState.value.media.toMutableList()
+            val index = mediaList.indexOfFirst { it.checksum == checksum && it is LocalMedia }
+
+            if (index != -1) {
+                val media = mediaList[index] as LocalMedia
+                mediaList[index] = media.copy(remoteId = remoteId)
+            }
+
+            _mediaGridState.update { currState ->
+                currState.copy(media = mediaList)
+            }
+        }
+    }
+
+    private fun setIsLoading() {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(isLoading = true)
+            }
+        }
+    }
+
+    private fun setIsLoaded() {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(isLoading = false)
+            }
+        }
+    }
+
+
+    private fun loadExifThumbnail(localMedia: LocalMedia): Bitmap? {
+        return try {
+            val file = File(localMedia.path)
+            val exifInterface = ExifInterface(file)
+            exifInterface.thumbnailBitmap
+        } catch (e: IOException) {
+            Log.e("MediaGridScreenViewModel", "Failed to load EXIF thumbnail: ${e.message}")
+            null
+        }
     }
 
 }

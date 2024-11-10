@@ -1,8 +1,11 @@
 package com.example.chronolens.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +15,10 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,10 +32,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
@@ -43,31 +53,51 @@ import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
 import com.example.chronolens.viewModels.WorkManagerViewModel
 
+// TODO: maybe make every single sync a background job in case it is too long
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun MediaGridScreen(
     viewModel: MediaGridScreenViewModel,
     state: State<MediaGridState>,
     navController: NavController,
     work: WorkManagerViewModel,
-    modifier: Modifier
+    modifier: Modifier,
+    refreshPaddingValues: Dp
 ) {
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = state.value.isLoading,
+        onRefresh = viewModel::refreshMediaGrid,
+        refreshingOffset = refreshPaddingValues,
+        refreshThreshold = refreshPaddingValues
+    )
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(4),
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .then(modifier),
+            .pullRefresh(pullRefreshState)
+            .then(modifier)
     ) {
-        items(state.value.media) { asset ->
-            ImageItem(viewModel,asset) {
-                viewModel.updateCurrentAsset(asset)
-                navController.navigate(ChronolensNav.FullScreenMedia.name) {
-                    popUpTo(ChronolensNav.FullScreenMedia.name) { inclusive = true }
-                    launchSingleTop = true
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(4),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(state.value.media) { asset ->
+                ImageItem(viewModel, asset) {
+                    viewModel.updateCurrentAsset(asset)
+                    navController.navigate(ChronolensNav.FullScreenMedia.name) {
+                        popUpTo(ChronolensNav.FullScreenMedia.name) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             }
         }
+
+        PullRefreshIndicator(
+            refreshing = state.value.isLoading,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }
 
@@ -88,29 +118,39 @@ fun ImageItem(
     ) {
 
         if (mediaAsset is LocalMedia) {
-            val localAsset: LocalMedia = mediaAsset
-            // State to hold the bitmap
-            //var bitmap by remember { mutableStateOf<Bitmap?>(null) }
-            // Load the bitmap asynchronously in a coroutine
-            val context = LocalContext.current
-            val model = ImageRequest.Builder(context)
-                .data(localAsset.path)
-                .size(120)
-                .scale(Scale.FILL)
-                .build()
             Box {
-                AsyncImage(
-                    model = model,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable {
-                            onClick(mediaAsset)
-                        },
 
+                if (mediaAsset.thumbnail != null) {
+                    Image(
+                        bitmap = mediaAsset.thumbnail!!.asImageBitmap(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable {
+                                onClick(mediaAsset)
+                            }
                     )
-                if (localAsset.remoteId != null) {
+                } else {
+                    val context = LocalContext.current
+                    val model = ImageRequest.Builder(context)
+                        .data(mediaAsset.path)
+                        .size(120)
+                        .scale(Scale.FILL)
+                        .build()
+                    AsyncImage(
+                        model = model,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable {
+                                onClick(mediaAsset)
+                            }
+                    )
+                }
+
+                if (mediaAsset.remoteId != null) {
                     Icon(
                         imageVector = ImageVector.vectorResource(id = R.drawable.cloudcheck),
                         contentDescription = null,

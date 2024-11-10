@@ -8,17 +8,13 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,25 +25,33 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
-import com.example.chronolens.R
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
+import com.example.chronolens.ui.components.BackButton
+import com.example.chronolens.ui.components.BookmarkButton
+import com.example.chronolens.ui.components.DeleteOrTransferButton
+import com.example.chronolens.ui.components.MenuButton
+import com.example.chronolens.ui.components.MetadataDisplay
+import com.example.chronolens.ui.components.ShareButton
+import com.example.chronolens.ui.components.UploadOrRemoveButton
 import com.example.chronolens.utils.loadExifData
 import com.example.chronolens.viewModels.FullscreenImageState
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
 
 
-
 // TODO: Restrict photo vertical position while zooming in with double tap
 
 // TODO: METADATA SLIDING BOX SWIPE IS TAKING OVER ZOOMING GESTURES
+
+// TODO: Move the photo slightly up when the metadata box is visible
+
+
 
 @Composable
 fun FullscreenMediaView(
@@ -75,61 +79,56 @@ fun FullscreenMediaView(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        LoadFullImage(mediaAsset!!, viewModel, { isBoxVisible = false }, { isBoxVisible = true }, isBoxVisible)
+        LoadFullImage(
+            mediaAsset!!,
+            viewModel,
+            { isBoxVisible = false },
+            { isBoxVisible = true },
+            isBoxVisible
+        )
 
-        // Top Bar with navigation buttons
+
+
+        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 32.dp, horizontal = 16.dp)
+                .padding(horizontal = 24.dp, vertical = 12.dp)
                 .align(Alignment.TopCenter),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { navController.navigateUp() }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White
-                )
-            }
-            IconButton(onClick = { println("Bookmark button pressed") }) {
-                Icon(
-                    imageVector = Icons.Default.FavoriteBorder,
-                    contentDescription = "Bookmark",
-                    tint = Color.White
-                )
-            }
+            BackButton(navController)
+            BookmarkButton()
         }
 
-        // Bottom Bar with actions
+
+
+        // Bottom Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 32.dp, horizontal = 16.dp)
+                .padding(horizontal = 24.dp, vertical = 4.dp)
                 .align(Alignment.BottomCenter),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            DeleteOrTransferIcon(mediaAsset)
-            IconButton(onClick = { println("Share button pressed") }) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "Share",
-                    tint = Color.White
-                )
-            }
-            CloudIcon(mediaAsset, viewModel)
-            IconButton(onClick = { println("Menu button pressed") }) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Menu",
-                    tint = Color.White
-                )
-            }
+            DeleteOrTransferButton(mediaAsset)
+            Spacer(modifier = Modifier.width(16.dp))
+
+            ShareButton()
+            Spacer(modifier = Modifier.width(16.dp))
+
+            UploadOrRemoveButton(mediaAsset, viewModel)
+            Spacer(modifier = Modifier.width(16.dp))
+
+            MenuButton({ isBoxVisible = true })
         }
 
-        val colorScheme = MaterialTheme.colorScheme
 
+
+        // Metadata Box
+        val colorScheme = MaterialTheme.colorScheme
         val brush = Brush.horizontalGradient(
             colors = listOf(
                 colorScheme.primary,
@@ -137,7 +136,6 @@ fun FullscreenMediaView(
             )
         )
 
-        // Metadata sliding box
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -146,10 +144,12 @@ fun FullscreenMediaView(
                 .offset(y = boxOffsetY)
                 .background(brush)
         ) {
-            MetadataDisplay(metadata)
+            MetadataDisplay(metadata, mediaAsset.timestamp)
         }
     }
 }
+
+
 
 
 @Composable
@@ -175,7 +175,7 @@ fun LoadFullImage(
                 isBoxVisible = isBoxVisible
             )
         } else {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { // TODO DOES NOTHING?
                 CircularProgressIndicator()
             }
         }
@@ -188,7 +188,6 @@ fun LoadFullImage(
         )
     }
 }
-
 
 
 // TODO: detectTransformGestures is not fine grain enough, we will need to listen to raw events and apply the calculations manually
@@ -266,10 +265,6 @@ private fun ImageDisplay(
 }
 
 
-
-
-
-
 fun Offset.calculateNewOffset(
     centroid: Offset,
     pan: Offset,
@@ -300,308 +295,4 @@ fun calculateDoubleTapOffset(
     Log.d("ImageDisplay", "Calculated Offset: x=$constrainedOffsetX, y=$constrainedOffsetY")
 
     return Offset(constrainedOffsetX, constrainedOffsetY)
-}
-
-
-
-
-@Composable
-fun CloudIcon(asset: MediaAsset, viewModel: MediaGridScreenViewModel) {
-    if (asset is LocalMedia) {
-        if (asset.remoteId != null) {
-            Icon(
-                painter = painterResource(id = R.drawable.cloudcheck),
-                contentDescription = "Uploaded",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
-        } else {
-            IconButton(onClick = {
-                println("Uploading local asset: ${asset.path}")
-                viewModel.uploadMedia(asset)
-            }) {
-                Icon(
-                    painter = painterResource(id = R.drawable.uploadsimple),
-                    contentDescription = "Upload",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-    } else if (asset is RemoteMedia) {
-        IconButton(onClick = {
-            println("Remove from cloud not implemented yet")
-        }) {
-            Icon(
-                painter = painterResource(id = R.drawable.cloud),
-                contentDescription = "Cloud",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun DeleteOrTransferIcon(asset: MediaAsset) {
-    if (asset is RemoteMedia) {
-        IconButton(onClick = {
-            println("Downloading not implemented yet")
-        }) {
-            Icon(
-                painter = painterResource(id = R.drawable.cloud),
-                contentDescription = "Download",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    } else if (asset is LocalMedia) {
-        IconButton(onClick = {
-            println("Deleting not implemented yet")
-        }) {
-            Icon(
-                painter = painterResource(id = R.drawable.trashsimple),
-                contentDescription = "Delete",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
-}
-
-
-
-
-@Composable
-fun MetadataDisplay(metadata: Map<String, String?>) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp, start = 16.dp, end = 16.dp)
-    ) {
-        if (metadata.isEmpty()) {
-            item {
-                Text(
-                    text = "No details available",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
-                )
-            }
-        }
-
-        item {
-            val dateTime = metadata["dateTime"]
-            val readableDate = dateTime?.let {
-                val (date, time) = it.split(" ")
-                val dateParts = date.split(":")
-                val formattedDate = "${dateParts[2]}/${dateParts[1]}/${dateParts[0]}"
-                "$formattedDate - $time"
-            }
-
-            if (readableDate != null) {
-                Text(
-                    text = readableDate,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color.White
-                )
-            }
-        }
-
-        if (metadata["make"] != null
-            || metadata["model"] != null
-            || metadata["exposureTime"] != null
-            || metadata["fNumber"] != null
-            || metadata["iso"] != null) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                CameraDetails(metadata["make"], metadata["model"], metadata["exposureTime"], metadata["fNumber"], metadata["iso"])
-            }
-        }
-
-        if (metadata["imageWidth"] != null || metadata["imageHeight"] != null || metadata["fileName"] != null || metadata["fileSize"] != null) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                PhotoDetails(metadata["imageWidth"], metadata["imageHeight"], metadata["fileName"], metadata["fileSize"])
-            }
-        }
-
-        if (metadata["latitude"] != null || metadata["longitude"] != null) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                PhotoGPSInfo(metadata["latitude"], metadata["longitude"])
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Map area",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White
-                )
-            }
-        }
-
-
-//        // list all metadata
-//        metadata.forEach { (key, value) ->
-//            if (value != null) {
-//                item {
-//                    MetadataItem(key, value)
-//                }
-//            }
-//        }
-    }
-}
-@Composable
-fun PhotoGPSInfo(latitude: String?, longitude: String?) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.mappin),
-            contentDescription = "Map",
-            tint = Color.White,
-            modifier = Modifier.size(24.dp)
-        )
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = "Location",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White
-            )
-
-            val locationText = "${latitude ?: "N/A"} • ${longitude ?: "N/A"}"
-
-            Text(
-                text = locationText,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onTertiary
-            )
-        }
-    }
-}
-
-
-@Composable
-fun CameraDetails(
-    phoneMake: String?,
-    phoneModel: String?,
-    exposureTime: String?,
-    fNumber: String?,
-    iso: String?
-) {
-    val exposureTimeFraction = exposureTime?.toFloatOrNull()?.let {
-        if (it > 0) "1/${(1 / it).toInt()}" else "N/A"
-    } ?: "N/A"
-
-    val fStop = fNumber?.toFloatOrNull()?.let { "f/${"%.1f".format(it)}" } ?: "N/A"
-    val isoValue = iso ?: "N/A"
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.devicemobilecamera),
-            contentDescription = "Phone",
-            tint = Color.White,
-            modifier = Modifier.size(24.dp)
-        )
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-
-            Text(
-                text = phoneMake ?: "N/A",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White
-            )
-            Text(
-                text = "${phoneModel ?: "N/A"} • $fStop • $exposureTimeFraction • ISO $isoValue",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onTertiary
-            )
-        }
-    }
-}
-
-
-@Composable
-fun PhotoDetails(
-    photoWidthValue: String?,
-    photoHeightValue: String?,
-    photoNameValue: String?,
-    photoSizeValue: String?
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.imagesquare),
-            contentDescription = "Photo",
-            tint = Color.White,
-            modifier = Modifier.size(24.dp)
-        )
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = photoNameValue ?: "N/A",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White
-            )
-            val resolutionText = "${photoWidthValue ?: "N/A"} x ${photoHeightValue ?: "N/A"}"
-
-            val fileSizeText = photoSizeValue?.let {
-                val fileSize = it.toLong()
-                val fileSizeKB = fileSize / 1024
-                val fileSizeMB = fileSizeKB / 1024
-                if (fileSizeMB > 0) {
-                    "${fileSizeMB} MB"
-                } else {
-                    "${fileSizeKB} KB"
-                }
-            } ?: "${photoSizeValue ?: "N/A"} bytes"
-
-            Text(
-                text = "$resolutionText • $fileSizeText",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onTertiary
-            )
-        }
-    }
-}
-
-
-@Composable
-fun MetadataItem(key: String, value: String?) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = key,
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.White,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = value ?: "N/A",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White,
-            modifier = Modifier.weight(1f)
-        )
-    }
 }
