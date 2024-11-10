@@ -1,5 +1,6 @@
 package com.example.chronolens.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -117,29 +119,39 @@ fun ImageItem(
     ) {
 
         if (mediaAsset is LocalMedia) {
-            val localAsset: LocalMedia = mediaAsset
-            // State to hold the bitmap
-            //var bitmap by remember { mutableStateOf<Bitmap?>(null) }
-            // Load the bitmap asynchronously in a coroutine
-            val context = LocalContext.current
-            val model = ImageRequest.Builder(context)
-                .data(localAsset.path)
-                .size(120)
-                .scale(Scale.FILL)
-                .build()
             Box {
-                AsyncImage(
-                    model = model,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable {
-                            onClick(mediaAsset)
-                        },
 
+                if (mediaAsset.thumbnail != null) {
+                    Image(
+                        bitmap = mediaAsset.thumbnail!!.asImageBitmap(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable {
+                                onClick(mediaAsset)
+                            }
                     )
-                if (localAsset.remoteId != null) {
+                } else {
+                    val context = LocalContext.current
+                    val model = ImageRequest.Builder(context)
+                        .data(mediaAsset.path)
+                        .size(120)
+                        .scale(Scale.FILL)
+                        .build()
+                    AsyncImage(
+                        model = model,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable {
+                                onClick(mediaAsset)
+                            }
+                    )
+                }
+
+                if (mediaAsset.remoteId != null) {
                     Icon(
                         imageVector = ImageVector.vectorResource(id = R.drawable.cloudcheck),
                         contentDescription = null,
