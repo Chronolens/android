@@ -113,14 +113,17 @@ fun ChronoLens() {
                             .padding(innerPadding)
                     )
                 }
+                composable(ChronolensNav.Albums.name) {
+                    AlbumsScreen(
+                        viewModel = mediaGridScreenViewModel,
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
                 composable(ChronolensNav.Search.name) {
                     SearchScreen(modifier = Modifier.padding(innerPadding))
                 }
                 composable(ChronolensNav.Settings.name) {
                     SettingsScreen(modifier = Modifier.padding(innerPadding))
-                }
-                composable(ChronolensNav.Albums.name) {
-                    AlbumsScreen(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
