@@ -1,6 +1,5 @@
 package com.example.chronolens.ui.screens
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,13 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Divider
-import androidx.compose.material3.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -30,7 +26,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.chronolens.models.SettingsItem
-import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.utils.Settings
 import com.example.chronolens.viewModels.UserState
 import com.example.chronolens.viewModels.UserViewModel
@@ -39,15 +34,13 @@ import com.example.chronolens.viewModels.WorkManagerViewModel
 @Composable
 fun SettingsScreen(
     modifier: Modifier,
-    viewModel: UserViewModel,
     state: State<UserState>,
-    work: WorkManagerViewModel,
     navController: NavController
 ) {
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 10.dp)
+            //.padding(horizontal = 10.dp)
     ) {
         item {
             Profile(state)
@@ -63,7 +56,7 @@ fun SettingsScreen(
                 Divider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = 6.dp, horizontal = 10.dp),
                     color = Color.White
                 )
             }

@@ -19,6 +19,10 @@
     <string name="settings_background_upload_desc">Background Upload description</string>
     <string name="settings_activity_history_title">Activity history</string>
     <string name="settings_activity_history_desc">Activity history description</string>
+    <string name="background_uploads_now">Upload all media now</string>
+    <string name="background_uploads_now_desc">Uploads every piece of media in the background</string>
+    <string name="background_uploads_periodic">Periodic Upload</string>
+    <string name="background_uploads_periodic_desc">Periodically uploads media according to customization set by the user</string>
 
     <string name="settings_logout">Logout</string>
     <string name="settings_change_password">Change password</string>

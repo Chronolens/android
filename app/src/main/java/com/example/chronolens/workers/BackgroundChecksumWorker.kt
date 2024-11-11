@@ -28,7 +28,6 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
 
             // Sync Phase
             showSyncNotification(applicationContext)
-//            delay(6000)
             val mediaGridRepository = syncManager.mediaGridRepository
             val localMedia: List<LocalMedia> = syncManager.getLocalAssets()
             val localMediaIds: List<String> = localMedia.map { it.id }
@@ -44,7 +43,6 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
             updateSyncNotificationProgress(applicationContext, 0, localMedia.size)
 
             for (media in localMedia) {
-//                delay(1000)
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {
                     if (!remoteAssets.contains(checksum)) {
@@ -74,7 +72,6 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
             // Upload Phase Logic
             var uploaded = 0
             mediaToUpload.forEach {
-//                delay(2000)
                 mediaGridRepository.apiUploadFileStream(it)
                 uploaded++
                 updateUploadNotificationProgress(applicationContext, uploaded, mediaToUpload.size)

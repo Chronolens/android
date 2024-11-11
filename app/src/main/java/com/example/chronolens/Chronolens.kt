@@ -126,9 +126,7 @@ fun ChronoLens() {
                 composable(ChronolensNav.Settings.name) {
                     SettingsScreen(
                         modifier = Modifier.padding(innerPadding),
-                        viewModel = userViewModel,
                         state = userState,
-                        work = workManagerViewModel,
                         navController = navController
                     )
                 }
@@ -137,15 +135,20 @@ fun ChronoLens() {
                 }
 
                 composable(ChronolensNav.Error.name) {
-                    Box(modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxWidth()
+                    ) {
                         Text("Coming soon", color = Color.White)
                     }
                 }
 
                 composable(ChronolensNav.BackgroundUpload.name) {
-                    BackgroundUploadScreen(modifier = Modifier.padding(innerPadding))
+                    BackgroundUploadScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        workmanager = workManagerViewModel
+                    )
                 }
                 composable(ChronolensNav.ActivityHistory.name) {
                     ActivityHistoryScreen(modifier = Modifier.padding(innerPadding))
