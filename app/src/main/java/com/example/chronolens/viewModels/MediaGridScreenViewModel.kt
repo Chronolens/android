@@ -46,6 +46,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     fun init() {
         viewModelScope.launch {
             loadMediaGrid()
+            setIsLoaded()
         }
     }
 
