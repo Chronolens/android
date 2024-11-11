@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 
 
+// TODO Implement and call the People request in the MediaGridScreenViewModel
+
 @Composable
 fun AlbumsScreen(
     viewModel: MediaGridScreenViewModel,
@@ -35,7 +37,7 @@ fun AlbumsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            // Row with two buttons: Favorites and Bin
+            // Favorite and Bin Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -47,8 +49,10 @@ fun AlbumsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
+
+
+        // People Row
         item {
-            // People Row - Lazy Row with a variable number of people thumbnails
             Text(
                 text = "People",
                 style = MaterialTheme.typography.titleSmall,
@@ -59,7 +63,7 @@ fun AlbumsScreen(
                 contentPadding = PaddingValues(horizontal = 8.dp)
             ) {
                 repeat(10) {
-                    item{
+                    item {
                         Box(
                             modifier = Modifier.size(88.dp),
                             contentAlignment = Alignment.Center
@@ -72,8 +76,13 @@ fun AlbumsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+
+
+
+
+
         item {
-            // System Folders Row - Lazy Row with variable number of system folders
+            // System Folders Row
             Text(
                 text = "System Folders",
                 style = MaterialTheme.typography.titleSmall,
@@ -84,7 +93,7 @@ fun AlbumsScreen(
                 contentPadding = PaddingValues(horizontal = 8.dp)
             ) {
                 repeat(10) {
-                    item{
+                    item {
                         Box(
                             modifier = Modifier.size(88.dp),
                             contentAlignment = Alignment.Center
@@ -98,8 +107,10 @@ fun AlbumsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
+
+
         item {
-            // User-Created Albums Row - Lazy Row with variable number of albums
+            // User-Created Albums Row
             Text(
                 text = "Albums",
                 style = MaterialTheme.typography.titleSmall,
@@ -110,7 +121,7 @@ fun AlbumsScreen(
                 contentPadding = PaddingValues(horizontal = 8.dp)
             ) {
                 repeat(10) {
-                    item{
+                    item {
                         Box(
                             modifier = Modifier.size(88.dp),
                             contentAlignment = Alignment.Center
@@ -121,6 +132,7 @@ fun AlbumsScreen(
                 }
             }
         }
+
     }
 }
 
@@ -134,6 +146,7 @@ fun FavoritesButton() {
         Text("Favorites")
     }
 }
+
 @Composable
 fun BinButton() {
     Button(

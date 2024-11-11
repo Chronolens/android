@@ -10,7 +10,7 @@ abstract class MediaAsset(
     @Transient open var timestamp: Long
 ) {
     abstract fun eq(other: MediaAsset): Boolean
-}
+}        
 
 data class LocalMedia(
     var remoteId: String?,
