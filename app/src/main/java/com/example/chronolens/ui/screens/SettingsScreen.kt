@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Divider
 import androidx.compose.material3.Button
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
@@ -112,5 +113,28 @@ fun SettingsListItem(
             navController.navigate(setting.nav.name)
         }
     )
+
+}
+
+// TODO: decide which one to use
+@Composable
+fun SettingsListItem2(
+    setting: SettingsItem,
+    navController: NavController
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                navController.navigate(setting.nav.name)
+            },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(imageVector = Icons.Outlined.Check, contentDescription = null, tint = Color.White)
+        Column {
+            Text(stringResource(setting.title))
+            Text(stringResource(setting.description))
+        }
+    }
 
 }
