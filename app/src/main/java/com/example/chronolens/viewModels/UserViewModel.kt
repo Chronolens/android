@@ -21,6 +21,7 @@ enum class UserLoginState {
 
 data class UserState(
     val username: String = "",
+    val server: String = "",
     val userLoginState: UserLoginState = UserLoginState.LoggedOut
     // TODO: the rest of the user's stuff
 )
@@ -59,7 +60,8 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
                 200 -> _userState.update { currState ->
                     currState.copy(
                         userLoginState = UserLoginState.LoggedIn,
-                        username = username
+                        username = username,
+                        server = server
                     )
                 }
 
@@ -74,10 +76,13 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
                         userLoginState = UserLoginState.Error,
                     )
                 }
-
-
             }
         }
+    }
+
+    // TODO
+    fun logout(){
+
     }
 
 }

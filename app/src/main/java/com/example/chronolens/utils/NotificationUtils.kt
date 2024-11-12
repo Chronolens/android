@@ -7,6 +7,7 @@ import androidx.core.app.NotificationCompat
 import com.example.chronolens.R
 
 // TODO: ask for notification permission
+// TODO: design do icon
 fun createNotificationChannels(context: Context) {
     val syncChannel = NotificationChannel(
         Notifications.SYNC_CHANNEL_ID,

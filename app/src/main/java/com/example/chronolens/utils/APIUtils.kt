@@ -1,11 +1,7 @@
 package com.example.chronolens.utils
 
 import android.content.SharedPreferences
-import android.net.Uri
-import android.net.Uri.Builder
 import android.util.Log
-import coil3.toAndroidUri
-import coil3.toCoilUri
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.Person
@@ -13,21 +9,16 @@ import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.models.UnknownPerson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.Headers
-import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.internal.http.HttpMethod
-import okhttp3.internal.http2.Http2
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
-import java.net.URI
 import java.net.URL
 import kotlin.io.path.Path
 
