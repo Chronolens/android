@@ -27,18 +27,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.chronolens.R
 import com.example.chronolens.viewModels.WorkManagerViewModel
 
-
 @Composable
 fun BackgroundUploadScreen(
-    modifier: Modifier,
-    workmanager: WorkManagerViewModel
+    modifier: Modifier = Modifier,
+    workManager: WorkManagerViewModel
 ) {
-
     var requireWifi by remember { mutableStateOf(true) }
     var requireCharging by remember { mutableStateOf(false) }
     var period by remember { mutableIntStateOf(15) } // minimum is 15 minutes
@@ -51,100 +50,91 @@ fun BackgroundUploadScreen(
             .padding(horizontal = 10.dp)
     ) {
         item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        workmanager.oneTimeBackgroundSync()
-                        //cancelPeriodicBackgroundSync()
-                    }, verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Check,
-                    contentDescription = null,
-                    tint = Color.White
-                )
-                Column {
-                    Text(stringResource(R.string.background_uploads_now))
-                    Text(stringResource(R.string.background_uploads_now_desc))
-                }
-            }
+            BackgroundUploadOption(
+                icon = Icons.Outlined.Check,
+                title = stringResource(R.string.background_uploads_now),
+                description = stringResource(R.string.background_uploads_now_desc),
+                onClick = { workManager.oneTimeBackgroundSync() }
+            )
         }
-        item {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.height(24.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {},
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Check,
-                        contentDescription = null,
-                        tint = Color.White
-                    )
-                    Column {
-                        Text(stringResource(R.string.background_uploads_periodic))
-                        Text(stringResource(R.string.background_uploads_periodic_desc))
-                    }
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("period")
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("wifi?")
-                    Spacer(modifier = Modifier
-                        .weight(1f)
-                        .border(2.dp, Color.Blue))
-                    Checkbox(
-                        checked = requireWifi,
-                        onCheckedChange = { requireWifi = it }
-                    )
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("charging?")
-                    Spacer(modifier = Modifier
-                        .weight(1f)
-                        .border(2.dp, Color.Blue))
-                    Checkbox(
-                        checked = requireCharging,
-                        onCheckedChange = { requireCharging = it }
-                    )
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("from now on or ALL or pick date")
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("include videos?")
-                }
 
-            }
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
+            BackgroundUploadOption(
+                icon = Icons.Outlined.Check,
+                title = stringResource(R.string.background_uploads_periodic),
+                description = stringResource(R.string.background_uploads_periodic_desc)
+            )
+
+            SettingsOptionRow("Period", period.toString())
+            ToggleOptionRow("Wi-Fi only?", requireWifi) { requireWifi = it }
+            ToggleOptionRow("Requires Charging?", requireCharging) { requireCharging = it }
+            SettingsOptionRow("Upload Since", since ?: "ALL")
+            ToggleOptionRow("Include Videos?", includeVideos) { includeVideos = it }
         }
+    }
+}
+
+@Composable
+fun BackgroundUploadOption(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    onClick: () -> Unit = {}
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.padding(end = 8.dp)
+        )
+        Column {
+            Text(title)
+            Text(description)
+        }
+    }
+}
+
+@Composable
+fun SettingsOptionRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label)
+        Spacer(modifier = Modifier.weight(1f))
+        Text(value)
+    }
+}
+
+@Composable
+fun ToggleOptionRow(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label)
+        Spacer(modifier = Modifier.weight(1f))
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
     }
 }

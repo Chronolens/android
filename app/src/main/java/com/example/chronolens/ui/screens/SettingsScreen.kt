@@ -11,25 +11,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Divider
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.chronolens.R
 import com.example.chronolens.models.SettingsItem
 import com.example.chronolens.utils.Settings
 import com.example.chronolens.viewModels.UserState
-import com.example.chronolens.viewModels.UserViewModel
-import com.example.chronolens.viewModels.WorkManagerViewModel
 
 @Composable
 fun SettingsScreen(
@@ -40,7 +38,7 @@ fun SettingsScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            //.padding(horizontal = 10.dp)
+        //.padding(horizontal = 10.dp)
     ) {
         item {
             Profile(state)
@@ -71,7 +69,10 @@ fun Profile(state: State<UserState>) {
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(imageVector = Icons.Outlined.Person, contentDescription = null)
+        Icon(
+            painter = painterResource(id = R.drawable.user),
+            contentDescription = null
+        )
         Column {
             Text(state.value.username)
             Text(state.value.server)
@@ -87,7 +88,7 @@ fun SettingsListItem(
     ListItem(
         leadingContent = {
             Icon(
-                imageVector = setting.icon,
+                painter = painterResource(id = R.drawable.harddrives),
                 contentDescription = "",
                 tint = Color.White,
             )
@@ -106,7 +107,6 @@ fun SettingsListItem(
             navController.navigate(setting.nav.name)
         }
     )
-
 }
 
 // TODO: decide which one to use
@@ -123,11 +123,14 @@ fun SettingsListItem2(
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(imageVector = Icons.Outlined.Check, contentDescription = null, tint = Color.White)
+        Icon(
+            painter = painterResource(id = R.drawable.harddrives),
+            contentDescription = null,
+            tint = Color.White
+        )
         Column {
             Text(stringResource(setting.title))
             Text(stringResource(setting.description))
         }
     }
-
 }

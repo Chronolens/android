@@ -155,7 +155,7 @@ fun ChronoLens() {
                 composable(ChronolensNav.BackgroundUpload.name) {
                     BackgroundUploadScreen(
                         modifier = Modifier.padding(innerPadding),
-                        workmanager = workManagerViewModel
+                        workManager = workManagerViewModel
                     )
                 }
 
