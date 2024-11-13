@@ -24,6 +24,7 @@ object Json {
 object Work {
         const val PERIODIC_BACKGROUND_UPLOAD_WORK_NAME = "PERIODIC_BACKGROUND_UPLOAD_WORK_NAME"
         const val ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME = "ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME"
+        const val SINCE = "SINCE"
 }
 
 object Notifications {
