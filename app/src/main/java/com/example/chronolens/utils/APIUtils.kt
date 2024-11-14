@@ -331,33 +331,20 @@ class APIUtils {
 
 
 
-    suspend fun getPeoplePage(
-        page: Int,
-        sharedPreferences: SharedPreferences
-    ): List<Person> = withContext(Dispatchers.IO) {
-
-        val pagesize = 5
+    suspend fun getPeople(sharedPreferences: SharedPreferences): List<Person> = withContext(Dispatchers.IO) {
 
         val server = sharedPreferences.getString(Prefs.SERVER, "")
-        val accessToken =
-            sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-                ?: return@withContext emptyList()
-
-
+        val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
+            ?: return@withContext emptyList()
 
         val url = "$server/people".toHttpUrlOrNull()!!.newBuilder()
-            .addQueryParameter("page", page.toString())
-            .addQueryParameter("pagesize", pagesize.toString())
             .build().toUrl()
-
 
         val connection = (url.openConnection() as HttpURLConnection).apply {
             setRequestProperty("Authorization", "Bearer $accessToken")
             setRequestProperty("Accept", "application/json")
             requestMethod = "GET"
         }
-
-
 
         try {
             val responseCode = connection.responseCode
@@ -381,7 +368,8 @@ class APIUtils {
                         peopleList.add(person)
                     }
 
-                    peopleList
+                    println(peopleList)
+                    return@use peopleList
                 }
             } else {
                 emptyList()
@@ -392,7 +380,6 @@ class APIUtils {
         } finally {
             connection.disconnect()
         }
-
     }
 
 }

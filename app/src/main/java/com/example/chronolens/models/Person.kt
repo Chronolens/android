@@ -30,7 +30,7 @@ data class KnownPerson(
 
     companion object {
         fun fromJson(personJson: JSONObject): KnownPerson {
-            val personId = personJson.optInt("person_id")
+            val personId = personJson.optInt("face_id")
             val name = personJson.optString("name", "")
             val photoLink = personJson.optString("photo_link", "")
             val boundingBoxArray = personJson.optJSONArray("bounding_box")
