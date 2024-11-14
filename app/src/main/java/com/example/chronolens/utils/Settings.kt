@@ -1,7 +1,5 @@
 package com.example.chronolens.utils
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Done
 import com.example.chronolens.R
 import com.example.chronolens.models.SettingsItem
 

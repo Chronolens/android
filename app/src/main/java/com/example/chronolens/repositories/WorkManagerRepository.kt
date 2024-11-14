@@ -8,10 +8,12 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.example.chronolens.utils.SyncManager
 import com.example.chronolens.utils.Work
 import com.example.chronolens.workers.BackgroundChecksumWorker
+import kotlinx.coroutines.flow.Flow
 import java.time.Duration
 
 // TODO: allow schedulling by hour of the day?
@@ -66,12 +68,13 @@ class WorkManagerRepository(
     }
 
     // TODO: ExistingWorkPolicy??
-    fun oneTimeBackgroundSync() {
+    fun oneTimeBackgroundSync(): Flow<MutableList<WorkInfo>> {
         val job = OneTimeWorkRequestBuilder<BackgroundChecksumWorker>().build()
 
         workManager.enqueueUniqueWork(
             Work.ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME, ExistingWorkPolicy.KEEP, job
         )
+        return workManager.getWorkInfosForUniqueWorkFlow(Work.ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME)
     }
 
     fun cancelOneTimeBackgroundSync() {

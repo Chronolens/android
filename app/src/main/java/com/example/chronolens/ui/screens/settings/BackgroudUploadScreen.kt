@@ -1,7 +1,7 @@
 package com.example.chronolens.ui.screens.settings
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Button
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.Checkbox
@@ -20,6 +21,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.work.WorkInfo
 import com.example.chronolens.R
 import com.example.chronolens.ui.components.AlertConfirmDialog
 import com.example.chronolens.viewModels.WorkManagerViewModel
@@ -38,7 +41,10 @@ import com.example.chronolens.viewModels.WorkManagerViewModel
 @Composable
 fun BackgroundUploadScreen(
     modifier: Modifier = Modifier,
-    workManager: WorkManagerViewModel
+    workManager: WorkManagerViewModel,
+    isLoading: State<Boolean>,
+    workInfo: State<WorkInfo.State?>
+
 ) {
     var requireWifi by remember { mutableStateOf(true) }
     var requireCharging by remember { mutableStateOf(false) }
@@ -77,20 +83,75 @@ fun BackgroundUploadScreen(
         )
     }
 
-
-
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 10.dp)
     ) {
         item {
-            BackgroundUploadOption(
-                icon = Icons.Outlined.Check,
-                title = stringResource(R.string.background_uploads_now),
-                description = stringResource(R.string.background_uploads_now_desc),
-                onClick = { uploadNowVisible.value = true }
-            )
+            Column {
+                Text(text = workInfo.value.toString())
+                BackgroundUploadOption(
+                    icon = Icons.Outlined.Check,
+                    title = stringResource(R.string.background_uploads_now),
+                    description = stringResource(R.string.background_uploads_now_desc),
+                    onClick = { uploadNowVisible.value = true }
+                )
+                //1
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+
+                    Button(
+                        onClick = { uploadNowVisible.value = true },
+                        enabled = !isLoading.value
+                    ) {
+                        if (isLoading.value) {
+                            CircularProgressIndicator()
+                        } else {
+                            Text("Start")
+                        }
+                    }
+
+                    Button(
+                        onClick = workManager::cancelOneTimeBackgroundSync,
+                        enabled = isLoading.value
+                    ) {
+                        Text("Cancel")
+                    }
+
+                }
+                //2
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+
+                    Button(
+                        onClick = { uploadNowVisible.value = true },
+                        //enabled = !isLoading.value
+                    ) {
+                        if (isLoading.value) {
+                            Text("Cancel")
+                        } else {
+                            Text("Start")
+                        }
+                    }
+                }
+                //3
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+
+                    Button(
+                        onClick = { uploadNowVisible.value = true },
+                        enabled = !isLoading.value
+                    ) {
+                        Text("Start")
+                    }
+
+                    Button(
+                        onClick = workManager::cancelOneTimeBackgroundSync,
+                        enabled = isLoading.value
+                    ) {
+                        Text("Cancel")
+                    }
+
+                }
+            }
         }
 
         item {

@@ -12,6 +12,7 @@ import com.example.chronolens.utils.showUploadNotification
 import com.example.chronolens.utils.showSyncNotification
 import com.example.chronolens.utils.updateSyncNotificationProgress
 import com.example.chronolens.utils.updateUploadNotificationProgress
+import kotlinx.coroutines.delay
 
 private const val TAG = "UploadWorker"
 
@@ -30,6 +31,7 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
 
             // Sync Phase
             showSyncNotification(applicationContext)
+            delay(8000L)
             val mediaGridRepository = syncManager.mediaGridRepository
             val localMedia: List<LocalMedia> = syncManager.getLocalAssets()
             val localMediaIds: List<String> = localMedia.map { it.id }
@@ -43,7 +45,7 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
             var calculated = 0
 
             updateSyncNotificationProgress(applicationContext, 0, localMedia.size)
-
+            delay(5000L)
             for (media in localMedia) {
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {
