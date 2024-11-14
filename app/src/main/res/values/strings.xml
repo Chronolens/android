@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name" translatable="false">Chronolens</string>
 
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="start">Start</string>
+
+
     <string name="notification_sync_message">Syncing</string>
     <string name="notification_sync_message_init">Syncing Data</string>
     <string name="notification_sync_message_progress">Syncing assets (%d/%d)</string>

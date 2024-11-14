@@ -1,5 +1,6 @@
 package com.example.chronolens.ui.screens.settings
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.Checkbox
@@ -30,6 +32,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.chronolens.R
+import com.example.chronolens.ui.components.AlertConfirmDialog
 import com.example.chronolens.viewModels.WorkManagerViewModel
 
 @Composable
@@ -42,7 +45,39 @@ fun BackgroundUploadScreen(
     var since by remember { mutableStateOf(null) }
     var includeVideos by remember { mutableStateOf(false) }
     var period by remember { mutableLongStateOf(15) } // minimum is 15 minutes
-    val periodOptions = listOf(15, 30, 45, 60, 90)
+    val periodOptions = listOf(15, 30, 45, 60, 90, 120, 240, 480, 1440)
+
+    val uploadNowVisible = remember { mutableStateOf(false) }
+    val periodicUploadVisible = remember { mutableStateOf(false) }
+
+    if (uploadNowVisible.value) {
+        AlertConfirmDialog(
+            title = "Upload everything now",
+            text = "Are you sure bro?",
+            confirmOption = workManager::oneTimeBackgroundSync,
+            visible = uploadNowVisible
+        )
+    }
+
+    if (periodicUploadVisible.value) {
+        AlertConfirmDialog(
+            title = "Periodic Upload",
+            text = "Are you sure bro?",
+            confirmOption = {
+                workManager.periodicBackgroundSync(
+                    period = period,
+                    requireWifi = requireWifi,
+                    requireCharging = requireCharging,
+                    since = 0,
+                    includeVideos = includeVideos,
+                    startNow = false
+                )
+            },
+            visible = periodicUploadVisible
+        )
+    }
+
+
 
     LazyColumn(
         modifier = modifier
@@ -54,7 +89,7 @@ fun BackgroundUploadScreen(
                 icon = Icons.Outlined.Check,
                 title = stringResource(R.string.background_uploads_now),
                 description = stringResource(R.string.background_uploads_now_desc),
-                onClick = { workManager.oneTimeBackgroundSync() }
+                onClick = { uploadNowVisible.value = true }
             )
         }
 
@@ -64,23 +99,17 @@ fun BackgroundUploadScreen(
                 icon = Icons.Outlined.Check,
                 title = stringResource(R.string.background_uploads_periodic),
                 description = stringResource(R.string.background_uploads_periodic_desc),
-                onClick = {
-                    workManager.periodicBackgroundSync(
-                        period,
-                        requireWifi,
-                        requireCharging,
-                        0,
-                        includeVideos,
-                        false
-                    )
-                },
-            )
+
+                )
 
             DropdownMenuPicker("period", periodOptions, period.toInt()) { period = it.toLong() }
             ToggleOptionRow("Wi-Fi only?", requireWifi) { requireWifi = it }
             ToggleOptionRow("Requires Charging?", requireCharging) { requireCharging = it }
             SettingsOptionRow("Upload Since", since ?: "ALL")
             ToggleOptionRow("Include Videos?", includeVideos) { includeVideos = it }
+            Button(onClick = { periodicUploadVisible.value = true }) {
+                Text(stringResource(R.string.start))
+            }
         }
     }
 }
@@ -95,8 +124,12 @@ fun DropdownMenuPicker(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Column {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(label)
+        Spacer(modifier = Modifier.weight(1f))
         Box {
             Text(
                 text = formatTime(selectedOption),
@@ -195,8 +228,8 @@ private fun formatTime(minutes: Int): String {
     val m = minutes % 60
 
     var formatedTime = ""
-    if (h != 0) formatedTime+="$h h "
-    if (m != 0) formatedTime+="$m min"
+    if (h != 0) formatedTime += "$h h "
+    if (m != 0) formatedTime += "$m min"
 
     return formatedTime
 }
