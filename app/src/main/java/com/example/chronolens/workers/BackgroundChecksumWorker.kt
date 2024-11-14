@@ -6,12 +6,12 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.repositories.WorkManagerRepository
+import com.example.chronolens.utils.Work
 import com.example.chronolens.utils.showFinishedNotification
 import com.example.chronolens.utils.showUploadNotification
 import com.example.chronolens.utils.showSyncNotification
 import com.example.chronolens.utils.updateSyncNotificationProgress
 import com.example.chronolens.utils.updateUploadNotificationProgress
-import kotlinx.coroutines.delay
 
 private const val TAG = "UploadWorker"
 
@@ -19,6 +19,8 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
     CoroutineWorker(ctx, params) {
 
     override suspend fun doWork(): Result {
+
+        val since: Long = inputData.getLong(Work.SINCE, -1)
 
         val syncManager = WorkManagerRepository.syncManager
         val notificationManager =
@@ -45,14 +47,14 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
             for (media in localMedia) {
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {
-                    if (!remoteAssets.contains(checksum)) {
+                    if (!remoteAssets.contains(checksum) && media.timestamp >= since) {
                         media.checksum = checksum
                         mediaToUpload.add(media)
                     }
                 } else {
                     media.checksum =
                         mediaGridRepository.computeAndStoreChecksum(media.id, media.path)
-                    if (!remoteAssets.contains(media.checksum)) {
+                    if (!remoteAssets.contains(media.checksum) && media.timestamp >= since) {
                         mediaToUpload.add(media)
                     }
                 }
@@ -78,7 +80,7 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
             }
 
             notificationManager.cancel(2)
-            showFinishedNotification(applicationContext,uploaded)
+            showFinishedNotification(applicationContext, uploaded)
 
             return Result.success()
         } else {

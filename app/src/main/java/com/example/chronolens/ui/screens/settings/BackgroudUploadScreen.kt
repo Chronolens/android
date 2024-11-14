@@ -1,8 +1,8 @@
 package com.example.chronolens.ui.screens.settings
 
-import android.util.Log
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,15 +11,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +32,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.chronolens.R
+import com.example.chronolens.ui.components.AlertConfirmDialog
 import com.example.chronolens.viewModels.WorkManagerViewModel
 
 @Composable
@@ -40,9 +42,42 @@ fun BackgroundUploadScreen(
 ) {
     var requireWifi by remember { mutableStateOf(true) }
     var requireCharging by remember { mutableStateOf(false) }
-    var period by remember { mutableIntStateOf(15) } // minimum is 15 minutes
     var since by remember { mutableStateOf(null) }
     var includeVideos by remember { mutableStateOf(false) }
+    var period by remember { mutableLongStateOf(15) } // minimum is 15 minutes
+    val periodOptions = listOf(15, 30, 45, 60, 90, 120, 240, 480, 1440)
+
+    val uploadNowVisible = remember { mutableStateOf(false) }
+    val periodicUploadVisible = remember { mutableStateOf(false) }
+
+    if (uploadNowVisible.value) {
+        AlertConfirmDialog(
+            title = "Upload everything now",
+            text = "Are you sure bro?",
+            confirmOption = workManager::oneTimeBackgroundSync,
+            visible = uploadNowVisible
+        )
+    }
+
+    if (periodicUploadVisible.value) {
+        AlertConfirmDialog(
+            title = "Periodic Upload",
+            text = "Are you sure bro?",
+            confirmOption = {
+                workManager.periodicBackgroundSync(
+                    period = period,
+                    requireWifi = requireWifi,
+                    requireCharging = requireCharging,
+                    since = 0,
+                    includeVideos = includeVideos,
+                    startNow = false
+                )
+            },
+            visible = periodicUploadVisible
+        )
+    }
+
+
 
     LazyColumn(
         modifier = modifier
@@ -54,7 +89,7 @@ fun BackgroundUploadScreen(
                 icon = Icons.Outlined.Check,
                 title = stringResource(R.string.background_uploads_now),
                 description = stringResource(R.string.background_uploads_now_desc),
-                onClick = { workManager.oneTimeBackgroundSync() }
+                onClick = { uploadNowVisible.value = true }
             )
         }
 
@@ -63,14 +98,61 @@ fun BackgroundUploadScreen(
             BackgroundUploadOption(
                 icon = Icons.Outlined.Check,
                 title = stringResource(R.string.background_uploads_periodic),
-                description = stringResource(R.string.background_uploads_periodic_desc)
-            )
+                description = stringResource(R.string.background_uploads_periodic_desc),
 
-            SettingsOptionRow("Period", period.toString())
+                )
+
+            DropdownMenuPicker("period", periodOptions, period.toInt()) { period = it.toLong() }
             ToggleOptionRow("Wi-Fi only?", requireWifi) { requireWifi = it }
             ToggleOptionRow("Requires Charging?", requireCharging) { requireCharging = it }
             SettingsOptionRow("Upload Since", since ?: "ALL")
             ToggleOptionRow("Include Videos?", includeVideos) { includeVideos = it }
+            Button(onClick = { periodicUploadVisible.value = true }) {
+                Text(stringResource(R.string.start))
+            }
+        }
+    }
+}
+
+
+@Composable
+fun DropdownMenuPicker(
+    label: String,
+    options: List<Int>,
+    selectedOption: Int,
+    onOptionSelected: (Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label)
+        Spacer(modifier = Modifier.weight(1f))
+        Box {
+            Text(
+                text = formatTime(selectedOption),
+                modifier = Modifier
+                    .padding(8.dp)
+                    .clickable { expanded = true }
+                    .padding(8.dp)
+            )
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        onClick = {
+                            onOptionSelected(option)
+                            expanded = false
+                        },
+                        text = { Text(formatTime(option)) }
+
+                    )
+                }
+            }
         }
     }
 }
@@ -137,4 +219,17 @@ fun ToggleOptionRow(
             onCheckedChange = onCheckedChange
         )
     }
+}
+
+// TODO: use string values from the xml
+private fun formatTime(minutes: Int): String {
+
+    val h = minutes / 60
+    val m = minutes % 60
+
+    var formatedTime = ""
+    if (h != 0) formatedTime += "$h h "
+    if (m != 0) formatedTime += "$m min"
+
+    return formatedTime
 }

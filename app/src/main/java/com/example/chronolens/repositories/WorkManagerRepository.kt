@@ -2,6 +2,7 @@ package com.example.chronolens.repositories
 
 import android.content.Context
 import androidx.work.Constraints
+import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
@@ -16,40 +17,46 @@ import java.time.Duration
 // TODO: allow schedulling by hour of the day?
 // TODO: settings check "from now on"?
 class WorkManagerRepository(
-    context: Context,
-    mediaGridRepository: MediaGridRepository
+    context: Context, mediaGridRepository: MediaGridRepository
 ) {
 
     private val workManager = WorkManager.getInstance(context)
     private val syncManager = SyncManager(mediaGridRepository)
 
     init {
-        // Set a static reference to mediaGridRepository
         Companion.syncManager = syncManager
     }
 
-    // TODO: make it dynamic with user prefs
-    // TODO: set initial delay so that it doesn't execute right away
-    // TODO: using onetime+periodic for initial setup?
-    fun periodicBackgroundSync() {
+    fun periodicBackgroundSync(
+        period: Long,
+        requireWifi: Boolean,
+        requireCharging: Boolean,
+        since: Long,
+        includeVideos: Boolean,
+        startNow: Boolean
+    ) {
 
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.UNMETERED)    //Wifi
-            //.setRequiredNetworkType(NetworkType.METERED)    //Data
-            .setRequiresBatteryNotLow(true)
-            .build()
+        val networkType = if (requireWifi) NetworkType.UNMETERED else NetworkType.CONNECTED
+        val data = Data.Builder()
+        data.putLong(Work.SINCE,since)
+
+        val constraints = Constraints.Builder().setRequiredNetworkType(networkType)
+            .setRequiresCharging(requireCharging).setRequiresBatteryNotLow(true).build()
 
 
         val job = PeriodicWorkRequestBuilder<BackgroundChecksumWorker>(
-            repeatInterval = Duration.ofMinutes(15),
-        ).setConstraints(constraints)
-            .setInitialDelay(Duration.ofSeconds(5))
-            .build()
+            repeatInterval = Duration.ofMinutes(period),
+        ).setConstraints(constraints).setInputData(data.build())
+
+//        if (startNow) {
+//            job.setInitialDelay(Duration.ofSeconds(period))
+//            .build()
+//        } else {
+//            job.build()
+//        }
 
         workManager.enqueueUniquePeriodicWork(
-            Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME,
-            ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
-            job
+            Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, job.build()
         )
 
     }
@@ -58,17 +65,13 @@ class WorkManagerRepository(
         workManager.cancelUniqueWork(Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME)
     }
 
-    // TODO: without constraints?
+    // TODO: ExistingWorkPolicy??
     fun oneTimeBackgroundSync() {
-
         val job = OneTimeWorkRequestBuilder<BackgroundChecksumWorker>().build()
 
         workManager.enqueueUniqueWork(
-            Work.ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME,
-            ExistingWorkPolicy.KEEP,
-            job
+            Work.ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME, ExistingWorkPolicy.KEEP, job
         )
-
     }
 
     fun cancelOneTimeBackgroundSync() {
@@ -76,7 +79,6 @@ class WorkManagerRepository(
     }
 
     companion object {
-        // A static reference for BackgroundChecksumWorker
         var syncManager: SyncManager? = null
             private set
     }
