@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
@@ -95,61 +96,21 @@ fun BackgroundUploadScreen(
                     icon = Icons.Outlined.Check,
                     title = stringResource(R.string.background_uploads_now),
                     description = stringResource(R.string.background_uploads_now_desc),
-                    onClick = { uploadNowVisible.value = true }
                 )
-                //1
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-
-                    Button(
-                        onClick = { uploadNowVisible.value = true },
-                        enabled = !isLoading.value
-                    ) {
-                        if (isLoading.value) {
-                            CircularProgressIndicator()
-                        } else {
-                            Text("Start")
-                        }
-                    }
-
-                    Button(
-                        onClick = workManager::cancelOneTimeBackgroundSync,
-                        enabled = isLoading.value
-                    ) {
-                        Text("Cancel")
-                    }
-
-                }
-                //2
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-
-                    Button(
-                        onClick = { uploadNowVisible.value = true },
-                        //enabled = !isLoading.value
-                    ) {
-                        if (isLoading.value) {
+                    if (isLoading.value) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(onClick = workManager::cancelOneTimeBackgroundSync) {
                             Text("Cancel")
-                        } else {
+                        }
+                    } else {
+                        Button(
+                            onClick = { uploadNowVisible.value = true }
+                        ) {
                             Text("Start")
                         }
                     }
-                }
-                //3
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-
-                    Button(
-                        onClick = { uploadNowVisible.value = true },
-                        enabled = !isLoading.value
-                    ) {
-                        Text("Start")
-                    }
-
-                    Button(
-                        onClick = workManager::cancelOneTimeBackgroundSync,
-                        enabled = isLoading.value
-                    ) {
-                        Text("Cancel")
-                    }
-
                 }
             }
         }
