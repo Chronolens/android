@@ -1,5 +1,8 @@
 package com.example.chronolens.ui.screens
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.provider.MediaStore
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -52,6 +56,8 @@ import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
 import com.example.chronolens.viewModels.WorkManagerViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 // TODO: maybe make every single sync a background job in case it is too long
 @OptIn(ExperimentalMaterialApi::class)
@@ -82,7 +88,7 @@ fun MediaGridScreen(
             columns = GridCells.Fixed(4),
             modifier = Modifier.fillMaxSize()
         ) {
-            items(state.value.media) { asset ->
+            items(items = state.value.media) { asset ->
                 ImageItem(viewModel, asset) {
                     viewModel.updateCurrentAsset(asset)
                     navController.navigate(ChronolensNav.FullScreenMedia.name) {
@@ -100,6 +106,38 @@ fun MediaGridScreen(
         )
     }
 }
+
+fun getThumbnail(context: Context, mediaId: Long): Bitmap? {
+    return MediaStore.Images.Thumbnails.getThumbnail(
+        context.contentResolver,
+        mediaId,
+        MediaStore.Images.Thumbnails.MINI_KIND,
+        null
+    )
+
+}
+
+fun getMediaIdFromPath(context: Context, filePath: String): Long? {
+    val projection = arrayOf(MediaStore.Images.Media._ID)
+    val selection = "${MediaStore.Images.Media.DATA} = ?"
+    val selectionArgs = arrayOf(filePath)
+
+    return context.contentResolver.query(
+        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+        projection,
+        selection,
+        selectionArgs,
+        null
+    )?.use { cursor ->
+        if (cursor.moveToFirst()) {
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+            cursor.getLong(idColumn)
+        } else {
+            null
+        }
+    }
+}
+
 
 
 // TODO : Investigate the possibility of having a composable builder in the class itself to reduce conditional logic
@@ -121,51 +159,51 @@ fun ImageItem(
     ) {
 
         if (mediaAsset is LocalMedia) {
-            Box {
+            val context = LocalContext.current
+            var thumbnail by remember { mutableStateOf(mediaAsset.thumbnail?.asImageBitmap()) }
 
-                if (mediaAsset.thumbnail != null) {
-                    Image(
-                        bitmap = mediaAsset.thumbnail!!.asImageBitmap(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clickable {
-                                onClick(mediaAsset)
-                            }
-                    )
-                } else {
-                    val context = LocalContext.current
-                    val model = ImageRequest.Builder(context)
-                        .data(mediaAsset.path)
-                        .size(120)
-                        .scale(Scale.FILL)
-                        .build()
-                    AsyncImage(
-                        model = model,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clickable {
-                                onClick(mediaAsset)
-                            }
-                    )
-                }
-
-                if (mediaAsset.remoteId != null) {
-                    Icon(
-                        imageVector = ImageVector.vectorResource(id = R.drawable.cloudcheck),
-                        contentDescription = null,
-                        tint = colorScheme.tertiary,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .align(Alignment.TopEnd)
-                            .padding(horizontal = 4.dp, vertical = 4.dp)
-                    )
+            
+            LaunchedEffect(mediaAsset) {
+                if (mediaAsset.thumbnail == null) {
+                    withContext(Dispatchers.IO) {
+                        val mediaId = getMediaIdFromPath(context, mediaAsset.path)
+                        if (mediaId != null) {
+                            val bitmap = getThumbnail(context, mediaId)
+                            mediaAsset.thumbnail = bitmap
+                            thumbnail = bitmap?.asImageBitmap()
+                        }
+                    }
                 }
             }
+
+
+            if (thumbnail != null) {
+                Image(
+                    bitmap = thumbnail!!,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable { onClick(mediaAsset) }
+                )
+            } else {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+
+            if (mediaAsset.remoteId != null) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(id = R.drawable.cloudcheck),
+                    contentDescription = null,
+                    tint = colorScheme.tertiary,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .align(Alignment.TopEnd)
+                        .padding(horizontal = 4.dp, vertical = 4.dp)
+                )
+            }
+
+
         } else if (mediaAsset is RemoteMedia) {
             val remoteAsset: RemoteMedia = mediaAsset
             var imageUrl by remember { mutableStateOf<String?>(null) }
