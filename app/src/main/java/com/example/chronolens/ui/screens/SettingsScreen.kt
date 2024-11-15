@@ -88,8 +88,8 @@ fun SettingsListItem(
     ListItem(
         leadingContent = {
             Icon(
-                painter = painterResource(id = R.drawable.harddrives),
-                contentDescription = "",
+                painter = painterResource(id = setting.icon),
+                contentDescription = null,
                 tint = Color.White,
             )
         },
@@ -109,28 +109,4 @@ fun SettingsListItem(
     )
 }
 
-// TODO: decide which one to use
-@Composable
-fun SettingsListItem2(
-    setting: SettingsItem,
-    navController: NavController
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                navController.navigate(setting.nav.name)
-            },
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.harddrives),
-            contentDescription = null,
-            tint = Color.White
-        )
-        Column {
-            Text(stringResource(setting.title))
-            Text(stringResource(setting.description))
-        }
-    }
-}
+

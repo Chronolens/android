@@ -8,7 +8,7 @@ import org.json.JSONObject
 
 abstract class Person(
     @Transient open var photoLink: String,
-    @Transient open var bounding_box: List<Float>,
+    @Transient open var bounding_box: List<Int>,
 ) {
     @Composable
     abstract fun BuildCard()
@@ -18,7 +18,7 @@ data class KnownPerson(
     var personId: Int,
     var name: String,
     override var photoLink: String,
-    override var bounding_box: List<Float>
+    override var bounding_box: List<Int>
 ) : Person(photoLink, bounding_box) {
 
     @Composable
@@ -33,13 +33,13 @@ data class KnownPerson(
             val personId = personJson.optInt("face_id")
             val name = personJson.optString("name", "")
             val photoLink = personJson.optString("photo_link", "")
-            val boundingBoxArray = personJson.optJSONArray("bounding_box")
+            val boundingBoxArray = personJson.optJSONArray("bbox")
 
 
-            val boundingBox = mutableListOf<Float>()
+            val boundingBox = mutableListOf<Int>()
             if (boundingBoxArray != null) {
                 for (i in 0 until boundingBoxArray.length()) {
-                    boundingBox.add(boundingBoxArray.getDouble(i).toFloat())
+                    boundingBox.add(boundingBoxArray.getDouble(i).toInt())
                 }
             }
 
@@ -52,7 +52,7 @@ data class KnownPerson(
 data class UnknownPerson(
     var clusterId: Int,
     override var photoLink: String,
-    override var bounding_box: List<Float>
+    override var bounding_box: List<Int>
 ) : Person(photoLink, bounding_box) {
 
     @Composable
@@ -66,13 +66,13 @@ data class UnknownPerson(
         fun fromJson(personJson: JSONObject): UnknownPerson {
             val clusterId = personJson.optInt("cluster_id")
             val photoLink = personJson.optString("photo_link", "")
-            val boundingBoxArray = personJson.optJSONArray("bounding_box")
+            val boundingBoxArray = personJson.optJSONArray("bbox")
 
 
-            val boundingBox = mutableListOf<Float>()
+            val boundingBox = mutableListOf<Int>()
             if (boundingBoxArray != null) {
                 for (i in 0 until boundingBoxArray.length()) {
-                    boundingBox.add(boundingBoxArray.getDouble(i).toFloat())
+                    boundingBox.add(boundingBoxArray.getDouble(i).toInt())
                 }
             }
 

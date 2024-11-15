@@ -17,12 +17,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import android.graphics.Bitmap
 import android.media.ExifInterface
+import com.example.chronolens.models.Person
+import com.example.chronolens.utils.APIUtils
 import java.io.File
 import java.io.IOException
 
 data class MediaGridState(
     val media: List<MediaAsset> = listOf(),
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+
+    val people: List<Person> = listOf()
 )
 
 data class FullscreenImageState(
@@ -47,6 +51,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         viewModelScope.launch {
             loadMediaGrid()
             setIsLoaded()
+            loadPeople()
         }
     }
 
@@ -187,4 +192,15 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+    fun loadPeople() {
+        viewModelScope.launch {
+
+            val peopleThumbnails = mediaGridRepository.apiGetPeople()
+            _mediaGridState.update { currState ->
+                currState.copy(
+                    people = peopleThumbnails
+                )
+            }
+        }
+    }
 }

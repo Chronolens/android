@@ -327,59 +327,64 @@ class APIUtils {
             }
         }
 
-    }
 
+        suspend fun getPeople(sharedPreferences: SharedPreferences): List<Person> =
+            withContext(Dispatchers.IO) {
 
+                Log.i("APIUtils", "getPeople")
+                sharedPreferences.getString(Prefs.SERVER, "")?.let { Log.i("APIUtils", it) }
+                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")?.let { Log.i("APIUtils", it) }
 
-    suspend fun getPeople(sharedPreferences: SharedPreferences): List<Person> = withContext(Dispatchers.IO) {
+                val server = sharedPreferences.getString(Prefs.SERVER, "")
+                val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
+                    ?: return@withContext emptyList()
 
-        val server = sharedPreferences.getString(Prefs.SERVER, "")
-        val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-            ?: return@withContext emptyList()
+                val url = "$server/faces".toHttpUrlOrNull()!!.newBuilder()
+                    .build().toUrl()
 
-        val url = "$server/people".toHttpUrlOrNull()!!.newBuilder()
-            .build().toUrl()
-
-        val connection = (url.openConnection() as HttpURLConnection).apply {
-            setRequestProperty("Authorization", "Bearer $accessToken")
-            setRequestProperty("Accept", "application/json")
-            requestMethod = "GET"
-        }
-
-        try {
-            val responseCode = connection.responseCode
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                connection.inputStream.use { inputStream ->
-                    val responseJson = JSONObject(inputStream.bufferedReader().readText())
-                    val knownPeople = responseJson.getJSONArray("faces")
-                    val unknownPeople = responseJson.getJSONArray("clusters")
-
-                    val peopleList = mutableListOf<Person>()
-
-                    for (i in 0 until knownPeople.length()) {
-                        val personJson = knownPeople.getJSONObject(i)
-                        val person = KnownPerson.fromJson(personJson)
-                        peopleList.add(person)
-                    }
-
-                    for (i in 0 until unknownPeople.length()) {
-                        val personJson = unknownPeople.getJSONObject(i)
-                        val person = UnknownPerson.fromJson(personJson)
-                        peopleList.add(person)
-                    }
-
-                    println(peopleList)
-                    return@use peopleList
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    setRequestProperty("Authorization", "Bearer $accessToken")
+                    setRequestProperty("Accept", "application/json")
+                    requestMethod = "GET"
                 }
-            } else {
-                emptyList()
+
+                try {
+                    val responseCode = connection.responseCode
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        connection.inputStream.use { inputStream ->
+                            val responseJson = JSONObject(inputStream.bufferedReader().readText())
+                            val knownPeople = responseJson.getJSONArray("faces")
+                            val unknownPeople = responseJson.getJSONArray("clusters")
+
+                            Log.i("APIUtils", responseJson.toString())
+                            val peopleList = mutableListOf<Person>()
+
+                            for (i in 0 until knownPeople.length()) {
+                                val personJson = knownPeople.getJSONObject(i)
+                                val person = KnownPerson.fromJson(personJson)
+                                peopleList.add(person)
+                            }
+
+                            for (i in 0 until unknownPeople.length()) {
+                                val personJson = unknownPeople.getJSONObject(i)
+                                val person = UnknownPerson.fromJson(personJson)
+                                peopleList.add(person)
+                            }
+
+                            println(peopleList)
+                            return@use peopleList
+                        }
+                    } else {
+                        emptyList()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    emptyList()
+                } finally {
+                    connection.disconnect()
+                }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            emptyList()
-        } finally {
-            connection.disconnect()
-        }
+
     }
 
 }

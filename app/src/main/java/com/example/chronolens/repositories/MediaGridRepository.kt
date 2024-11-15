@@ -8,6 +8,7 @@ import com.example.chronolens.database.ChecksumDao
 import com.example.chronolens.database.RemoteAssetDao
 import com.example.chronolens.database.RemoteAssetDb
 import com.example.chronolens.models.LocalMedia
+import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.utils.ChecksumUtils
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +43,10 @@ class MediaGridRepository(
         return withContext(Dispatchers.IO) {
             APIUtils.getFullImage(sharedPreferences, id)
         }
+    }
+
+    suspend fun apiGetPeople(): List<Person> {
+        return APIUtils.getPeople(sharedPreferences)
     }
 
     suspend fun dbStoreChecksumInDatabase(localId: String, checksum: String) {

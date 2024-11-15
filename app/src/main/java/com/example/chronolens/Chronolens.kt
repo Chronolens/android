@@ -126,6 +126,7 @@ fun ChronoLens() {
                 composable(ChronolensNav.Albums.name) {
                     AlbumsScreen(
                         viewModel = mediaGridScreenViewModel,
+                        state = mediaGridScreenState,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
