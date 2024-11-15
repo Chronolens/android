@@ -1,7 +1,9 @@
 package com.example.chronolens.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,12 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.crossfade
+import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.Person
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
@@ -35,13 +37,13 @@ import com.example.chronolens.viewModels.MediaGridState
 
 // TODO: The current method is to get the people albums from the server at the start of mediagridstate
 
+
 @Composable
 fun AlbumsScreen(
     viewModel: MediaGridScreenViewModel,
     state: State<MediaGridState>,
     modifier: Modifier = Modifier,
 ) {
-
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -61,7 +63,7 @@ fun AlbumsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-
+        // PEOPLE section
         item {
             Text(
                 text = "People",
@@ -70,8 +72,8 @@ fun AlbumsScreen(
             )
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 8.dp),
-                modifier = Modifier.height(88.dp)
+                contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 12.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 items(state.value.people) { person ->
                     PersonPhotoCard(person)
@@ -81,10 +83,7 @@ fun AlbumsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-
-
-
-
+        // System folders / albums section
         item {
             Text(
                 text = "System Folders",
@@ -110,8 +109,7 @@ fun AlbumsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-
-
+        // Albums section - POSSIBLY REMOVE DUE TO LACK OF TIME
         item {
             Text(
                 text = "Albums",
@@ -134,32 +132,44 @@ fun AlbumsScreen(
                 }
             }
         }
-
     }
 }
 
 @Composable
 fun PersonPhotoCard(person: Person) {
-    // Display the photo for both KnownPerson and UnknownPerson as a square image
-    Box(
-        modifier = Modifier
-            .size(88.dp), // Ensures the box is square
-        contentAlignment = Alignment.Center
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(horizontal = 4.dp)
     ) {
-        // Use AsyncImage to load the image from the photoLink
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(person.photoLink)
-                .crossfade(true)
-                .build(),
-            contentDescription = "Person Photo",
+
+        Box(
             modifier = Modifier
-                .fillMaxSize() // Fills the Box
-                .clip(RectangleShape), // Ensures image stays within the square bounds
-            contentScale = ContentScale.Crop // Crop to fit the square
-        )
+                .size(88.dp)
+                .clip(RectangleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            person.photoBitmap?.let { bitmap ->
+                Image(
+                    painter = BitmapPainter(bitmap.asImageBitmap()),
+                    contentDescription = "Person Photo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } ?: Text("No Image")
+        }
+
+        if (person is KnownPerson) {
+            Text(
+                text = person.name,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
     }
 }
+
 
 
 @Composable
