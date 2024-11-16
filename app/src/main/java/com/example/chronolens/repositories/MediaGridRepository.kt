@@ -107,4 +107,8 @@ class MediaGridRepository(
         checksumDao.insertChecksum(checksumDb)
         return checksum
     }
+
+    fun apiGetPersonPhotos(faceId: Int, type: String): List<RemoteMedia> {
+        return APIUtils.getPersonPhotos(sharedPreferences, faceId, type)
+    }
 }

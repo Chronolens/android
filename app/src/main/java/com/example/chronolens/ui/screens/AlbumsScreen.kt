@@ -1,6 +1,7 @@
 package com.example.chronolens.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,8 +30,11 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.Person
+import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
 
@@ -41,6 +45,7 @@ import com.example.chronolens.viewModels.MediaGridState
 @Composable
 fun AlbumsScreen(
     viewModel: MediaGridScreenViewModel,
+    navController: NavController,
     state: State<MediaGridState>,
     modifier: Modifier = Modifier,
 ) {
@@ -76,7 +81,10 @@ fun AlbumsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 items(state.value.people) { person ->
-                    PersonPhotoCard(person)
+                    PersonItem(viewModel,person) {
+                        viewModel.updateCurrentPerson(it)
+                        navController.navigate(ChronolensNav.PersonPhotoGrid.name)
+                    }
                 }
             }
 
@@ -136,10 +144,15 @@ fun AlbumsScreen(
 }
 
 @Composable
-fun PersonPhotoCard(person: Person) {
+fun PersonItem (
+    viewModel: MediaGridScreenViewModel,
+    person: Person,
+    onClick: (Person) -> Unit
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(horizontal = 4.dp)
+        modifier = Modifier.padding(horizontal = 4.dp).clickable { onClick(person) }
+
     ) {
 
         Box(

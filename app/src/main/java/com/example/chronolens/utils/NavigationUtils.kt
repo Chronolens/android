@@ -5,6 +5,7 @@ enum class ChronolensNav {
     MediaGrid,
     FullScreenMedia,
     Albums,
+    PersonPhotoGrid,
     Search,
     Error, // TODO: remove?
     Settings,

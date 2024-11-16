@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
+import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.Person
@@ -29,6 +30,11 @@ data class FullscreenImageState(
     val currentMedia: MediaAsset? = null
 )
 
+data class PersonPhotoGridState(
+    val person: Person? = null,
+    val people: List<RemoteMedia> = listOf()
+)
+
 
 class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
 
@@ -37,6 +43,9 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     private val _fullscreenImageState = MutableStateFlow(FullscreenImageState())
     val fullscreenImageState: StateFlow<FullscreenImageState> = _fullscreenImageState.asStateFlow()
+
+    private val _personPhotoGridState = MutableStateFlow(PersonPhotoGridState())
+    val personPhotoGridState: StateFlow<PersonPhotoGridState> = _personPhotoGridState.asStateFlow()
 
     private val syncManager = SyncManager(mediaGridRepository)
     private var remoteAssets: List<RemoteMedia> = mutableListOf()
@@ -118,6 +127,17 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+    fun updateCurrentPerson(person: Person) {
+        _personPhotoGridState.update { currState ->
+            currState.copy(
+                person = person
+            )
+        }
+    }
+
+
+
+
     fun uploadMedia(localMedia: LocalMedia) {
         viewModelScope.launch(Dispatchers.IO) {
             val remoteId: String? = mediaGridRepository.apiUploadFileStream(localMedia)
@@ -158,6 +178,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+
     private fun setIsLoading() {
         viewModelScope.launch {
             _mediaGridState.update { currState ->
@@ -175,7 +196,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-    fun loadPeople() {
+    private fun loadPeople() {
         viewModelScope.launch {
 
             val peopleThumbnails = mediaGridRepository.apiGetPeople()

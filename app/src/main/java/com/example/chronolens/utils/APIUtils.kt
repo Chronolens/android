@@ -385,6 +385,10 @@ class APIUtils {
                 }
             }
 
+        fun getPersonPhotos(sharedPreferences: SharedPreferences, faceId: Int, type: String): List<RemoteMedia> {
+            return emptyList()
+        }
+
     }
 
 }
