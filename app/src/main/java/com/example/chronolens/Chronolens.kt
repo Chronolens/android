@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.core.app.Person
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,6 +27,7 @@ import com.example.chronolens.ui.screens.settings.BackgroundUploadScreen
 import com.example.chronolens.ui.screens.FullscreenMediaView
 import com.example.chronolens.ui.screens.LoginScreen
 import com.example.chronolens.ui.screens.MediaGridScreen
+import com.example.chronolens.ui.screens.PersonPhotoGrid
 import com.example.chronolens.ui.screens.SearchScreen
 import com.example.chronolens.ui.screens.SettingsScreen
 import com.example.chronolens.ui.screens.settings.ActivityHistoryScreen
@@ -33,6 +35,7 @@ import com.example.chronolens.ui.screens.settings.MachineLearningScreen
 import com.example.chronolens.ui.theme.ChronoLensTheme
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.PersonPhotoGridState
 import com.example.chronolens.viewModels.UserViewModel
 import com.example.chronolens.viewModels.ViewModelProvider
 import com.example.chronolens.viewModels.WorkManagerViewModel
@@ -45,11 +48,14 @@ fun ChronoLens() {
 
         val userViewModel: UserViewModel = viewModel(factory = ViewModelProvider.Factory)
         val userState = userViewModel.userState.collectAsState()
+
         val mediaGridScreenViewModel: MediaGridScreenViewModel =
             viewModel(factory = ViewModelProvider.Factory)
         val mediaGridScreenState = mediaGridScreenViewModel.mediaGridState.collectAsState()
         val fullscreenMediaState =
             mediaGridScreenViewModel.fullscreenImageState.collectAsState()
+        val personPhotoGridState =
+            mediaGridScreenViewModel.personPhotoGridState.collectAsState()
         val workManagerViewModel: WorkManagerViewModel =
             viewModel(factory = ViewModelProvider.Factory)
 
@@ -126,7 +132,17 @@ fun ChronoLens() {
                 composable(ChronolensNav.Albums.name) {
                     AlbumsScreen(
                         viewModel = mediaGridScreenViewModel,
+                        navController = navController,
                         state = mediaGridScreenState,
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
+
+                composable(ChronolensNav.PersonPhotoGrid.name) {
+                    PersonPhotoGrid(
+                        viewModel = mediaGridScreenViewModel,
+                        personPhotoGridState = personPhotoGridState,
+                        navController = navController,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
