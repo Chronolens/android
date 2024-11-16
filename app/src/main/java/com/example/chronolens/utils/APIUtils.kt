@@ -327,7 +327,6 @@ class APIUtils {
             }
         }
 
-
         suspend fun getPeople(sharedPreferences: SharedPreferences): List<Person> =
             withContext(Dispatchers.IO) {
 
@@ -385,18 +384,32 @@ class APIUtils {
                 }
             }
 
-        fun getPersonPhotos(sharedPreferences: SharedPreferences, faceId: Int, type: String): List<RemoteMedia> {
-            val server = sharedPreferences.getString(Prefs.SERVER, "")
-            val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-            val url = "$server/faces/$faceId/$type"
+        suspend fun getPersonPhotos(
+            sharedPreferences: SharedPreferences,
+            personId: Int,
+            type: String
+        ): List<RemoteMedia> = withContext(Dispatchers.IO) {
+            val jwtToken =
+                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
+                    ?: return@withContext emptyList()
+            val server =
+                sharedPreferences.getString(Prefs.SERVER, "") ?: return@withContext emptyList()
+            val url = "$server/$type/$personId"
+
+            Log.i("APIUtils", url)
+            Log.i("APIUtils", "Initializing request for testing only aaaaaaaaaaaaaa")
+            Log.i("APIUtils", jwtToken)
+            Log.i("APIUtils", server)
+            Log.i("APIUtils", personId.toString())
+            Log.i("APIUtils", type)
 
             val connection = (URL(url).openConnection() as HttpURLConnection).apply {
-                setRequestProperty("Authorization", "Bearer $accessToken")
+                setRequestProperty("Authorization", "Bearer $jwtToken")
                 setRequestProperty("Accept", "application/json")
                 requestMethod = "GET"
             }
 
-            return try {
+            try {
                 val responseCode = connection.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     connection.inputStream.use { inputStream ->
@@ -421,7 +434,6 @@ class APIUtils {
                 connection.disconnect()
             }
         }
-
     }
 
 }

@@ -130,7 +130,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     fun updateCurrentPersonPhotoGrid(person: Person) {
         viewModelScope.launch {
-            val requestType = if (person is KnownPerson) "known" else "unknown"
+            val requestType = if (person is KnownPerson) "face" else "cluster"
 
             val photoList = mediaGridRepository.apiGetPersonPhotos(person.personId, requestType)
             _personPhotoGridState.update { currState ->

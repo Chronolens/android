@@ -108,7 +108,7 @@ class MediaGridRepository(
         return checksum
     }
 
-    fun apiGetPersonPhotos(faceId: Int, type: String): List<RemoteMedia> {
+    suspend fun apiGetPersonPhotos(faceId: Int, type: String): List<RemoteMedia> {
         return APIUtils.getPersonPhotos(sharedPreferences, faceId, type)
     }
 }
