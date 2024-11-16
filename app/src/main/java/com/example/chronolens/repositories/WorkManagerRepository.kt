@@ -49,13 +49,6 @@ class WorkManagerRepository(
             repeatInterval = Duration.ofMinutes(period),
         ).setConstraints(constraints).setInputData(data.build())
 
-//        if (startNow) {
-//            job.setInitialDelay(Duration.ofSeconds(period))
-//            .build()
-//        } else {
-//            job.build()
-//        }
-
         // TODO: ExistingPeriodicWorkPolicy??
         workManager.enqueueUniquePeriodicWork(
             Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, job.build()
@@ -63,6 +56,7 @@ class WorkManagerRepository(
         return workManager.getWorkInfosForUniqueWorkFlow(Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME)
     }
 
+    // TODO: delete notification
     fun cancelPeriodicBackgroundSync() {
         workManager.cancelUniqueWork(Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME)
     }
@@ -84,6 +78,14 @@ class WorkManagerRepository(
     companion object {
         var syncManager: SyncManager? = null
             private set
+    }
+
+    fun getPeriodicWorkInfo(): Flow<MutableList<WorkInfo>> {
+        return workManager.getWorkInfosForUniqueWorkFlow(Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME)
+    }
+
+    fun getOneTimeWorkInfo(): Flow<MutableList<WorkInfo>> {
+        return workManager.getWorkInfosForUniqueWorkFlow(Work.ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME)
     }
 
 }

@@ -22,6 +22,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -37,30 +38,30 @@ import androidx.compose.ui.unit.dp
 import androidx.work.WorkInfo
 import com.example.chronolens.R
 import com.example.chronolens.ui.components.AlertConfirmDialog
+import com.example.chronolens.viewModels.WorkManagerState
 import com.example.chronolens.viewModels.WorkManagerViewModel
 
 @Composable
 fun BackgroundUploadScreen(
     modifier: Modifier = Modifier,
     workManager: WorkManagerViewModel,
-    isLoading: State<Boolean>,
-    workInfo: State<WorkInfo.State?>
+    workManagerState: State<WorkManagerState>
 
 ) {
     var requireWifi by remember { mutableStateOf(true) }
     var requireCharging by remember { mutableStateOf(false) }
-    var since by remember { mutableStateOf(null) }
+    var since by remember { mutableLongStateOf(-1) }
     var includeVideos by remember { mutableStateOf(false) }
     var period by remember { mutableLongStateOf(15) } // minimum is 15 minutes
-    val periodOptions = listOf(15, 30, 45, 60, 90, 120, 240, 480, 1440)
+    val periodOptions: List<Long> = listOf(15, 30, 45, 60, 90, 120, 240, 480, 1440)
 
     val uploadNowVisible = remember { mutableStateOf(false) }
     val periodicUploadVisible = remember { mutableStateOf(false) }
 
     if (uploadNowVisible.value) {
         AlertConfirmDialog(
-            title = "Upload everything now",
-            text = "Are you sure bro?",
+            title = stringResource(R.string.upload_now),
+            text = stringResource(R.string.upload_now_desc),
             confirmOption = workManager::oneTimeBackgroundSync,
             visible = uploadNowVisible
         )
@@ -68,14 +69,14 @@ fun BackgroundUploadScreen(
 
     if (periodicUploadVisible.value) {
         AlertConfirmDialog(
-            title = "Periodic Upload",
-            text = "Are you sure bro?",
+            title = stringResource(R.string.upload_periodic),
+            text = stringResource(R.string.upload_periodic_desc, formatTime(period)),
             confirmOption = {
                 workManager.periodicBackgroundSync(
                     period = period,
                     requireWifi = requireWifi,
                     requireCharging = requireCharging,
-                    since = 0,
+                    since = since,
                     includeVideos = includeVideos,
                     startNow = false
                 )
@@ -91,48 +92,123 @@ fun BackgroundUploadScreen(
     ) {
         item {
             Column {
-                Text(text = workInfo.value.toString())
+                Text(text = workManagerState.value.oneTimeWorkInfoState.toString())
                 BackgroundUploadOption(
                     icon = Icons.Outlined.Check,
                     title = stringResource(R.string.background_uploads_now),
                     description = stringResource(R.string.background_uploads_now_desc),
                 )
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    if (isLoading.value) {
-                        CircularProgressIndicator()
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(onClick = workManager::cancelOneTimeBackgroundSync) {
-                            Text("Cancel")
-                        }
-                    } else {
-                        Button(
-                            onClick = { uploadNowVisible.value = true }
-                        ) {
-                            Text("Start")
-                        }
-                    }
-                }
+                StartCancelOneTimeRow(
+                    state = workManagerState,
+                    visible = uploadNowVisible,
+                    cancel = workManager::cancelOneTimeBackgroundSync
+                )
             }
         }
 
         item {
+
+            //val enable =
+            //    (periodicWorkInfo.value == WorkInfo.State.CANCELLED || periodicWorkInfo.value == null || periodicWorkInfo.value == WorkInfo.State.BLOCKED || periodicWorkInfo.value == WorkInfo.State.FAILED)
             Spacer(modifier = Modifier.height(24.dp))
             BackgroundUploadOption(
                 icon = Icons.Outlined.Check,
                 title = stringResource(R.string.background_uploads_periodic),
                 description = stringResource(R.string.background_uploads_periodic_desc),
+            )
 
-                )
+            DropdownMenuPicker(
+                label = stringResource(R.string.period),
+                options = periodOptions,
+                selectedOption = period,
+                onOptionSelected = { period = it }
+            )
+            ToggleOptionRow(
+                label = stringResource(R.string.require_wifi),
+                checked = requireWifi,
+                onCheckedChange = { requireWifi = it }
+            )
 
-            DropdownMenuPicker("period", periodOptions, period.toInt()) { period = it.toLong() }
-            ToggleOptionRow("Wi-Fi only?", requireWifi) { requireWifi = it }
-            ToggleOptionRow("Requires Charging?", requireCharging) { requireCharging = it }
-            SettingsOptionRow("Upload Since", since ?: "ALL")
-            ToggleOptionRow("Include Videos?", includeVideos) { includeVideos = it }
-            Button(onClick = { periodicUploadVisible.value = true }) {
+            ToggleOptionRow(
+                label = stringResource(R.string.require_charging),
+                checked = requireCharging,
+                onCheckedChange = { requireCharging = it }
+            )
+            ToggleOptionRow(
+                label = stringResource(R.string.include_videos),
+                checked = includeVideos,
+                onCheckedChange = { includeVideos = it }
+            )
+            Text(text = workManagerState.value.periodicWorkInfoState.toString())
+            StartCancelPeriodicRow(
+                state = workManagerState,
+                visible = periodicUploadVisible,
+                cancel = workManager::cancelPeriodicBackgroundSync
+            )
+        }
+    }
+}
+
+@Composable
+fun StartCancelOneTimeRow(
+    state: State<WorkManagerState>,
+    cancel: () -> Unit,
+    visible: MutableState<Boolean>
+
+) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        if (state.value.isLoading) {
+            CircularProgressIndicator()
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = cancel) {
+                Text(stringResource(R.string.cancel))
+            }
+        } else {
+            Button(
+                onClick = { visible.value = true }
+            ) {
                 Text(stringResource(R.string.start))
             }
         }
+    }
+}
+
+@Composable
+fun StartCancelPeriodicRow(
+    state: State<WorkManagerState>,
+    cancel: () -> Unit,
+    visible: MutableState<Boolean>
+
+) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+
+        if (state.value.isReady) {
+            // Start
+            Button(
+                onClick = { visible.value = true }
+            ) {
+                Text(stringResource(R.string.start))
+            }
+        } else {
+            Button(onClick = cancel) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+
+
+//        if (state.value == WorkInfo.State.RUNNING) {
+//            CircularProgressIndicator()
+//            Spacer(modifier = Modifier.width(8.dp))
+//            Button(onClick = cancel) {
+//                Text(stringResource(R.string.cancel))
+//            }
+//        } else {
+//            Button(
+//                onClick = { visible.value = true }
+//            ) {
+//                Text(stringResource(R.string.start))
+//            }
+//        }
     }
 }
 
@@ -140,9 +216,9 @@ fun BackgroundUploadScreen(
 @Composable
 fun DropdownMenuPicker(
     label: String,
-    options: List<Int>,
-    selectedOption: Int,
-    onOptionSelected: (Int) -> Unit
+    options: List<Long>,
+    selectedOption: Long,
+    onOptionSelected: (Long) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -207,21 +283,6 @@ fun BackgroundUploadOption(
 }
 
 @Composable
-fun SettingsOptionRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label)
-        Spacer(modifier = Modifier.weight(1f))
-        Text(value)
-    }
-}
-
-@Composable
 fun ToggleOptionRow(
     label: String,
     checked: Boolean,
@@ -243,15 +304,15 @@ fun ToggleOptionRow(
     }
 }
 
-// TODO: use string values from the xml
-private fun formatTime(minutes: Int): String {
+@Composable
+private fun formatTime(minutes: Long): String {
 
     val h = minutes / 60
     val m = minutes % 60
 
     var formatedTime = ""
-    if (h != 0) formatedTime += "$h h "
-    if (m != 0) formatedTime += "$m min"
+    if (h != 0L) formatedTime += stringResource(R.string.formatted_hour, h)
+    if (m != 0L) formatedTime += stringResource(R.string.formatted_minute, m)
 
     return formatedTime
 }

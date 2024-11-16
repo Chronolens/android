@@ -52,8 +52,7 @@ fun ChronoLens() {
             mediaGridScreenViewModel.fullscreenImageState.collectAsState()
         val workManagerViewModel: WorkManagerViewModel =
             viewModel(factory = ViewModelProvider.Factory)
-        val workManagerState = workManagerViewModel.isLoading.collectAsState()
-        val workInfoState = workManagerViewModel.workInfoState.collectAsState()
+        val workManagerState = workManagerViewModel.workManagerState.collectAsState()
 
 
         val backStackEntry by navController.currentBackStackEntryAsState()
@@ -159,8 +158,7 @@ fun ChronoLens() {
                     BackgroundUploadScreen(
                         modifier = Modifier.padding(innerPadding),
                         workManager = workManagerViewModel,
-                        isLoading = workManagerState,
-                        workInfo = workInfoState
+                        workManagerState = workManagerState
                     )
                 }
 

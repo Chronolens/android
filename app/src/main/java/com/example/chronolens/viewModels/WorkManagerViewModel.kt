@@ -6,18 +6,38 @@ import androidx.work.WorkInfo
 import com.example.chronolens.repositories.WorkManagerRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+data class WorkManagerState(
+    val isLoading: Boolean = false,
+    val isReady: Boolean = false,
+    val nextJob: Long? = null,
+    val oneTimeWorkInfoState: WorkInfo.State? = null,
+    val periodicWorkInfoState: WorkInfo.State? = null
+)
 
 // TODO: clear notification here?
 class WorkManagerViewModel(private val workManagerRepository: WorkManagerRepository) : ViewModel() {
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    private val _workManagerState = MutableStateFlow(WorkManagerState())
+    val workManagerState: StateFlow<WorkManagerState> = _workManagerState
 
-    private val _workInfoState = MutableStateFlow<WorkInfo.State?>(null)
-    val workInfoState: StateFlow<WorkInfo.State?> = _workInfoState
+    init {
+        viewModelScope.launch {
+            workManagerRepository.getPeriodicWorkInfo().collect { workInfoList ->
+                // Assuming only one job, otherwise this breaks
+                val workInfo = workInfoList.firstOrNull()
+                _workManagerState.update { currState ->
+                    currState.copy(
+                        periodicWorkInfoState = workInfo?.state,
+                        nextJob = workInfo?.nextScheduleTimeMillis,
+                        isReady = !(workInfo?.state == WorkInfo.State.RUNNING || workInfo?.state == WorkInfo.State.ENQUEUED)
+                    )
+                }
+            }
+        }
+    }
 
     fun periodicBackgroundSync(
         period: Long,
@@ -27,28 +47,40 @@ class WorkManagerViewModel(private val workManagerRepository: WorkManagerReposit
         includeVideos: Boolean,
         startNow: Boolean
     ) {
-        workManagerRepository.periodicBackgroundSync(
-            period = period,
-            requireWifi = requireWifi,
-            requireCharging = requireCharging,
-            since = since,
-            includeVideos = includeVideos,
-            startNow = startNow
-        )
+        viewModelScope.launch {
+            workManagerRepository.periodicBackgroundSync(
+                period = period,
+                requireWifi = requireWifi,
+                requireCharging = requireCharging,
+                since = since,
+                includeVideos = includeVideos,
+                startNow = startNow
+            )/*.collect { workInfoList ->
+                // Assuming only one job, otherwise this breaks
+                val workInfo = workInfoList.firstOrNull()
+                _workManagerState.update { currState ->
+                    currState.copy(
+                        periodicWorkInfoState = workInfo?.state,
+                        nextJob = workInfo?.nextScheduleTimeMillis,
+                        isReady = !(workInfo?.state == WorkInfo.State.RUNNING || workInfo?.state == WorkInfo.State.ENQUEUED)
+                    )
+                }
+            }*/
+        }
 
     }
 
     fun oneTimeBackgroundSync() {
-
         viewModelScope.launch {
             workManagerRepository.oneTimeBackgroundSync()
-                .map { workInfoList ->
-                    // Assuming only one job, otherwise this breaks
-                    workInfoList.firstOrNull()?.state
-                }
-                .collect { state ->
-                    _workInfoState.value = state
-                    _isLoading.value = (state==WorkInfo.State.RUNNING)
+                .collect { workInfoList ->
+                    val workInfo = workInfoList.firstOrNull()
+                    _workManagerState.update { currState ->
+                        currState.copy(
+                            oneTimeWorkInfoState = workInfo?.state,
+                            isLoading = (workInfo?.state == WorkInfo.State.RUNNING)
+                        )
+                    }
                 }
         }
     }
@@ -60,5 +92,6 @@ class WorkManagerViewModel(private val workManagerRepository: WorkManagerReposit
     fun cancelOneTimeBackgroundSync() {
         workManagerRepository.cancelOneTimeBackgroundSync()
     }
+
 
 }
