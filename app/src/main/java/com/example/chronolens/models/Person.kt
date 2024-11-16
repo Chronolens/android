@@ -10,22 +10,65 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URL
 
+
 abstract class Person(
+    @Transient open var personId: Int,
     @Transient open var photoLink: String,
     @Transient open var bounding_box: List<Int>,
     @Transient open var photoBitmap: Bitmap? = null
 ) {
     @Composable
     abstract fun BuildCard()
+
+    companion object {
+        fun adjustBoundingBox(boundingBox: MutableList<Int>) {
+            val bboxWidth = boundingBox[2] - boundingBox[0]
+            val bboxHeight = boundingBox[3] - boundingBox[1]
+
+            if (bboxWidth > bboxHeight) {
+                val diff = bboxWidth - bboxHeight
+                boundingBox[1] -= diff / 2
+            } else {
+                val diff = bboxHeight - bboxWidth
+                boundingBox[0] -= diff / 2
+            }
+        }
+
+        fun resizeAndCropBitmap(photoBitmap: Bitmap?, boundingBox: List<Int>): Bitmap? {
+            val bboxWidth = boundingBox[2] - boundingBox[0]
+            val bboxHeight = boundingBox[3] - boundingBox[1]
+
+            val croppedBitmap = photoBitmap?.let {
+                Bitmap.createBitmap(it, boundingBox[0], boundingBox[1], bboxWidth, bboxHeight)
+            }
+            photoBitmap?.recycle()
+
+            return croppedBitmap?.let {
+                Bitmap.createScaledBitmap(it, 256, 256, false).also { croppedBitmap.recycle() }
+            }
+        }
+
+        suspend fun fetchImage(url: String): Bitmap? {
+            return withContext(Dispatchers.IO) {
+                try {
+                    val connection = URL(url).openStream()
+                    BitmapFactory.decodeStream(connection)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
+            }
+        }
+    }
 }
 
 data class KnownPerson(
-    var personId: Int,
+    override var personId: Int,
     var name: String,
     override var photoLink: String,
     override var bounding_box: List<Int>,
     override var photoBitmap: Bitmap? = null
-) : Person(photoLink, bounding_box, photoBitmap) {
+) : Person(personId, photoLink, bounding_box, photoBitmap) {
 
     @Composable
     override fun BuildCard() {
@@ -34,7 +77,6 @@ data class KnownPerson(
         }
     }
 
-    // TODO: loading from the json in sequential order is not ideal
     companion object {
         suspend fun fromJson(personJson: JSONObject): KnownPerson {
             val personId = personJson.optInt("face_id")
@@ -42,35 +84,16 @@ data class KnownPerson(
             val photoLink = personJson.optString("photo_link", "")
             val boundingBoxArray = personJson.optJSONArray("bbox")
 
-            val boundingBox = mutableListOf<Int>()
-            if (boundingBoxArray != null) {
-                for (i in 0 until boundingBoxArray.length()) {
-                    boundingBox.add(boundingBoxArray.getDouble(i).toInt())
+            val boundingBox = mutableListOf<Int>().apply {
+                boundingBoxArray?.let {
+                    for (i in 0 until it.length()) add(it.getDouble(i).toInt())
                 }
             }
 
-            val photoBitmap = withContext(Dispatchers.IO) { fetchImage(photoLink) }
+            Person.adjustBoundingBox(boundingBox)
 
-            var bboxWidth = boundingBox[2] - boundingBox[0]
-            var bboxHeight = boundingBox[3] - boundingBox[1]
-
-            if (bboxWidth > bboxHeight) {
-                val diff = bboxWidth - bboxHeight
-                boundingBox[1] -= diff / 2
-//                boundingBox[3] += diff / 2
-                bboxHeight = bboxWidth
-            } else {
-                val diff = bboxHeight - bboxWidth
-                boundingBox[0] -= diff / 2
-//                boundingBox[2] += diff / 2
-                bboxWidth = bboxHeight
-            }
-
-            val croppedBitmap = photoBitmap?.let { Bitmap.createBitmap(it, boundingBox[0], boundingBox[1], bboxWidth, bboxHeight) }
-            photoBitmap?.recycle()
-
-            val resizedBitmap = Bitmap.createScaledBitmap(croppedBitmap!!, 256, 256, false)
-            croppedBitmap.recycle()
+            val photoBitmap = Person.fetchImage(photoLink)
+            val resizedBitmap = Person.resizeAndCropBitmap(photoBitmap, boundingBox)
 
             return KnownPerson(personId, name, photoLink, boundingBox, resizedBitmap)
         }
@@ -78,67 +101,37 @@ data class KnownPerson(
 }
 
 data class UnknownPerson(
-    var clusterId: Int,
+    override var personId: Int,
     override var photoLink: String,
     override var bounding_box: List<Int>,
     override var photoBitmap: Bitmap? = null
-) : Person(photoLink, bounding_box, photoBitmap) {
+) : Person(personId, photoLink, bounding_box, photoBitmap) {
 
     @Composable
     override fun BuildCard() {
         Box {
-            Text(text = "")
+            Text(text = "Unknown Person")
         }
     }
 
     companion object {
         suspend fun fromJson(personJson: JSONObject): UnknownPerson {
-            val clusterId = personJson.optInt("cluster_id")
+            val personId = personJson.optInt("cluster_id")
             val photoLink = personJson.optString("photo_link", "")
             val boundingBoxArray = personJson.optJSONArray("bbox")
 
-            val boundingBox = mutableListOf<Int>()
-            if (boundingBoxArray != null) {
-                for (i in 0 until boundingBoxArray.length()) {
-                    boundingBox.add(boundingBoxArray.getDouble(i).toInt())
+            val boundingBox = mutableListOf<Int>().apply {
+                boundingBoxArray?.let {
+                    for (i in 0 until it.length()) add(it.getDouble(i).toInt())
                 }
             }
 
-            val photoBitmap = withContext(Dispatchers.IO) { fetchImage(photoLink) }
+            Person.adjustBoundingBox(boundingBox)
 
-            var cropWidth = boundingBox[2] - boundingBox[0]
-            var cropHeight = boundingBox[3] - boundingBox[1]
+            val photoBitmap = Person.fetchImage(photoLink)
+            val resizedBitmap = Person.resizeAndCropBitmap(photoBitmap, boundingBox)
 
-            if (cropWidth > cropHeight) {
-                val diff = cropWidth - cropHeight
-                boundingBox[1] -= diff / 2
-//                boundingBox[3] += diff / 2
-                cropHeight = cropWidth
-            } else {
-                val diff = cropHeight - cropWidth
-                boundingBox[0] -= diff / 2
-//                boundingBox[2] += diff / 2
-                cropWidth = cropHeight
-            }
-
-            val croppedBitmap = photoBitmap?.let { Bitmap.createBitmap(it, boundingBox[0], boundingBox[1], cropWidth, cropHeight) }
-            photoBitmap?.recycle()
-
-            val resizedBitmap = Bitmap.createScaledBitmap(croppedBitmap!!, 256, 256, false)
-            croppedBitmap.recycle()
-
-            return UnknownPerson(clusterId, photoLink, boundingBox, resizedBitmap)
+            return UnknownPerson(personId, photoLink, boundingBox, resizedBitmap)
         }
-    }
-}
-
-// Function to fetch an image from a URL and retrieve Bitmap
-private fun fetchImage(url: String): Bitmap? {
-    return try {
-        val connection = URL(url).openStream()
-        BitmapFactory.decodeStream(connection)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
     }
 }
