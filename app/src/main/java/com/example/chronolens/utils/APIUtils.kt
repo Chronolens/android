@@ -386,7 +386,40 @@ class APIUtils {
             }
 
         fun getPersonPhotos(sharedPreferences: SharedPreferences, faceId: Int, type: String): List<RemoteMedia> {
-            return emptyList()
+            val server = sharedPreferences.getString(Prefs.SERVER, "")
+            val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
+            val url = "$server/faces/$faceId/$type"
+
+            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                setRequestProperty("Authorization", "Bearer $accessToken")
+                setRequestProperty("Accept", "application/json")
+                requestMethod = "GET"
+            }
+
+            return try {
+                val responseCode = connection.responseCode
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    connection.inputStream.use { inputStream ->
+                        val response = inputStream.bufferedReader().readText()
+                        val mediaArray = JSONArray(response)
+
+                        val mediaList = mutableListOf<RemoteMedia>()
+                        for (i in 0 until mediaArray.length()) {
+                            val mediaJson = mediaArray.getJSONObject(i)
+                            mediaList.add(RemoteMedia.fromJson(mediaJson))
+                        }
+
+                        mediaList
+                    }
+                } else {
+                    emptyList()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                emptyList()
+            } finally {
+                connection.disconnect()
+            }
         }
 
     }

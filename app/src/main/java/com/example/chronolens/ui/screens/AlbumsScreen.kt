@@ -82,7 +82,7 @@ fun AlbumsScreen(
             ) {
                 items(state.value.people) { person ->
                     PersonItem(viewModel,person) {
-                        viewModel.updateCurrentPerson(it)
+                        viewModel.updateCurrentPersonPhotoGrid(it)
                         navController.navigate(ChronolensNav.PersonPhotoGrid.name)
                     }
                 }

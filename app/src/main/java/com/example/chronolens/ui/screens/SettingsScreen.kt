@@ -31,9 +31,9 @@ import com.example.chronolens.viewModels.UserState
 
 @Composable
 fun SettingsScreen(
-    modifier: Modifier,
     state: State<UserState>,
-    navController: NavController
+    navController: NavController,
+    modifier: Modifier
 ) {
     LazyColumn(
         modifier = modifier

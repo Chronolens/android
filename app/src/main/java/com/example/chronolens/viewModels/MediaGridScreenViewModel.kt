@@ -32,7 +32,7 @@ data class FullscreenImageState(
 
 data class PersonPhotoGridState(
     val person: Person? = null,
-    val people: List<RemoteMedia> = listOf()
+    val photos: List<RemoteMedia> = listOf()
 )
 
 
@@ -127,11 +127,18 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-    fun updateCurrentPerson(person: Person) {
-        _personPhotoGridState.update { currState ->
-            currState.copy(
-                person = person
-            )
+
+    fun updateCurrentPersonPhotoGrid(person: Person) {
+        viewModelScope.launch {
+            val requestType = if (person is KnownPerson) "known" else "unknown"
+
+            val photoList = mediaGridRepository.apiGetPersonPhotos(person.personId, requestType)
+            _personPhotoGridState.update { currState ->
+                currState.copy(
+                    person = person,
+                    photos = photoList
+                )
+            }
         }
     }
 

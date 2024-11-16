@@ -153,9 +153,9 @@ fun ChronoLens() {
 
                 composable(ChronolensNav.Settings.name) {
                     SettingsScreen(
-                        modifier = Modifier.padding(innerPadding),
                         state = userState,
-                        navController = navController
+                        navController = navController,
+                        modifier = Modifier.padding(innerPadding)
                     )
                 }
 
