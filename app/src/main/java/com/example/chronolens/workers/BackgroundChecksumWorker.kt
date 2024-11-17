@@ -6,7 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.repositories.WorkManagerRepository
-import com.example.chronolens.utils.Work
+import com.example.chronolens.utils.Notification
 import com.example.chronolens.utils.showFinishedNotification
 import com.example.chronolens.utils.showUploadNotification
 import com.example.chronolens.utils.showSyncNotification
@@ -62,7 +62,7 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
                 updateSyncNotificationProgress(applicationContext, calculated, localMedia.size)
             }
 
-            notificationManager.cancel(1)
+            notificationManager.cancel(Notification.SYNC_CHANNEL_ID.ordinal)
 
             // No media to upload
             if (mediaToUpload.isEmpty()) {
@@ -79,7 +79,7 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
                 updateUploadNotificationProgress(applicationContext, uploaded, mediaToUpload.size)
             }
 
-            notificationManager.cancel(2)
+            notificationManager.cancel(Notification.UPLOAD_CHANNEL_ID.ordinal)
             showFinishedNotification(applicationContext, uploaded)
 
             return Result.success()

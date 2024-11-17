@@ -145,7 +145,7 @@ fun BackgroundUploadScreen(
             Text(text = workManagerState.value.periodicWorkInfoState.toString())
             if (workManagerState.value.nextJob != null) {
                 // get locale for this
-                val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm:ss") //1731851754567
+                val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm:ss")
                 val dateString: String = formatter.format(Date(workManagerState.value.nextJob!!))
                 Text(text = dateString)
             } else {
