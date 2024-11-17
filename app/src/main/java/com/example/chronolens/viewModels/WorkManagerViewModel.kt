@@ -1,5 +1,6 @@
 package com.example.chronolens.viewModels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
@@ -29,9 +30,10 @@ class WorkManagerViewModel(private val workManagerRepository: WorkManagerReposit
                 // Assuming only one job, otherwise this breaks
                 val workInfo = workInfoList.firstOrNull()
                 _workManagerState.update { currState ->
+                    Log.i("WORK",currState.periodicWorkInfoState.toString())
                     currState.copy(
                         periodicWorkInfoState = workInfo?.state,
-                        nextJob = workInfo?.nextScheduleTimeMillis,
+                        nextJob = if (workInfo?.state == WorkInfo.State.ENQUEUED) workInfo.nextScheduleTimeMillis else null,
                         isReady = !(workInfo?.state == WorkInfo.State.RUNNING || workInfo?.state == WorkInfo.State.ENQUEUED)
                     )
                 }
@@ -43,31 +45,18 @@ class WorkManagerViewModel(private val workManagerRepository: WorkManagerReposit
         period: Long,
         requireWifi: Boolean,
         requireCharging: Boolean,
-        since: Long,
-        includeVideos: Boolean,
-        startNow: Boolean
+        requireBatteryNotLow: Boolean,
+        includeVideos: Boolean
     ) {
         viewModelScope.launch {
             workManagerRepository.periodicBackgroundSync(
                 period = period,
                 requireWifi = requireWifi,
                 requireCharging = requireCharging,
-                since = since,
-                includeVideos = includeVideos,
-                startNow = startNow
-            )/*.collect { workInfoList ->
-                // Assuming only one job, otherwise this breaks
-                val workInfo = workInfoList.firstOrNull()
-                _workManagerState.update { currState ->
-                    currState.copy(
-                        periodicWorkInfoState = workInfo?.state,
-                        nextJob = workInfo?.nextScheduleTimeMillis,
-                        isReady = !(workInfo?.state == WorkInfo.State.RUNNING || workInfo?.state == WorkInfo.State.ENQUEUED)
-                    )
-                }
-            }*/
+                requireBatteryNotLow = requireBatteryNotLow,
+                includeVideos = includeVideos
+            )
         }
-
     }
 
     fun oneTimeBackgroundSync() {
@@ -92,6 +81,4 @@ class WorkManagerViewModel(private val workManagerRepository: WorkManagerReposit
     fun cancelOneTimeBackgroundSync() {
         workManagerRepository.cancelOneTimeBackgroundSync()
     }
-
-
 }

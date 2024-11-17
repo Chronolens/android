@@ -11,6 +11,7 @@
     <string name="period">Period</string>
     <string name="require_wifi">Require Wifi</string>
     <string name="require_charging">Require Charging</string>
+    <string name="require_battery_not_low">Require Battery Not Low</string>
     <string name="include_videos">Include Videos</string>
 
 

@@ -33,21 +33,21 @@ class WorkManagerRepository(
         period: Long,
         requireWifi: Boolean,
         requireCharging: Boolean,
-        since: Long,
-        includeVideos: Boolean,
-        startNow: Boolean
+        requireBatteryNotLow: Boolean,
+        includeVideos: Boolean
     ): Flow<MutableList<WorkInfo>> {
 
         val networkType = if (requireWifi) NetworkType.UNMETERED else NetworkType.CONNECTED
-        val data = Data.Builder()
-        data.putLong(Work.SINCE, since)
 
-        val constraints = Constraints.Builder().setRequiredNetworkType(networkType)
-            .setRequiresCharging(requireCharging).setRequiresBatteryNotLow(true).build()
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(networkType)
+            .setRequiresCharging(requireCharging)
+            .setRequiresBatteryNotLow(requireBatteryNotLow)
+            .build()
 
         val job = PeriodicWorkRequestBuilder<BackgroundChecksumWorker>(
             repeatInterval = Duration.ofMinutes(period),
-        ).setConstraints(constraints).setInputData(data.build())
+        ).setConstraints(constraints)
 
         // TODO: ExistingPeriodicWorkPolicy??
         workManager.enqueueUniquePeriodicWork(
@@ -75,17 +75,13 @@ class WorkManagerRepository(
         workManager.cancelUniqueWork(Work.ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME)
     }
 
-    companion object {
-        var syncManager: SyncManager? = null
-            private set
-    }
-
     fun getPeriodicWorkInfo(): Flow<MutableList<WorkInfo>> {
         return workManager.getWorkInfosForUniqueWorkFlow(Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME)
     }
 
-    fun getOneTimeWorkInfo(): Flow<MutableList<WorkInfo>> {
-        return workManager.getWorkInfosForUniqueWorkFlow(Work.ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME)
+    companion object {
+        var syncManager: SyncManager? = null
+            private set
     }
 
 }

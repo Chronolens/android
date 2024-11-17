@@ -21,8 +21,6 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
 
     override suspend fun doWork(): Result {
 
-        val since: Long = inputData.getLong(Work.SINCE, -1)
-
         val syncManager = WorkManagerRepository.syncManager
         val notificationManager =
             applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -49,14 +47,14 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
             for (media in localMedia) {
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {
-                    if (!remoteAssets.contains(checksum) && media.timestamp >= since) {
+                    if (!remoteAssets.contains(checksum)) {
                         media.checksum = checksum
                         mediaToUpload.add(media)
                     }
                 } else {
                     media.checksum =
                         mediaGridRepository.computeAndStoreChecksum(media.id, media.path)
-                    if (!remoteAssets.contains(media.checksum) && media.timestamp >= since) {
+                    if (!remoteAssets.contains(media.checksum)) {
                         mediaToUpload.add(media)
                     }
                 }

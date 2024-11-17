@@ -40,6 +40,8 @@ import com.example.chronolens.R
 import com.example.chronolens.ui.components.AlertConfirmDialog
 import com.example.chronolens.viewModels.WorkManagerState
 import com.example.chronolens.viewModels.WorkManagerViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
 
 @Composable
 fun BackgroundUploadScreen(
@@ -50,7 +52,7 @@ fun BackgroundUploadScreen(
 ) {
     var requireWifi by remember { mutableStateOf(true) }
     var requireCharging by remember { mutableStateOf(false) }
-    var since by remember { mutableLongStateOf(-1) }
+    var requireBatteryNotLow by remember { mutableStateOf(true) }
     var includeVideos by remember { mutableStateOf(false) }
     var period by remember { mutableLongStateOf(15) } // minimum is 15 minutes
     val periodOptions: List<Long> = listOf(15, 30, 45, 60, 90, 120, 240, 480, 1440)
@@ -76,9 +78,8 @@ fun BackgroundUploadScreen(
                     period = period,
                     requireWifi = requireWifi,
                     requireCharging = requireCharging,
-                    since = since,
-                    includeVideos = includeVideos,
-                    startNow = false
+                    requireBatteryNotLow = requireBatteryNotLow,
+                    includeVideos = includeVideos
                 )
             },
             visible = periodicUploadVisible
@@ -107,9 +108,6 @@ fun BackgroundUploadScreen(
         }
 
         item {
-
-            //val enable =
-            //    (periodicWorkInfo.value == WorkInfo.State.CANCELLED || periodicWorkInfo.value == null || periodicWorkInfo.value == WorkInfo.State.BLOCKED || periodicWorkInfo.value == WorkInfo.State.FAILED)
             Spacer(modifier = Modifier.height(24.dp))
             BackgroundUploadOption(
                 icon = Icons.Outlined.Check,
@@ -135,11 +133,24 @@ fun BackgroundUploadScreen(
                 onCheckedChange = { requireCharging = it }
             )
             ToggleOptionRow(
+                label = stringResource(R.string.require_battery_not_low),
+                checked = requireBatteryNotLow,
+                onCheckedChange = { requireBatteryNotLow = it }
+            )
+            ToggleOptionRow(
                 label = stringResource(R.string.include_videos),
                 checked = includeVideos,
                 onCheckedChange = { includeVideos = it }
             )
             Text(text = workManagerState.value.periodicWorkInfoState.toString())
+            if (workManagerState.value.nextJob != null) {
+                // get locale for this
+                val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm:ss") //1731851754567
+                val dateString: String = formatter.format(Date(workManagerState.value.nextJob!!))
+                Text(text = dateString)
+            } else {
+                Text("No scheduled jobs")
+            }
             StartCancelPeriodicRow(
                 state = workManagerState,
                 visible = periodicUploadVisible,
@@ -194,21 +205,6 @@ fun StartCancelPeriodicRow(
                 Text(stringResource(R.string.cancel))
             }
         }
-
-
-//        if (state.value == WorkInfo.State.RUNNING) {
-//            CircularProgressIndicator()
-//            Spacer(modifier = Modifier.width(8.dp))
-//            Button(onClick = cancel) {
-//                Text(stringResource(R.string.cancel))
-//            }
-//        } else {
-//            Button(
-//                onClick = { visible.value = true }
-//            ) {
-//                Text(stringResource(R.string.start))
-//            }
-//        }
     }
 }
 
