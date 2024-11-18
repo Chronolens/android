@@ -31,7 +31,8 @@ data class LocalMedia(
 data class RemoteMedia(
     var id: String,
     override var checksum: String?,
-    override var timestamp: Long
+    override var timestamp: Long,
+    @Transient var thumbnail: Bitmap? = null
 ) : MediaAsset(checksum, timestamp) {
 
     override fun eq(other: MediaAsset): Boolean {

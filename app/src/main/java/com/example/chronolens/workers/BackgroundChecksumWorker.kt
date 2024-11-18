@@ -19,6 +19,7 @@ private const val TAG = "UploadWorker"
 class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
     CoroutineWorker(ctx, params) {
 
+    // FIXME: check for login or token
     override suspend fun doWork(): Result {
 
         val syncManager = WorkManagerRepository.syncManager

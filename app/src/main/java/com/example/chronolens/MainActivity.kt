@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // FIXME: FIX PERMISSIONS
     private val readExternal = READ_EXTERNAL_STORAGE
     private val readVideo = READ_MEDIA_VIDEO
     private val readImages = READ_MEDIA_IMAGES
