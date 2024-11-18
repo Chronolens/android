@@ -143,7 +143,7 @@ class APIUtils {
 
             val file = File(Path(asset.path).toUri())
             val mimeType = asset.mimeType
-            val checksum = ChecksumUtils().computeChecksum(asset.path)
+            val checksum = asset.checksum!!
 
             val client = OkHttpClient()
             val requestBody = MultipartBody.Builder()
