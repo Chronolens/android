@@ -108,7 +108,7 @@ class MediaGridRepository(
         return checksum
     }
 
-    suspend fun apiGetClusterPreviewsPage(clusterId: Int, page: Int, pageSize: Int): List<Map<String, String>>? {
-        return APIUtils.getClusterPreviewsPage(sharedPreferences, clusterId, page, pageSize)
+    suspend fun apiGetClusterPreviewsPage(clusterId: Int, page: Int, pageSize: Int, requestType: String): List<Map<String, String>>? {
+        return APIUtils.getClusterPreviewsPage(sharedPreferences, clusterId, page, pageSize, requestType)
     }
 }

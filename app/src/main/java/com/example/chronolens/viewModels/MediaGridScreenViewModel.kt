@@ -153,7 +153,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-    fun loadNextPage(clusterId: Int) {
+    fun loadNextPage(clusterId: Int, requestType: String) {
         viewModelScope.launch {
             val state = _personPhotoGridState.value
 
@@ -164,7 +164,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             try {
                 val nextPage = state.currentPage
                 val pageSize = 10
-                val newPhotos = mediaGridRepository.apiGetClusterPreviewsPage(clusterId, nextPage, pageSize)
+                val newPhotos = mediaGridRepository.apiGetClusterPreviewsPage(clusterId, nextPage, pageSize, requestType)
 
                 _personPhotoGridState.update {
                     it.copy(

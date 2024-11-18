@@ -37,7 +37,7 @@ fun PersonPhotoGrid(
 ) {
     val personPhotoGridStateValue by personPhotoGridState.collectAsState()
     val person = personPhotoGridStateValue.person
-
+    val requestType = if (person is KnownPerson) "face" else "cluster"
     val clusterId = person!!.personId
 
     Column(
@@ -84,7 +84,7 @@ fun PersonPhotoGrid(
             } else if (personPhotoGridStateValue.hasMore) {
                 item {
                     LaunchedEffect(Unit) {
-                        viewModel.loadNextPage(clusterId)
+                        viewModel.loadNextPage(clusterId, requestType)
                     }
                 }
             }

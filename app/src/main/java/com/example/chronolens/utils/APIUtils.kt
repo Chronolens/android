@@ -390,13 +390,14 @@ class APIUtils {
             sharedPreferences: SharedPreferences,
             clusterId: Int,
             page: Int = 1,
-            pageSize: Int = 10
+            pageSize: Int = 10,
+            requestType: String
         ): List<Map<String, String>>? = withContext(Dispatchers.IO) {
             val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return@withContext null
             val accessToken =
                 sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext null
 
-            val url = URL("$server/cluster/$clusterId?page=$page&page_size=$pageSize")
+            val url = URL("$server/$requestType/$clusterId?page=$page&page_size=$pageSize")
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 setRequestProperty("Authorization", "Bearer $accessToken")
                 setRequestProperty("Accept", "application/json")
