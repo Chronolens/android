@@ -140,6 +140,7 @@ fun ChronoLens() {
                     SettingsScreen(
                         modifier = Modifier.padding(innerPadding),
                         state = userState,
+                        viewModel = userViewModel,
                         navController = navController
                     )
                 }

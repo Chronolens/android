@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.net.HttpURLConnection
 
 enum class UserLoginState {
     LoggedIn,
@@ -32,12 +33,14 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
     val userState: StateFlow<UserState> = _userState.asStateFlow()
 
 
-    // TODO: Check for token, if yes, grantAccess
     init {
-//        viewModelScope.launch {
-//            userRepository.checkLogin()
-//        }
-
+        viewModelScope.launch {
+            val loggedIn = userRepository.checkLogin()
+            val state = if (loggedIn) UserLoginState.LoggedIn else UserLoginState.LoggedOut
+            _userState.update { currState ->
+                currState.copy(userLoginState = state)
+            }
+        }
     }
 
     fun getServer(): String {
@@ -49,28 +52,26 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
     }
 
     fun login(server: String, username: String, password: String) {
-        Log.i("LOGIN","$server | $username | $password")
+        Log.i("LOGIN", "$server | $username | $password")
         viewModelScope.launch {
             _userState.update { currState ->
                 currState.copy(userLoginState = UserLoginState.Loading)
             }
             val code: Int? = userRepository.apiLogin(server, username, password)
-            Log.i("LOGIN","$code")
+            Log.i("LOGIN", "$code")
             when (code) {
-                200 -> _userState.update { currState ->
+                HttpURLConnection.HTTP_OK -> _userState.update { currState ->
                     currState.copy(
                         userLoginState = UserLoginState.LoggedIn,
                         username = username,
                         server = server
                     )
                 }
-
-                401 -> _userState.update { currState ->
+                HttpURLConnection.HTTP_UNAUTHORIZED -> _userState.update { currState ->
                     currState.copy(
                         userLoginState = UserLoginState.CredentialsWrong,
                     )
                 }
-
                 else -> _userState.update { currState ->
                     currState.copy(
                         userLoginState = UserLoginState.Error,
@@ -80,9 +81,13 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
         }
     }
 
-    // TODO
-    fun logout(){
-
+    fun logout() {
+        viewModelScope.launch {
+            userRepository.logout()
+            _userState.update { currState ->
+                currState.copy(userLoginState = UserLoginState.LoggedOut)
+            }
+        }
     }
 
 }
