@@ -26,63 +26,63 @@ import kotlin.io.path.Path
 class APIUtils {
     companion object {
 
-        suspend fun checkLogin(sharedPreferences: SharedPreferences) {
-            checkValidToken(sharedPreferences)
+        suspend fun checkLogin(sharedPreferences: SharedPreferences): Boolean {
+            return checkValidToken(sharedPreferences)
         }
 
-        // TODO: Handle case where token is valid but expires while in the middle of app usage?
-        private suspend fun checkValidToken(sharedPreferences: SharedPreferences) =
+        private suspend fun checkValidToken(sharedPreferences: SharedPreferences): Boolean =
             withContext(Dispatchers.IO) {
-                val oldAccessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-                val oldExpiresAt = sharedPreferences.getLong(Prefs.EXPIRES_AT, -1L)
-                val oldRefreshToken = sharedPreferences.getString(Prefs.REFRESH_TOKEN, "")
-                val oldServer = sharedPreferences.getString(Prefs.SERVER, "")
 
-                // Expired token
-                if (System.currentTimeMillis() >= oldExpiresAt) {
-                    val url = URL("$oldServer/refresh")
-                    val payload = JSONObject().apply {
-                        put(Json.ACCESS_TOKEN, oldAccessToken)
-                        put(Json.REFRESH_TOKEN, oldRefreshToken)
-                    }
-                    val body = payload.toString()
-                    val connection = (url.openConnection() as HttpURLConnection).apply {
-                        setRequestProperty("Content-Type", "application/json")
-                        setRequestProperty("Accept", "application/json")
-                        requestMethod = "POST"
-                        doOutput = true
-                        outputStream.write(body.toByteArray())
-                    }
+                val oldAccessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
+                val oldRefreshToken = sharedPreferences.getString(Prefs.REFRESH_TOKEN, null)
+                val server = sharedPreferences.getString(Prefs.SERVER, null)
 
-                    try {
-                        val responseCode = connection.responseCode
-                        if (responseCode == HttpURLConnection.HTTP_OK) {
-                            val response = connection.inputStream.bufferedReader().readText()
-                            val jsonResponse = JSONObject(response)
-                            val token = jsonResponse.getString(Json.ACCESS_TOKEN)
-                            val expiresAt = jsonResponse.getLong(Json.EXPIRES_AT)
-                            val refreshToken = jsonResponse.getString(Json.REFRESH_TOKEN)
-
-                            sharedPreferences.edit().putString(Prefs.ACCESS_TOKEN, token).apply()
-                            sharedPreferences.edit().putLong(Prefs.EXPIRES_AT, expiresAt).apply()
-                            sharedPreferences.edit().putString(Prefs.REFRESH_TOKEN, refreshToken)
-                                .apply()
-                        }
-
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-
-                    } finally {
-                        connection.disconnect()
-                    }
-
-                    // TODO: Validade token?
-                } else {
-
-
+                // Login for the first time
+                if (server == null || oldAccessToken == null || oldRefreshToken == null) {
+                    return@withContext false
                 }
-                // TODO: return bool?
 
+                // Assume token is always expired
+                val url = URL("$server/refresh")
+                val payload = JSONObject().apply {
+                    put(Json.ACCESS_TOKEN, oldAccessToken)
+                    put(Json.REFRESH_TOKEN, oldRefreshToken)
+                }
+                val body = payload.toString()
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    requestMethod = "POST"
+                    doOutput = true
+                    outputStream.write(body.toByteArray())
+                }
+
+                try {
+                    val responseCode = connection.responseCode
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        val response = connection.inputStream.bufferedReader().readText()
+                        val jsonResponse = JSONObject(response)
+                        val token = jsonResponse.getString(Json.ACCESS_TOKEN)
+                        val expiresAt = jsonResponse.getLong(Json.EXPIRES_AT)
+                        val refreshToken = jsonResponse.getString(Json.REFRESH_TOKEN)
+
+                        sharedPreferences.edit().putString(Prefs.ACCESS_TOKEN, token).apply()
+                        sharedPreferences.edit().putLong(Prefs.EXPIRES_AT, expiresAt).apply()
+                        sharedPreferences.edit().putString(Prefs.REFRESH_TOKEN, refreshToken)
+                            .apply()
+
+                        return@withContext true
+                    } else {
+                        return@withContext false
+                    }
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    return@withContext false
+
+                } finally {
+                    connection.disconnect()
+                }
             }
 
         // Login function
@@ -131,7 +131,7 @@ class APIUtils {
             }
         }
 
-        // TODO: use already calculated checksum if possible
+        // TODO: handle other error codes
         suspend fun uploadMedia(
             sharedPreferences: SharedPreferences,
             asset: LocalMedia
@@ -143,7 +143,7 @@ class APIUtils {
 
             val file = File(Path(asset.path).toUri())
             val mimeType = asset.mimeType
-            val checksum = ChecksumUtils().computeChecksum(asset.path)
+            val checksum = asset.checksum!!
 
             val client = OkHttpClient()
             val requestBody = MultipartBody.Builder()
@@ -165,7 +165,7 @@ class APIUtils {
             try {
                 client.newCall(request).execute().use { response ->
                     Log.i("UPLOAD", response.code.toString())
-                    if (response.code == 200) {
+                    if (response.code == HttpURLConnection.HTTP_OK) {
                         return@withContext response.body?.string()
                     } else {
                         return@withContext null
@@ -432,5 +432,7 @@ class APIUtils {
                 connection.disconnect()
             }
         }
+
     }
+
 }

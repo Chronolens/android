@@ -184,6 +184,12 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     fun uploadMedia(localMedia: LocalMedia) {
         viewModelScope.launch(Dispatchers.IO) {
+            if (localMedia.checksum == null) {
+                val checksum =
+                    mediaGridRepository.getOrComputeChecksum(localMedia.id, localMedia.path)
+                localMedia.checksum = checksum
+            }
+
             val remoteId: String? = mediaGridRepository.apiUploadFileStream(localMedia)
             _fullscreenImageState.update { currState ->
                 currState.copy(

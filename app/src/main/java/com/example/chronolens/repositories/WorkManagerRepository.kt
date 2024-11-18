@@ -8,10 +8,12 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.example.chronolens.utils.SyncManager
 import com.example.chronolens.utils.Work
 import com.example.chronolens.workers.BackgroundChecksumWorker
+import kotlinx.coroutines.flow.Flow
 import java.time.Duration
 
 // TODO: allow schedulling by hour of the day?
@@ -31,51 +33,50 @@ class WorkManagerRepository(
         period: Long,
         requireWifi: Boolean,
         requireCharging: Boolean,
-        since: Long,
-        includeVideos: Boolean,
-        startNow: Boolean
-    ) {
+        requireBatteryNotLow: Boolean,
+        includeVideos: Boolean
+    ): Flow<MutableList<WorkInfo>> {
 
         val networkType = if (requireWifi) NetworkType.UNMETERED else NetworkType.CONNECTED
-        val data = Data.Builder()
-        data.putLong(Work.SINCE,since)
 
-        val constraints = Constraints.Builder().setRequiredNetworkType(networkType)
-            .setRequiresCharging(requireCharging).setRequiresBatteryNotLow(true).build()
-
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(networkType)
+            .setRequiresCharging(requireCharging)
+            .setRequiresBatteryNotLow(requireBatteryNotLow)
+            .build()
 
         val job = PeriodicWorkRequestBuilder<BackgroundChecksumWorker>(
             repeatInterval = Duration.ofMinutes(period),
-        ).setConstraints(constraints).setInputData(data.build())
+        ).setConstraints(constraints)
 
-//        if (startNow) {
-//            job.setInitialDelay(Duration.ofSeconds(period))
-//            .build()
-//        } else {
-//            job.build()
-//        }
-
+        // TODO: ExistingPeriodicWorkPolicy??
         workManager.enqueueUniquePeriodicWork(
             Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, job.build()
         )
-
+        return workManager.getWorkInfosForUniqueWorkFlow(Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME)
     }
 
+    // TODO: delete notification
     fun cancelPeriodicBackgroundSync() {
         workManager.cancelUniqueWork(Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME)
     }
 
     // TODO: ExistingWorkPolicy??
-    fun oneTimeBackgroundSync() {
+    fun oneTimeBackgroundSync(): Flow<MutableList<WorkInfo>> {
         val job = OneTimeWorkRequestBuilder<BackgroundChecksumWorker>().build()
 
         workManager.enqueueUniqueWork(
             Work.ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME, ExistingWorkPolicy.KEEP, job
         )
+        return workManager.getWorkInfosForUniqueWorkFlow(Work.ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME)
     }
 
     fun cancelOneTimeBackgroundSync() {
         workManager.cancelUniqueWork(Work.ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME)
+    }
+
+    fun getPeriodicWorkInfo(): Flow<MutableList<WorkInfo>> {
+        return workManager.getWorkInfosForUniqueWorkFlow(Work.PERIODIC_BACKGROUND_UPLOAD_WORK_NAME)
     }
 
     companion object {

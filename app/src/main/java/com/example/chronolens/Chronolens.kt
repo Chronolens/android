@@ -59,6 +59,8 @@ fun ChronoLens() {
 
         val workManagerViewModel: WorkManagerViewModel =
             viewModel(factory = ViewModelProvider.Factory)
+        val workManagerState = workManagerViewModel.workManagerState.collectAsState()
+
 
         val backStackEntry by navController.currentBackStackEntryAsState()
 
@@ -157,9 +159,10 @@ fun ChronoLens() {
 
                 composable(ChronolensNav.Settings.name) {
                     SettingsScreen(
+                        modifier = Modifier.padding(innerPadding),
                         state = userState,
-                        navController = navController,
-                        modifier = Modifier.padding(innerPadding)
+                        viewModel = userViewModel,
+                        navController = navController
                     )
                 }
 
@@ -176,7 +179,8 @@ fun ChronoLens() {
                 composable(ChronolensNav.BackgroundUpload.name) {
                     BackgroundUploadScreen(
                         modifier = Modifier.padding(innerPadding),
-                        workManager = workManagerViewModel
+                        workManager = workManagerViewModel,
+                        workManagerState = workManagerState
                     )
                 }
 

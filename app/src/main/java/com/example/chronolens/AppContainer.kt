@@ -18,7 +18,6 @@ class ChronoLensAppContainer(private val context: Context) : AppContainer {
     private val database: AppDatabase by lazy { AppDatabase.getInstance(context) }
     private val contentResolver: ContentResolver = context.contentResolver
 
-
     override val mediaGridRepository: MediaGridRepository by lazy {
         MediaGridRepository(
             database.checksumDao(),

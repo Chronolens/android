@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.Button
 import androidx.compose.material.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -26,22 +26,24 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.chronolens.R
 import com.example.chronolens.models.SettingsItem
+import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.utils.Settings
 import com.example.chronolens.viewModels.UserState
+import com.example.chronolens.viewModels.UserViewModel
 
 @Composable
 fun SettingsScreen(
+    modifier: Modifier,
     state: State<UserState>,
-    navController: NavController,
-    modifier: Modifier
+    viewModel: UserViewModel,
+    navController: NavController
 ) {
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-        //.padding(horizontal = 10.dp)
     ) {
         item {
-            Profile(state)
+            Profile(state, viewModel, navController)
             Spacer(modifier = Modifier.height(24.dp))
         }
         itemsIndexed(Settings.options) { i, item ->
@@ -64,7 +66,7 @@ fun SettingsScreen(
 
 // TODO: worth even having??
 @Composable
-fun Profile(state: State<UserState>) {
+fun Profile(state: State<UserState>, viewModel: UserViewModel, navController: NavController) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -76,6 +78,14 @@ fun Profile(state: State<UserState>) {
         Column {
             Text(state.value.username)
             Text(state.value.server)
+        }
+        Button(onClick = {
+            viewModel.logout()
+            navController.navigate(ChronolensNav.Login.name) {
+                popUpTo(0) { inclusive = true }
+            }
+        }) {
+            Text("Logout")
         }
     }
 }
