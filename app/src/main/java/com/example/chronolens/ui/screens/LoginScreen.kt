@@ -21,11 +21,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -68,19 +67,27 @@ fun LoginScreen(
         )
     }
 
+    val server = remember { mutableStateOf(viewModel.getServer()) }
+    val username = remember { mutableStateOf(viewModel.getUsername()) }
+    val password = remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(brush)
             .then(modifier)
-
     ) {
         when (userState.value.userLoginState) {
             UserLoginState.Loading -> DisplayLoading()
             UserLoginState.LoggedIn -> grantAccess()
             else -> {
-                LoginPrompt(viewModel, userState)
+                LoginPrompt(
+                    viewModel = viewModel,
+                    userState = userState,
+                    server = server,
+                    username = username,
+                    password = password
+                )
             }
         }
     }
@@ -90,13 +97,12 @@ fun LoginScreen(
 @Composable
 fun LoginPrompt(
     viewModel: UserViewModel,
-    userState: State<UserState>
+    userState: State<UserState>,
+    server: MutableState<String>,
+    username: MutableState<String>,
+    password: MutableState<String>
 ) {
     val colorScheme = MaterialTheme.colorScheme
-
-    var server by remember { mutableStateOf(viewModel.getServer()) }
-    var username by remember { mutableStateOf(viewModel.getUsername()) }
-    var password by remember { mutableStateOf("") }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -116,8 +122,8 @@ fun LoginPrompt(
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomTextField(
-            value = server,
-            onValueChange = { server = it },
+            value = server.value,
+            onValueChange = { server.value = it },
             label = "Server",
             isError = userState.value.userLoginState == UserLoginState.CredentialsWrong,
             keyboardType = KeyboardType.Uri,
@@ -127,8 +133,8 @@ fun LoginPrompt(
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomTextField(
-            value = username,
-            onValueChange = { username = it },
+            value = username.value,
+            onValueChange = { username.value = it },
             label = "Username",
             isError = userState.value.userLoginState == UserLoginState.CredentialsWrong,
             keyboardType = KeyboardType.Text,
@@ -138,8 +144,8 @@ fun LoginPrompt(
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomTextField(
-            value = password,
-            onValueChange = { password = it },
+            value = password.value,
+            onValueChange = { password.value = it },
             label = "Password",
             isPassword = true,
             isError = userState.value.userLoginState == UserLoginState.CredentialsWrong,
@@ -151,9 +157,8 @@ fun LoginPrompt(
 
         Button(
             onClick = {
-                viewModel.login(server, username, password)
-                username = ""
-                password = ""
+                viewModel.login(server.value, username.value, password.value)
+                password.value = ""
             },
             enabled = userState.value.userLoginState != UserLoginState.Loading,
             shape = RoundedCornerShape(4.dp),
@@ -187,9 +192,7 @@ fun CustomTextField(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val labelColor = colorScheme.onBackground.copy(alpha = 0.7f)
-
     val typography = MaterialTheme.typography
-
 
     Column(
         modifier = Modifier
@@ -203,7 +206,6 @@ fun CustomTextField(
             style = typography.labelSmall,
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
         )
-
 
         BasicTextField(
             value = value,
@@ -234,7 +236,6 @@ fun CustomTextField(
                 }
             }
         )
-
 
         HorizontalDivider(
             modifier = Modifier
