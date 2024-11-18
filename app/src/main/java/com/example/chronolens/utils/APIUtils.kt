@@ -384,56 +384,52 @@ class APIUtils {
                 }
             }
 
-        suspend fun getPersonPhotos(
+
+        // TODO: Add the type of request face or cluster to this function as input and the only thing we need to change is the URL
+        suspend fun getClusterPreviewsPage(
             sharedPreferences: SharedPreferences,
-            personId: Int,
-            type: String
-        ): List<RemoteMedia> = withContext(Dispatchers.IO) {
-            val jwtToken =
-                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-                    ?: return@withContext emptyList()
-            val server =
-                sharedPreferences.getString(Prefs.SERVER, "") ?: return@withContext emptyList()
-            val url = "$server/$type/$personId"
+            clusterId: Int,
+            page: Int = 1,
+            pageSize: Int = 10
+        ): List<Map<String, String>>? = withContext(Dispatchers.IO) {
+            val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return@withContext null
+            val accessToken =
+                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext null
 
-            Log.i("APIUtils", url)
-            Log.i("APIUtils", "Initializing request for testing only aaaaaaaaaaaaaa")
-            Log.i("APIUtils", jwtToken)
-            Log.i("APIUtils", server)
-            Log.i("APIUtils", personId.toString())
-            Log.i("APIUtils", type)
-
-            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
-                setRequestProperty("Authorization", "Bearer $jwtToken")
+            val url = URL("$server/cluster/$clusterId?page=$page&page_size=$pageSize")
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("Authorization", "Bearer $accessToken")
                 setRequestProperty("Accept", "application/json")
                 requestMethod = "GET"
             }
 
-            try {
+            return@withContext try {
                 val responseCode = connection.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     connection.inputStream.use { inputStream ->
-                        val response = inputStream.bufferedReader().readText()
-                        val mediaArray = JSONArray(response)
+                        val responseJson = JSONArray(inputStream.bufferedReader().readText())
+                        val previews = mutableListOf<Map<String, String>>()
 
-                        val mediaList = mutableListOf<RemoteMedia>()
-                        for (i in 0 until mediaArray.length()) {
-                            val mediaJson = mediaArray.getJSONObject(i)
-                            mediaList.add(RemoteMedia.fromJson(mediaJson))
+                        for (i in 0 until responseJson.length()) {
+                            val item = responseJson.getJSONObject(i)
+                            val preview = mapOf(
+                                "id" to item.getString("id"),
+                                "preview_link" to item.getString("preview_link")
+                            )
+                            previews.add(preview)
                         }
 
-                        mediaList
+                        previews
                     }
                 } else {
-                    emptyList()
+                    null
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                emptyList()
+                null
             } finally {
                 connection.disconnect()
             }
         }
     }
-
 }

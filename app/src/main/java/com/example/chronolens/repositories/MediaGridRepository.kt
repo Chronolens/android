@@ -108,7 +108,7 @@ class MediaGridRepository(
         return checksum
     }
 
-    suspend fun apiGetPersonPhotos(faceId: Int, type: String): List<RemoteMedia> {
-        return APIUtils.getPersonPhotos(sharedPreferences, faceId, type)
+    suspend fun apiGetClusterPreviewsPage(clusterId: Int, page: Int, pageSize: Int): List<Map<String, String>>? {
+        return APIUtils.getClusterPreviewsPage(sharedPreferences, clusterId, page, pageSize)
     }
 }
