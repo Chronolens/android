@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
-import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.Person
@@ -32,7 +31,10 @@ data class FullscreenImageState(
 
 data class PersonPhotoGridState(
     val person: Person? = null,
-    val photos: List<RemoteMedia> = listOf()
+    val photos: List<Map<String,String>> = listOf(),
+    var currentPage: Int = 1,
+    var isLoading: Boolean = false,
+    var hasMore: Boolean = true
 )
 
 
@@ -119,6 +121,29 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+
+    fun updateCurrentPersonPhotoGrid(person: Person) {
+        _personPhotoGridState.update {
+            it.copy(
+                person = person,
+                photos = emptyList(),
+                currentPage = 1,
+                isLoading = false,
+                hasMore = true
+            )
+        }
+    }
+
+
+    fun updateCurrentAssetHelper(preview: Map<String,String>)
+    {
+        val remoteId = preview["id"] ?: ""
+        val checksum = preview["checksum"] ?: ""
+        val timestamp = preview["timestamp"]?.toLong() ?: 0
+        val media = RemoteMedia(remoteId, checksum, timestamp)
+        updateCurrentAsset(media)
+    }
+
     fun updateCurrentAsset(mediaAsset: MediaAsset) {
         _fullscreenImageState.update { currState ->
             currState.copy(
@@ -128,21 +153,33 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-    fun updateCurrentPersonPhotoGrid(person: Person) {
+    fun loadNextPage(clusterId: Int) {
         viewModelScope.launch {
-            val requestType = if (person is KnownPerson) "face_previews" else "cluster_previews"
+            val state = _personPhotoGridState.value
 
-            val photoList = mediaGridRepository.apiGetPersonPhotos(person.personId, requestType)
-            _personPhotoGridState.update { currState ->
-                currState.copy(
-                    person = person,
-                    photos = photoList
-                )
+            if (state.isLoading || !state.hasMore) return@launch
+
+            _personPhotoGridState.update { it.copy(isLoading = true) }
+
+            try {
+                val nextPage = state.currentPage
+                val pageSize = 10
+                val newPhotos = mediaGridRepository.apiGetClusterPreviewsPage(clusterId, nextPage, pageSize)
+
+                _personPhotoGridState.update {
+                    it.copy(
+                        photos = it.photos + (newPhotos ?: emptyList()),
+                        currentPage = it.currentPage + 1,
+                        isLoading = false,
+                        hasMore = !newPhotos.isNullOrEmpty()
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _personPhotoGridState.update { it.copy(isLoading = false) }
             }
         }
     }
-
-
 
 
     fun uploadMedia(localMedia: LocalMedia) {

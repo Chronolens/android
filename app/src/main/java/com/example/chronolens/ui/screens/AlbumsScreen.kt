@@ -31,7 +31,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.Person
 import com.example.chronolens.utils.ChronolensNav
@@ -81,7 +80,7 @@ fun AlbumsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 items(state.value.people) { person ->
-                    PersonItem(viewModel,person) {
+                    PersonItem(viewModel, person) {
                         viewModel.updateCurrentPersonPhotoGrid(it)
                         navController.navigate(ChronolensNav.PersonPhotoGrid.name)
                     }
