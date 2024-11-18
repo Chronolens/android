@@ -51,11 +51,12 @@ fun ChronoLens() {
 
         val mediaGridScreenViewModel: MediaGridScreenViewModel =
             viewModel(factory = ViewModelProvider.Factory)
+
         val mediaGridScreenState = mediaGridScreenViewModel.mediaGridState.collectAsState()
+
         val fullscreenMediaState =
             mediaGridScreenViewModel.fullscreenImageState.collectAsState()
-        val personPhotoGridState =
-            mediaGridScreenViewModel.personPhotoGridState.collectAsState()
+
         val workManagerViewModel: WorkManagerViewModel =
             viewModel(factory = ViewModelProvider.Factory)
 
@@ -141,11 +142,14 @@ fun ChronoLens() {
                 composable(ChronolensNav.PersonPhotoGrid.name) {
                     PersonPhotoGrid(
                         viewModel = mediaGridScreenViewModel,
-                        personPhotoGridState = personPhotoGridState,
+                        personPhotoGridState = mediaGridScreenViewModel.personPhotoGridState,
                         navController = navController,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
+
+
+
 
                 composable(ChronolensNav.Search.name) {
                     SearchScreen(modifier = Modifier.padding(innerPadding))
