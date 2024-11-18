@@ -98,7 +98,7 @@ fun RemoteMediaItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val imageUrl = mediaAsset["preview_link"] ?: ""
+    val imageUrl = mediaAsset["preview_url"] ?: ""
 
     Box(
         modifier = modifier

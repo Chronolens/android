@@ -415,7 +415,7 @@ class APIUtils {
                             val item = responseJson.getJSONObject(i)
                             val preview = mapOf(
                                 "id" to item.getString("id"),
-                                "preview_link" to item.getString("preview_link")
+                                "preview_url" to item.getString("preview_url")
                             )
                             previews.add(preview)
                         }
