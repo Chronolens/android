@@ -1,5 +1,6 @@
 package com.example.chronolens.models
 
+import android.graphics.Bitmap
 import com.example.chronolens.utils.Json
 import org.json.JSONObject
 
@@ -9,7 +10,7 @@ abstract class MediaAsset(
     @Transient open var timestamp: Long
 ) {
     abstract fun eq(other: MediaAsset): Boolean
-}
+}        
 
 data class LocalMedia(
     var remoteId: String?,
@@ -17,7 +18,8 @@ data class LocalMedia(
     var id: String,
     var mimeType: String,
     override var checksum: String?,
-    override var timestamp: Long
+    override var timestamp: Long,
+    @Transient var thumbnail: Bitmap? = null
 ) : MediaAsset(checksum, timestamp) {
 
     override fun eq(other: MediaAsset): Boolean {
@@ -29,7 +31,8 @@ data class LocalMedia(
 data class RemoteMedia(
     var id: String,
     override var checksum: String?,
-    override var timestamp: Long
+    override var timestamp: Long,
+    @Transient var thumbnail: Bitmap? = null
 ) : MediaAsset(checksum, timestamp) {
 
     override fun eq(other: MediaAsset): Boolean {

@@ -48,26 +48,25 @@ android {
 
 dependencies {
 
-    implementation(libs.androidx.exifinterface)
     val room_version = "2.6.1"
 
-    implementation("androidx.room:room-runtime:$room_version")
     annotationProcessor("androidx.room:room-compiler:$room_version")
+    ksp("androidx.room:room-compiler:$room_version")
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version")
+    implementation("androidx.compose.material3:material3:1.3.1")
 
     // To use Kotlin Symbol Processing (KSP)
-    ksp("androidx.room:room-compiler:$room_version")
 
     implementation(libs.androidx.work.runtime.ktx)
-
-
-    // optional - Kotlin Extensions and Coroutines support for Room
-    implementation("androidx.room:room-ktx:$room_version")
-    implementation("io.coil-kt.coil3:coil-compose:3.0.0-rc01")
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.0-rc01")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
-    implementation ("com.google.code.gson:gson:2.10.1")
+    implementation(libs.androidx.exifinterface)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation (libs.gson)
     implementation("androidx.core:core-ktx:1.10.1")
     implementation(libs.guava)
+    implementation(libs.androidx.material)
 
     implementation (libs.androidx.navigation.compose)
     implementation(libs.androidx.core.ktx)

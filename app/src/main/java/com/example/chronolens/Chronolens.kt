@@ -1,14 +1,20 @@
 package com.example.chronolens
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.core.app.Person
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -17,14 +23,19 @@ import androidx.navigation.compose.rememberNavController
 import com.example.chronolens.ui.components.ChronolensBottomBar
 import com.example.chronolens.ui.components.ChronolensTopAppBar
 import com.example.chronolens.ui.screens.AlbumsScreen
+import com.example.chronolens.ui.screens.settings.BackgroundUploadScreen
 import com.example.chronolens.ui.screens.FullscreenMediaView
 import com.example.chronolens.ui.screens.LoginScreen
 import com.example.chronolens.ui.screens.MediaGridScreen
+import com.example.chronolens.ui.screens.PersonPhotoGrid
 import com.example.chronolens.ui.screens.SearchScreen
 import com.example.chronolens.ui.screens.SettingsScreen
+import com.example.chronolens.ui.screens.settings.ActivityHistoryScreen
+import com.example.chronolens.ui.screens.settings.MachineLearningScreen
 import com.example.chronolens.ui.theme.ChronoLensTheme
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.PersonPhotoGridState
 import com.example.chronolens.viewModels.UserViewModel
 import com.example.chronolens.viewModels.ViewModelProvider
 import com.example.chronolens.viewModels.WorkManagerViewModel
@@ -37,13 +48,19 @@ fun ChronoLens() {
 
         val userViewModel: UserViewModel = viewModel(factory = ViewModelProvider.Factory)
         val userState = userViewModel.userState.collectAsState()
+
         val mediaGridScreenViewModel: MediaGridScreenViewModel =
             viewModel(factory = ViewModelProvider.Factory)
+
         val mediaGridScreenState = mediaGridScreenViewModel.mediaGridState.collectAsState()
+
         val fullscreenMediaState =
             mediaGridScreenViewModel.fullscreenImageState.collectAsState()
+
         val workManagerViewModel: WorkManagerViewModel =
             viewModel(factory = ViewModelProvider.Factory)
+        val workManagerState = workManagerViewModel.workManagerState.collectAsState()
+
 
         val backStackEntry by navController.currentBackStackEntryAsState()
 
@@ -52,7 +69,6 @@ fun ChronoLens() {
 
         val navigationBarPadding =
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-
 
         Scaffold(
             topBar = {
@@ -84,9 +100,11 @@ fun ChronoLens() {
                         navController = navController,
                         work = workManagerViewModel,
                         modifier = Modifier
-                            .padding(innerPadding)
+                            .padding(innerPadding),
+                        refreshPaddingValues = innerPadding.calculateTopPadding() - 20.dp
                     )
                 }
+
                 composable(ChronolensNav.FullScreenMedia.name) {
                     FullscreenMediaView(
                         viewModel = mediaGridScreenViewModel,
@@ -97,6 +115,7 @@ fun ChronoLens() {
                             .padding(innerPadding)
                     )
                 }
+
                 composable(ChronolensNav.Login.name) {
                     LoginScreen(
                         viewModel = userViewModel,
@@ -112,15 +131,67 @@ fun ChronoLens() {
                             .padding(innerPadding)
                     )
                 }
+
+                composable(ChronolensNav.Albums.name) {
+                    AlbumsScreen(
+                        viewModel = mediaGridScreenViewModel,
+                        navController = navController,
+                        state = mediaGridScreenState,
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
+
+                composable(ChronolensNav.PersonPhotoGrid.name) {
+                    PersonPhotoGrid(
+                        viewModel = mediaGridScreenViewModel,
+                        personPhotoGridState = mediaGridScreenViewModel.personPhotoGridState,
+                        navController = navController,
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
+
+
+
+
                 composable(ChronolensNav.Search.name) {
                     SearchScreen(modifier = Modifier.padding(innerPadding))
                 }
+
                 composable(ChronolensNav.Settings.name) {
-                    SettingsScreen(modifier = Modifier.padding(innerPadding))
+                    SettingsScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        state = userState,
+                        viewModel = userViewModel,
+                        navController = navController
+                    )
                 }
-                composable(ChronolensNav.Albums.name) {
-                    AlbumsScreen(modifier = Modifier.padding(innerPadding))
+
+                composable(ChronolensNav.Error.name) {
+                    Box(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxWidth()
+                    ) {
+                        Text("Coming soon", color = Color.White)
+                    }
                 }
+
+                composable(ChronolensNav.BackgroundUpload.name) {
+                    BackgroundUploadScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        workManager = workManagerViewModel,
+                        workManagerState = workManagerState
+                    )
+                }
+
+                composable(ChronolensNav.ActivityHistory.name) {
+                    ActivityHistoryScreen(modifier = Modifier.padding(innerPadding))
+                }
+
+                composable(ChronolensNav.MachineLearning.name) {
+                    MachineLearningScreen(modifier = Modifier.padding(innerPadding))
+                }
+
             }
         }
     }

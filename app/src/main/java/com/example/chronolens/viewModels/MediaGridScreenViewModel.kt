@@ -4,11 +4,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
-import com.example.chronolens.utils.SyncManager
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
+import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.repositories.MediaGridRepository
+import com.example.chronolens.utils.SyncManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,9 @@ import kotlinx.coroutines.launch
 
 data class MediaGridState(
     val media: List<MediaAsset> = listOf(),
+    val isLoading: Boolean = true,
+
+    val people: List<Person> = listOf()
 )
 
 data class FullscreenImageState(
@@ -25,25 +29,49 @@ data class FullscreenImageState(
     val currentMedia: MediaAsset? = null
 )
 
+data class PersonPhotoGridState(
+    val person: Person? = null,
+    val photos: List<Map<String,String>> = listOf(),
+    var currentPage: Int = 1,
+    var isLoading: Boolean = false,
+    var hasMore: Boolean = true
+)
+
 
 class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
-    // List to hold the final merged images
+
     private val _mediaGridState = MutableStateFlow(MediaGridState())
     val mediaGridState: StateFlow<MediaGridState> = _mediaGridState.asStateFlow()
 
     private val _fullscreenImageState = MutableStateFlow(FullscreenImageState())
     val fullscreenImageState: StateFlow<FullscreenImageState> = _fullscreenImageState.asStateFlow()
 
+    private val _personPhotoGridState = MutableStateFlow(PersonPhotoGridState())
+    val personPhotoGridState: StateFlow<PersonPhotoGridState> = _personPhotoGridState.asStateFlow()
+
     private val syncManager = SyncManager(mediaGridRepository)
     private var remoteAssets: List<RemoteMedia> = mutableListOf()
     private var localAssets: List<LocalMedia> = mutableListOf()
 
-    // Initialize sync manager and fetch assets
     fun init() {
         viewModelScope.launch {
-            remoteAssets = syncManager.getRemoteAssets()
-            mergeMediaAssets()
-            loadLocalAssets()
+            loadMediaGrid()
+            setIsLoaded()
+            loadPeople()
+        }
+    }
+
+    private suspend fun loadMediaGrid() {
+        remoteAssets = syncManager.getRemoteAssets()
+        mergeMediaAssets()
+        loadLocalAssets()
+    }
+
+    fun refreshMediaGrid() {
+        viewModelScope.launch {
+            setIsLoading()
+            loadMediaGrid()
+            setIsLoaded()
         }
     }
 
@@ -68,7 +96,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                 }
             }
 
-            // Update the state with assets that have checksums
             localAssets = localMediaCalculated.toList()
             mergeMediaAssets()
             localMediaCalculated.clear()
@@ -76,18 +103,17 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             for (media in localMediaNotCalculated) {
                 val checksum = mediaGridRepository.getOrComputeChecksum(media.id, media.path)
                 media.checksum = checksum
-                // Update state in the main thread
                 localMediaCalculated += media
             }
             localAssets += localMediaCalculated
-            // Finally, merge local and remote assets
+
             mergeMediaAssets()
         }
     }
 
 
+    // Merge local and remote assets
     private fun mergeMediaAssets() {
-        // Merge local and remote assets
         _mediaGridState.update { currState ->
             currState.copy(
                 media = syncManager.mergeAssets(localAssets, remoteAssets)
@@ -95,8 +121,30 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+
+    fun updateCurrentPersonPhotoGrid(person: Person) {
+        _personPhotoGridState.update {
+            it.copy(
+                person = person,
+                photos = emptyList(),
+                currentPage = 1,
+                isLoading = false,
+                hasMore = true
+            )
+        }
+    }
+
+
+    fun updateCurrentAssetHelper(preview: Map<String,String>)
+    {
+        val remoteId = preview["id"] ?: ""
+        val checksum = preview["checksum"] ?: ""
+        val timestamp = preview["timestamp"]?.toLong() ?: 0
+        val media = RemoteMedia(remoteId, checksum, timestamp)
+        updateCurrentAsset(media)
+    }
+
     fun updateCurrentAsset(mediaAsset: MediaAsset) {
-        // Merge local and remote assets
         _fullscreenImageState.update { currState ->
             currState.copy(
                 currentMedia = mediaAsset
@@ -104,13 +152,52 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+
+    fun loadNextPage(clusterId: Int, requestType: String) {
+        viewModelScope.launch {
+            val state = _personPhotoGridState.value
+
+            if (state.isLoading || !state.hasMore) return@launch
+
+            _personPhotoGridState.update { it.copy(isLoading = true) }
+
+            try {
+                val nextPage = state.currentPage
+                val pageSize = 10
+                val newPhotos = mediaGridRepository.apiGetClusterPreviewsPage(clusterId, nextPage, pageSize, requestType)
+
+                _personPhotoGridState.update {
+                    it.copy(
+                        photos = it.photos + (newPhotos ?: emptyList()),
+                        currentPage = it.currentPage + 1,
+                        isLoading = false,
+                        hasMore = !newPhotos.isNullOrEmpty()
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _personPhotoGridState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+
     fun uploadMedia(localMedia: LocalMedia) {
         viewModelScope.launch(Dispatchers.IO) {
+            if (localMedia.checksum == null) {
+                val checksum =
+                    mediaGridRepository.getOrComputeChecksum(localMedia.id, localMedia.path)
+                localMedia.checksum = checksum
+            }
+
             val remoteId: String? = mediaGridRepository.apiUploadFileStream(localMedia)
             _fullscreenImageState.update { currState ->
                 currState.copy(
                     currentMedia = localMedia.copy(remoteId = remoteId)
                 )
+            }
+            if (remoteId != null) {
+                updateMediaList(remoteId, localMedia.checksum!!)
             }
         }
     }
@@ -123,4 +210,51 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         return mediaGridRepository.apiGetFullImage(id)
     }
 
+    // TODO: is it worth to "mergeMediaAssets()" or to do this??
+    private fun updateMediaList(remoteId: String, checksum: String) {
+        viewModelScope.launch {
+
+            val mediaList = _mediaGridState.value.media.toMutableList()
+            val index = mediaList.indexOfFirst { it.checksum == checksum && it is LocalMedia }
+
+            if (index != -1) {
+                val media = mediaList[index] as LocalMedia
+                mediaList[index] = media.copy(remoteId = remoteId)
+            }
+
+            _mediaGridState.update { currState ->
+                currState.copy(media = mediaList)
+            }
+        }
+    }
+
+
+    private fun setIsLoading() {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(isLoading = true)
+            }
+        }
+    }
+
+    private fun setIsLoaded() {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(isLoading = false)
+            }
+        }
+    }
+
+
+    private fun loadPeople() {
+        viewModelScope.launch {
+
+            val peopleThumbnails = mediaGridRepository.apiGetPeople()
+            _mediaGridState.update { currState ->
+                currState.copy(
+                    people = peopleThumbnails
+                )
+            }
+        }
+    }
 }

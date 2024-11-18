@@ -5,9 +5,18 @@ enum class ChronolensNav {
     MediaGrid,
     FullScreenMedia,
     Albums,
-    Settings,
+    PersonPhotoGrid,
     Search,
-    Error
+    Error, // TODO: remove?
+    Settings,
+
+    // TODO: make this a navGraph?
+    //Settings stuff
+    BackgroundUpload,
+    ActivityHistory,
+    MachineLearning
+
+
 }
 
 val noBottomBar:List<ChronolensNav> = listOf(ChronolensNav.FullScreenMedia,ChronolensNav.Login)

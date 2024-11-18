@@ -3,30 +3,42 @@ package com.example.chronolens.utils
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.chronolens.R
 
 // TODO: ask for notification permission
+// TODO: design do icon
+
+enum class Notification{
+    SYNC_CHANNEL_ID,
+    UPLOAD_CHANNEL_ID,
+    FINISHED_CHANNEL_ID,
+    SYNC_PROGRESS,
+    UPLOAD_PROGRESS,
+    FINISHED
+}
+
 fun createNotificationChannels(context: Context) {
     val syncChannel = NotificationChannel(
-        Notifications.SYNC_CHANNEL_ID,
-        Notifications.SYNC_PROGRESS,
+        Notification.SYNC_CHANNEL_ID.name,
+        Notification.SYNC_PROGRESS.name,
         NotificationManager.IMPORTANCE_LOW
     ).apply {
         description = "Shows progress of syncing local and remote assets"
     }
 
     val uploadChannel = NotificationChannel(
-        Notifications.UPLOAD_CHANNEL_ID,
-        Notifications.UPLOAD_PROGRESS,
+        Notification.UPLOAD_CHANNEL_ID.name,
+        Notification.UPLOAD_PROGRESS.name,
         NotificationManager.IMPORTANCE_LOW
     ).apply {
         description = "Shows progress of uploading media files"
     }
 
     val finishedChannel = NotificationChannel(
-        Notifications.FINISHED_CHANNEL_ID,
-        Notifications.FINISHED,
+        Notification.FINISHED_CHANNEL_ID.name,
+        Notification.FINISHED.name,
         NotificationManager.IMPORTANCE_LOW
     ).apply {
         description = "Shows upload has finished"
@@ -40,37 +52,35 @@ fun createNotificationChannels(context: Context) {
 }
 
 fun showSyncNotification(context: Context) {
-    val syncNotification = NotificationCompat.Builder(context, Notifications.SYNC_CHANNEL_ID)
+    val syncNotification = NotificationCompat.Builder(context, Notification.SYNC_CHANNEL_ID.name)
         .setSmallIcon(R.drawable.el_gato)
         .setContentTitle(context.resources.getString(R.string.notification_sync_message))
         .setContentText(context.resources.getString(R.string.notification_sync_message_init))
         .setPriority(NotificationCompat.PRIORITY_LOW)
-        .setOngoing(true)
         .build()
 
     val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    notificationManager.notify(1, syncNotification)
+    notificationManager.notify(Notification.SYNC_CHANNEL_ID.ordinal, syncNotification)
 }
 
 fun showUploadNotification(context: Context, progress: Int, max: Int) {
-    val uploadNotification = NotificationCompat.Builder(context, Notifications.UPLOAD_CHANNEL_ID)
+    val uploadNotification = NotificationCompat.Builder(context, Notification.UPLOAD_CHANNEL_ID.name)
         .setSmallIcon(R.drawable.el_gato)
         .setContentTitle(context.resources.getString(R.string.notification_upload_message))
         .setContentText(context.resources.getString(R.string.notification_upload_message_init))
         .setProgress(max, progress, false)
         .setPriority(NotificationCompat.PRIORITY_LOW)
-        .setOngoing(true)
         .build()
 
     val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    notificationManager.notify(2, uploadNotification)
+    notificationManager.notify(Notification.UPLOAD_CHANNEL_ID.ordinal, uploadNotification)
 }
 
 fun showFinishedNotification(context: Context, uploaded: Int) {
     val finishedNotification =
-        NotificationCompat.Builder(context, Notifications.FINISHED_CHANNEL_ID)
+        NotificationCompat.Builder(context, Notification.FINISHED_CHANNEL_ID.name)
             .setSmallIcon(R.drawable.el_gato)
             .setContentTitle(context.resources.getString(R.string.notification_finished))
             .setContentText(
@@ -85,13 +95,13 @@ fun showFinishedNotification(context: Context, uploaded: Int) {
 
     val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    notificationManager.notify(3, finishedNotification)
+    notificationManager.notify(Notification.FINISHED_CHANNEL_ID.ordinal, finishedNotification)
 }
 
 fun updateSyncNotificationProgress(context: Context, progress: Int, max: Int) {
     val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    val syncNotification = NotificationCompat.Builder(context, Notifications.SYNC_CHANNEL_ID)
+    val syncNotification = NotificationCompat.Builder(context, Notification.SYNC_CHANNEL_ID.name)
         .setSmallIcon(R.drawable.el_gato)
         .setContentTitle(context.resources.getString(R.string.notification_sync_message))
         .setContentText(
@@ -103,15 +113,14 @@ fun updateSyncNotificationProgress(context: Context, progress: Int, max: Int) {
         )
         .setProgress(max, progress, false)
         .setPriority(NotificationCompat.PRIORITY_LOW)
-        .setOngoing(true)
         .build()
-    notificationManager.notify(1, syncNotification)
+    notificationManager.notify(Notification.SYNC_CHANNEL_ID.ordinal, syncNotification)
 }
 
 fun updateUploadNotificationProgress(context: Context, progress: Int, max: Int) {
     val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    val uploadNotification = NotificationCompat.Builder(context, Notifications.UPLOAD_CHANNEL_ID)
+    val uploadNotification = NotificationCompat.Builder(context, Notification.UPLOAD_CHANNEL_ID.name)
         .setSmallIcon(R.drawable.el_gato)
         .setContentTitle(context.resources.getString(R.string.notification_upload_message))
         .setContentText(
@@ -123,7 +132,6 @@ fun updateUploadNotificationProgress(context: Context, progress: Int, max: Int) 
         )
         .setProgress(max, progress, false)
         .setPriority(NotificationCompat.PRIORITY_LOW)
-        .setOngoing(true)
         .build()
-    notificationManager.notify(2, uploadNotification)
+    notificationManager.notify(Notification.UPLOAD_CHANNEL_ID.ordinal, uploadNotification)
 }

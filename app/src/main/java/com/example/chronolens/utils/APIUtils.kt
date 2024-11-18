@@ -2,18 +2,19 @@ package com.example.chronolens.utils
 
 import android.content.SharedPreferences
 import android.util.Log
+import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.LocalMedia
+import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
+import com.example.chronolens.models.UnknownPerson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.internal.http.HttpMethod
-import okhttp3.internal.http2.Http2
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -25,63 +26,63 @@ import kotlin.io.path.Path
 class APIUtils {
     companion object {
 
-        suspend fun checkLogin(sharedPreferences: SharedPreferences) {
-            checkValidToken(sharedPreferences)
+        suspend fun checkLogin(sharedPreferences: SharedPreferences): Boolean {
+            return checkValidToken(sharedPreferences)
         }
 
-        // TODO: Handle case where token is valid but expires while in the middle of app usage?
-        private suspend fun checkValidToken(sharedPreferences: SharedPreferences) =
+        private suspend fun checkValidToken(sharedPreferences: SharedPreferences): Boolean =
             withContext(Dispatchers.IO) {
-                val oldAccessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-                val oldExpiresAt = sharedPreferences.getLong(Prefs.EXPIRES_AT, -1L)
-                val oldRefreshToken = sharedPreferences.getString(Prefs.REFRESH_TOKEN, "")
-                val oldServer = sharedPreferences.getString(Prefs.SERVER, "")
 
-                // Expired token
-                if (System.currentTimeMillis() >= oldExpiresAt) {
-                    val url = URL("$oldServer/refresh")
-                    val payload = JSONObject().apply {
-                        put(Json.ACCESS_TOKEN, oldAccessToken)
-                        put(Json.REFRESH_TOKEN, oldRefreshToken)
-                    }
-                    val body = payload.toString()
-                    val connection = (url.openConnection() as HttpURLConnection).apply {
-                        setRequestProperty("Content-Type", "application/json")
-                        setRequestProperty("Accept", "application/json")
-                        requestMethod = "POST"
-                        doOutput = true
-                        outputStream.write(body.toByteArray())
-                    }
+                val oldAccessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
+                val oldRefreshToken = sharedPreferences.getString(Prefs.REFRESH_TOKEN, null)
+                val server = sharedPreferences.getString(Prefs.SERVER, null)
 
-                    try {
-                        val responseCode = connection.responseCode
-                        if (responseCode == HttpURLConnection.HTTP_OK) {
-                            val response = connection.inputStream.bufferedReader().readText()
-                            val jsonResponse = JSONObject(response)
-                            val token = jsonResponse.getString(Json.ACCESS_TOKEN)
-                            val expiresAt = jsonResponse.getLong(Json.EXPIRES_AT)
-                            val refreshToken = jsonResponse.getString(Json.REFRESH_TOKEN)
-
-                            sharedPreferences.edit().putString(Prefs.ACCESS_TOKEN, token).apply()
-                            sharedPreferences.edit().putLong(Prefs.EXPIRES_AT, expiresAt).apply()
-                            sharedPreferences.edit().putString(Prefs.REFRESH_TOKEN, refreshToken)
-                                .apply()
-                        }
-
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-
-                    } finally {
-                        connection.disconnect()
-                    }
-
-                    // TODO: Validade token?
-                } else {
-
-
+                // Login for the first time
+                if (server == null || oldAccessToken == null || oldRefreshToken == null) {
+                    return@withContext false
                 }
-                // TODO: return bool?
 
+                // Assume token is always expired
+                val url = URL("$server/refresh")
+                val payload = JSONObject().apply {
+                    put(Json.ACCESS_TOKEN, oldAccessToken)
+                    put(Json.REFRESH_TOKEN, oldRefreshToken)
+                }
+                val body = payload.toString()
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    requestMethod = "POST"
+                    doOutput = true
+                    outputStream.write(body.toByteArray())
+                }
+
+                try {
+                    val responseCode = connection.responseCode
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        val response = connection.inputStream.bufferedReader().readText()
+                        val jsonResponse = JSONObject(response)
+                        val token = jsonResponse.getString(Json.ACCESS_TOKEN)
+                        val expiresAt = jsonResponse.getLong(Json.EXPIRES_AT)
+                        val refreshToken = jsonResponse.getString(Json.REFRESH_TOKEN)
+
+                        sharedPreferences.edit().putString(Prefs.ACCESS_TOKEN, token).apply()
+                        sharedPreferences.edit().putLong(Prefs.EXPIRES_AT, expiresAt).apply()
+                        sharedPreferences.edit().putString(Prefs.REFRESH_TOKEN, refreshToken)
+                            .apply()
+
+                        return@withContext true
+                    } else {
+                        return@withContext false
+                    }
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    return@withContext false
+
+                } finally {
+                    connection.disconnect()
+                }
             }
 
         // Login function
@@ -91,7 +92,6 @@ class APIUtils {
             username: String,
             password: String
         ): Int? = withContext(Dispatchers.IO) {
-            val url = URL("$server/login")
             val payload = JSONObject().apply {
                 put("username", username)
                 put("password", password)
@@ -100,6 +100,7 @@ class APIUtils {
             var connection: HttpURLConnection? = null
 
             try {
+                val url = URL("$server/login")
                 connection = (url.openConnection() as HttpURLConnection).apply {
                     setRequestProperty("Content-Type", "application/json")
                     setRequestProperty("Accept", "application/json")
@@ -130,7 +131,7 @@ class APIUtils {
             }
         }
 
-        // TODO: use already calculated checksum if possible
+        // TODO: handle other error codes
         suspend fun uploadMedia(
             sharedPreferences: SharedPreferences,
             asset: LocalMedia
@@ -142,7 +143,7 @@ class APIUtils {
 
             val file = File(Path(asset.path).toUri())
             val mimeType = asset.mimeType
-            val checksum = ChecksumUtils().computeChecksum(asset.path)
+            val checksum = asset.checksum!!
 
             val client = OkHttpClient()
             val requestBody = MultipartBody.Builder()
@@ -164,7 +165,7 @@ class APIUtils {
             try {
                 client.newCall(request).execute().use { response ->
                     Log.i("UPLOAD", response.code.toString())
-                    if (response.code == 200) {
+                    if (response.code == HttpURLConnection.HTTP_OK) {
                         return@withContext response.body?.string()
                     } else {
                         return@withContext null
@@ -326,5 +327,112 @@ class APIUtils {
             }
         }
 
+        suspend fun getPeople(sharedPreferences: SharedPreferences): List<Person> =
+            withContext(Dispatchers.IO) {
+
+                Log.i("APIUtils", "getPeople")
+                sharedPreferences.getString(Prefs.SERVER, "")?.let { Log.i("APIUtils", it) }
+                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")?.let { Log.i("APIUtils", it) }
+
+                val server = sharedPreferences.getString(Prefs.SERVER, "")
+                val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
+                    ?: return@withContext emptyList()
+
+                val url = "$server/faces".toHttpUrlOrNull()!!.newBuilder()
+                    .build().toUrl()
+
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    setRequestProperty("Authorization", "Bearer $accessToken")
+                    setRequestProperty("Accept", "application/json")
+                    requestMethod = "GET"
+                }
+
+                try {
+                    val responseCode = connection.responseCode
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        connection.inputStream.use { inputStream ->
+                            val responseJson = JSONObject(inputStream.bufferedReader().readText())
+                            val knownPeople = responseJson.getJSONArray("faces")
+                            val unknownPeople = responseJson.getJSONArray("clusters")
+
+                            Log.i("APIUtils", responseJson.toString())
+                            val peopleList = mutableListOf<Person>()
+
+                            for (i in 0 until knownPeople.length()) {
+                                val personJson = knownPeople.getJSONObject(i)
+                                val person = KnownPerson.fromJson(personJson)
+                                peopleList.add(person)
+                            }
+
+                            for (i in 0 until unknownPeople.length()) {
+                                val personJson = unknownPeople.getJSONObject(i)
+                                val person = UnknownPerson.fromJson(personJson)
+                                peopleList.add(person)
+                            }
+
+                            println(peopleList)
+                            return@use peopleList
+                        }
+                    } else {
+                        emptyList()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    emptyList()
+                } finally {
+                    connection.disconnect()
+                }
+            }
+
+
+        // TODO: Add the type of request face or cluster to this function as input and the only thing we need to change is the URL
+        suspend fun getClusterPreviewsPage(
+            sharedPreferences: SharedPreferences,
+            clusterId: Int,
+            page: Int = 1,
+            pageSize: Int = 10,
+            requestType: String
+        ): List<Map<String, String>>? = withContext(Dispatchers.IO) {
+            val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return@withContext null
+            val accessToken =
+                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext null
+
+            val url = URL("$server/$requestType/$clusterId?page=$page&page_size=$pageSize")
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("Authorization", "Bearer $accessToken")
+                setRequestProperty("Accept", "application/json")
+                requestMethod = "GET"
+            }
+
+            return@withContext try {
+                val responseCode = connection.responseCode
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    connection.inputStream.use { inputStream ->
+                        val responseJson = JSONArray(inputStream.bufferedReader().readText())
+                        val previews = mutableListOf<Map<String, String>>()
+
+                        for (i in 0 until responseJson.length()) {
+                            val item = responseJson.getJSONObject(i)
+                            val preview = mapOf(
+                                "id" to item.getString("id"),
+                                "preview_url" to item.getString("preview_url")
+                            )
+                            previews.add(preview)
+                        }
+
+                        previews
+                    }
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            } finally {
+                connection.disconnect()
+            }
+        }
+
     }
+
 }

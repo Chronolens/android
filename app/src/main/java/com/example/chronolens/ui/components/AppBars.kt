@@ -43,6 +43,7 @@ fun ChronolensBottomBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(navigationBarPadding + 48.dp),
+            containerColor = Color.Black
         ) {
             BoxWithConstraints(
                 modifier = Modifier.fillMaxSize()

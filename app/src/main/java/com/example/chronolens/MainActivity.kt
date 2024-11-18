@@ -1,5 +1,6 @@
 package com.example.chronolens
 
+import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.READ_MEDIA_IMAGES
 import android.Manifest.permission.READ_MEDIA_VIDEO
@@ -27,14 +28,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // FIXME: FIX PERMISSIONS
     private val readExternal = READ_EXTERNAL_STORAGE
     private val readVideo = READ_MEDIA_VIDEO
     private val readImages = READ_MEDIA_IMAGES
+    private val postNotifications = POST_NOTIFICATIONS
+
     private val permissions = arrayOf(
         readVideo, readImages
     )
 
-    //register a permissions activity launcher for multiple permissions
     private val videoImagesPermission =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissionMap ->
             if (permissionMap.all { it.value }) {
@@ -44,7 +47,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-    //register a permissions activity launcher for a single permission
     private val readExternalPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
@@ -56,10 +58,17 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Notification permission denied!", Toast.LENGTH_SHORT).show()
+            }
+        }
+
     private fun requestPermissions() {
-        //check the API level
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            //filter permissions array in order to get permissions that have not been granted
             val notGrantedPermissions = permissions.filterNot { permission ->
                 ContextCompat.checkSelfPermission(
                     this,
@@ -67,11 +76,9 @@ class MainActivity : ComponentActivity() {
                 ) == PackageManager.PERMISSION_GRANTED
             }
             if (notGrantedPermissions.isNotEmpty()) {
-                //check if permission was previously denied and return a boolean value
                 val showRationale = notGrantedPermissions.any { permission ->
                     shouldShowRequestPermissionRationale(permission)
                 }
-                //if true, explain to user why granting this permission is important
                 if (showRationale) {
                     AlertDialog.Builder(this)
                         .setTitle("Storage Permission")
@@ -89,15 +96,39 @@ class MainActivity : ComponentActivity() {
                         }
                         .show()
                 } else {
-                    //launch the videoPermission ActivityResultContract
                     videoImagesPermission.launch(notGrantedPermissions.toTypedArray())
                 }
             } else {
                 Toast.makeText(this, "Read media storage permission granted", Toast.LENGTH_SHORT)
                     .show()
             }
+
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    postNotifications
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                if (shouldShowRequestPermissionRationale(postNotifications)) {
+                    AlertDialog.Builder(this)
+                        .setTitle("Notification Permission")
+                        .setMessage("Notification permission is needed to receive app alerts and updates")
+                        .setNegativeButton("Cancel") { dialog, _ ->
+                            Toast.makeText(
+                                this,
+                                "Notification permission denied!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            dialog.dismiss()
+                        }
+                        .setPositiveButton("OK") { _, _ ->
+                            notificationPermission.launch(postNotifications)
+                        }
+                        .show()
+                } else {
+                    notificationPermission.launch(postNotifications)
+                }
+            }
         } else {
-            //check if permission is granted
             if (ContextCompat.checkSelfPermission(
                     this,
                     readExternal
