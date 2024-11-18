@@ -30,7 +30,7 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
 
             // Sync Phase
             showSyncNotification(applicationContext)
-            delay(8000L)
+//            delay(8000L)
             val mediaGridRepository = syncManager.mediaGridRepository
             val localMedia: List<LocalMedia> = syncManager.getLocalAssets()
             val localMediaIds: List<String> = localMedia.map { it.id }
@@ -44,7 +44,7 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
             var calculated = 0
 
             updateSyncNotificationProgress(applicationContext, 0, localMedia.size)
-            delay(5000L)
+//            delay(5000L)
             for (media in localMedia) {
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {

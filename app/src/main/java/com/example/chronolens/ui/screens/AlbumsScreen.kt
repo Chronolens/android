@@ -142,6 +142,9 @@ fun AlbumsScreen(
     }
 }
 
+
+
+// TODO: Fix for HEIF photos, as they are not being displayed probably due to the conversion to bitmap
 @Composable
 fun PersonItem (
     viewModel: MediaGridScreenViewModel,
