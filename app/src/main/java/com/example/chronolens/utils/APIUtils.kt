@@ -2,18 +2,19 @@ package com.example.chronolens.utils
 
 import android.content.SharedPreferences
 import android.util.Log
+import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.LocalMedia
+import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
+import com.example.chronolens.models.UnknownPerson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.Headers
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.internal.http.HttpMethod
-import okhttp3.internal.http2.Http2
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -327,4 +328,71 @@ class APIUtils {
         }
 
     }
+
+
+
+    suspend fun getPeoplePage(
+        page: Int,
+        sharedPreferences: SharedPreferences
+    ): List<Person> = withContext(Dispatchers.IO) {
+
+        val pagesize = 5
+
+        val server = sharedPreferences.getString(Prefs.SERVER, "")
+        val accessToken =
+            sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
+                ?: return@withContext emptyList()
+
+
+
+        val url = "$server/people".toHttpUrlOrNull()!!.newBuilder()
+            .addQueryParameter("page", page.toString())
+            .addQueryParameter("pagesize", pagesize.toString())
+            .build().toUrl()
+
+
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            setRequestProperty("Authorization", "Bearer $accessToken")
+            setRequestProperty("Accept", "application/json")
+            requestMethod = "GET"
+        }
+
+
+
+        try {
+            val responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                connection.inputStream.use { inputStream ->
+                    val responseJson = JSONObject(inputStream.bufferedReader().readText())
+                    val knownPeople = responseJson.getJSONArray("faces")
+                    val unknownPeople = responseJson.getJSONArray("clusters")
+
+                    val peopleList = mutableListOf<Person>()
+
+                    for (i in 0 until knownPeople.length()) {
+                        val personJson = knownPeople.getJSONObject(i)
+                        val person = KnownPerson.fromJson(personJson)
+                        peopleList.add(person)
+                    }
+
+                    for (i in 0 until unknownPeople.length()) {
+                        val personJson = unknownPeople.getJSONObject(i)
+                        val person = UnknownPerson.fromJson(personJson)
+                        peopleList.add(person)
+                    }
+
+                    peopleList
+                }
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        } finally {
+            connection.disconnect()
+        }
+
+    }
+
 }

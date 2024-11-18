@@ -8,12 +8,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -44,7 +41,6 @@ import com.example.chronolens.viewModels.FullscreenImageState
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
 
-
 // TODO: Restrict photo vertical position while zooming in with double tap
 
 // TODO: METADATA SLIDING BOX SWIPE IS TAKING OVER ZOOMING GESTURES
@@ -61,6 +57,10 @@ fun FullscreenMediaView(
     navController: NavHostController,
     modifier: Modifier
 ) {
+
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+
     val boxHeight = 300.dp
 
     val mediaAsset = fullscreenMediaState.value.currentMedia
@@ -126,14 +126,15 @@ fun FullscreenMediaView(
         }
 
 
-
         // Metadata Box
         val colorScheme = MaterialTheme.colorScheme
         val brush = Brush.horizontalGradient(
             colors = listOf(
-                colorScheme.primary,
-                colorScheme.secondary
-            )
+                colorScheme.secondary,
+                colorScheme.primary
+            ),
+            startX = 0f,
+            endX = with(LocalDensity.current) { screenWidth.toPx() } // This is odd, perhaps theres a better way
         )
 
         Box(
