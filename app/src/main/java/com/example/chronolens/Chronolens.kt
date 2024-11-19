@@ -14,7 +14,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.core.app.Person
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -35,7 +34,6 @@ import com.example.chronolens.ui.screens.settings.MachineLearningScreen
 import com.example.chronolens.ui.theme.ChronoLensTheme
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
-import com.example.chronolens.viewModels.PersonPhotoGridState
 import com.example.chronolens.viewModels.UserViewModel
 import com.example.chronolens.viewModels.ViewModelProvider
 import com.example.chronolens.viewModels.WorkManagerViewModel
