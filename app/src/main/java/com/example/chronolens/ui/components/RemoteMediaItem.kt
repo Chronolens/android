@@ -13,11 +13,11 @@ import coil3.compose.AsyncImage
 
 @Composable
 fun RemoteMediaItem(
-    mediaAsset: Map<String, String>,
+    mediaAsset: Pair<String, String>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val imageUrl = mediaAsset["preview_url"] ?: ""
+    val imageUrl = mediaAsset.second
 
     Box(
         modifier = modifier

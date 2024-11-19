@@ -396,7 +396,7 @@ class APIUtils {
             page: Int = 1,
             pageSize: Int = 10,
             requestType: String
-        ): List<Map<String, String>>? = withContext(Dispatchers.IO) {
+        ): List<Pair<String, String>>? = withContext(Dispatchers.IO) {
             val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return@withContext null
             val accessToken =
                 sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext null
@@ -413,14 +413,11 @@ class APIUtils {
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     connection.inputStream.use { inputStream ->
                         val responseJson = JSONArray(inputStream.bufferedReader().readText())
-                        val previews = mutableListOf<Map<String, String>>()
+                        val previews = mutableListOf<Pair<String, String>>()
 
                         for (i in 0 until responseJson.length()) {
                             val item = responseJson.getJSONObject(i)
-                            val preview = mapOf(
-                                "id" to item.getString("id"),
-                                "preview_url" to item.getString("preview_url")
-                            )
+                            val preview = Pair(item.getString("id"), item.getString("preview_url"))
                             previews.add(preview)
                         }
 
@@ -444,7 +441,7 @@ class APIUtils {
             search: String,
             page: Int = 1,
             pageSize: Int = 10
-        ): List<Map<String, String>>? {
+        ): List<Pair<String, String>>? {
             val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return null
             val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return null
 
@@ -473,14 +470,11 @@ class APIUtils {
                             Log.i("APIUtils", "Response: $responseText")
                             try {
                                 val responseJson = JSONArray(responseText)
-                                val previews = mutableListOf<Map<String, String>>()
+                                val previews = mutableListOf<Pair<String, String>>()
 
                                 for (i in 0 until responseJson.length()) {
                                     val item = responseJson.getJSONObject(i)
-                                    val preview = mapOf(
-                                        "id" to item.getString("id"),
-                                        "preview_url" to item.getString("preview_url")
-                                    )
+                                    val preview = Pair(item.getString("id"), item.getString("preview_url"))
                                     previews.add(preview)
                                 }
                                 Log.i("APIUtils", previews.toString())
