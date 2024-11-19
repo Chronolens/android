@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import com.example.chronolens.models.KnownPerson
+import com.example.chronolens.ui.components.RemoteMediaItem
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.PersonPhotoGridState
@@ -84,7 +85,7 @@ fun PersonPhotoGrid(
             } else if (personPhotoGridStateValue.hasMore) {
                 item {
                     LaunchedEffect(Unit) {
-                        viewModel.loadNextPage(clusterId, requestType)
+                        viewModel.loadClusterNextPage(clusterId, requestType)
                     }
                 }
             }
@@ -92,26 +93,3 @@ fun PersonPhotoGrid(
     }
 }
 
-@Composable
-fun RemoteMediaItem(
-    mediaAsset: Map<String, String>,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val imageUrl = mediaAsset["preview_url"] ?: ""
-
-    Box(
-        modifier = modifier
-            .padding(1.dp)
-            .clickable(onClick = onClick)
-    ) {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxSize()
-                .aspectRatio(1f),
-            contentScale = ContentScale.Crop
-        )
-    }
-}
