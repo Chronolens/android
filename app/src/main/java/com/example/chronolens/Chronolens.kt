@@ -151,10 +151,13 @@ fun ChronoLens() {
                 }
 
 
-
-
                 composable(ChronolensNav.Search.name) {
-                    SearchScreen(modifier = Modifier.padding(innerPadding))
+                    SearchScreen(
+                        viewModel = mediaGridScreenViewModel,
+                        clipSearchState = mediaGridScreenViewModel.clipSearchState,
+                        navController = navController,
+                        modifier = Modifier.padding(innerPadding)
+                    )
                 }
 
                 composable(ChronolensNav.Settings.name) {

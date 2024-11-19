@@ -29,6 +29,8 @@ data class FullscreenImageState(
     val currentMedia: MediaAsset? = null
 )
 
+// We have to null all these values after the user leaves the screen, there's a weird bug
+// that randomly displays one of the images from the previous screen
 data class PersonPhotoGridState(
     val person: Person? = null,
     val photos: List<Map<String,String>> = listOf(),
@@ -36,6 +38,15 @@ data class PersonPhotoGridState(
     var isLoading: Boolean = false,
     var hasMore: Boolean = true
 )
+
+data class ClipSearchState(
+    val currentSearch : String = "",
+    val photos: List<Map<String,String>> = listOf(),
+    var currentPage: Int = 1,
+    var isLoading: Boolean = false,
+    var hasMore: Boolean = true
+)
+
 
 
 class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
@@ -48,6 +59,9 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     private val _personPhotoGridState = MutableStateFlow(PersonPhotoGridState())
     val personPhotoGridState: StateFlow<PersonPhotoGridState> = _personPhotoGridState.asStateFlow()
+
+    private val _clipSearchState = MutableStateFlow(ClipSearchState())
+    val clipSearchState: StateFlow<ClipSearchState> = _clipSearchState.asStateFlow()
 
     private val syncManager = SyncManager(mediaGridRepository)
     private var remoteAssets: List<RemoteMedia> = mutableListOf()
@@ -111,7 +125,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-
     // Merge local and remote assets
     private fun mergeMediaAssets() {
         _mediaGridState.update { currState ->
@@ -152,8 +165,49 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+    fun clipSearchNextPage(searchInput: String) {
+        viewModelScope.launch {
+            val state = _clipSearchState.value
 
-    fun loadNextPage(clusterId: Int, requestType: String) {
+            if (state.isLoading || !state.hasMore) return@launch
+
+            _clipSearchState.update { it.copy(isLoading = true, currentSearch = searchInput) }
+
+            try {
+                val nextPage = state.currentPage
+                val pageSize = 10
+                val newPhotos = mediaGridRepository.apiGetNextClipSearchPage(searchInput, nextPage, pageSize)
+
+                _clipSearchState.update {
+                    it.copy(
+                        photos = it.photos + (newPhotos ?: emptyList()),
+                        currentPage = it.currentPage + 1,
+                        isLoading = false,
+                        hasMore = !newPhotos.isNullOrEmpty()
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _clipSearchState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+
+
+    fun clearSearchResults() {
+        _clipSearchState.update {
+            it.copy(
+                currentSearch = "",
+                photos = emptyList(),
+                currentPage = 1,
+                isLoading = false,
+                hasMore = true
+            )
+        }
+    }
+
+    fun loadClusterNextPage(clusterId: Int, requestType: String) {
         viewModelScope.launch {
             val state = _personPhotoGridState.value
 
@@ -201,6 +255,10 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             }
         }
     }
+
+
+
+
 
     suspend fun getRemoteAssetPreviewUrl(id: String): String {
         return mediaGridRepository.apiGetPreview(id)

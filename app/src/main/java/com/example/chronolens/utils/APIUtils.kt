@@ -315,7 +315,9 @@ class APIUtils {
             try {
                 val responseCode = connection.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
-                    connection.inputStream.bufferedReader().readText()
+                    val responseText = connection.inputStream.bufferedReader().readText()
+                    val jsonResponse = JSONObject(responseText)
+                    jsonResponse.getString("media_url")
                 } else {
                     ""
                 }
@@ -405,6 +407,52 @@ class APIUtils {
             }
 
             return@withContext try {
+                val responseCode = connection.responseCode
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    connection.inputStream.use { inputStream ->
+                        val responseJson = JSONArray(inputStream.bufferedReader().readText())
+                        val previews = mutableListOf<Map<String, String>>()
+
+                        for (i in 0 until responseJson.length()) {
+                            val item = responseJson.getJSONObject(i)
+                            val preview = mapOf(
+                                "id" to item.getString("id"),
+                                "preview_url" to item.getString("preview_url")
+                            )
+                            previews.add(preview)
+                        }
+
+                        previews
+                    }
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            } finally {
+                connection.disconnect()
+            }
+        }
+
+
+        fun loadNextClipSearchPage(
+            sharedPreferences: SharedPreferences,
+            search: String,
+            page: Int = 1,
+            pageSize: Int = 10
+        ): List<Map<String, String>>? {
+            val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return null
+            val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return null
+
+            val url = URL("$server/search/$search?page=$page&page_size=$pageSize")
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("Authorization", "Bearer $accessToken")
+                setRequestProperty("Accept", "application/json")
+                requestMethod = "GET"
+            }
+
+            return try {
                 val responseCode = connection.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     connection.inputStream.use { inputStream ->
