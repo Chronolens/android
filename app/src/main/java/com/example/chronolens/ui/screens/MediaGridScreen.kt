@@ -103,7 +103,6 @@ fun MediaGridScreen(
 
 
 // TODO : Investigate the possibility of having a composable builder in the class itself to reduce conditional logic
-
 @Composable
 fun ImageItem(
     viewModel: MediaGridScreenViewModel,

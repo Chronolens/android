@@ -2,6 +2,8 @@ package com.example.chronolens.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,12 +17,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.TextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -71,6 +76,7 @@ fun LoginScreen(
     val server = remember { mutableStateOf(viewModel.getServer()) }
     val username = remember { mutableStateOf(viewModel.getUsername()) }
     val password = remember { mutableStateOf("") }
+    val passwordVisible = remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -87,7 +93,8 @@ fun LoginScreen(
                     userState = userState,
                     server = server,
                     username = username,
-                    password = password
+                    password = password,
+                    passwordVisible = passwordVisible
                 )
             }
         }
@@ -101,7 +108,8 @@ fun LoginPrompt(
     userState: State<UserState>,
     server: MutableState<String>,
     username: MutableState<String>,
-    password: MutableState<String>
+    password: MutableState<String>,
+    passwordVisible: MutableState<Boolean>
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -151,7 +159,8 @@ fun LoginPrompt(
             isPassword = true,
             isError = userState.value.userLoginState == UserLoginState.CredentialsWrong,
             keyboardType = KeyboardType.Password,
-            imeAction = ImeAction.Done
+            imeAction = ImeAction.Done,
+            passwordVisible = passwordVisible
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -189,7 +198,8 @@ fun CustomTextField(
     isPassword: Boolean = false,
     isError: Boolean = false,
     keyboardType: KeyboardType,
-    imeAction: ImeAction
+    imeAction: ImeAction,
+    passwordVisible: MutableState<Boolean>? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val labelColor = colorScheme.onBackground.copy(alpha = 0.7f)
@@ -208,41 +218,46 @@ fun CustomTextField(
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
         )
 
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-        )
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                visualTransformation = if (isPassword && !passwordVisible!!.value) PasswordVisualTransformation() else VisualTransformation.None,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = keyboardType,
+                    imeAction = imeAction
+                ),
+                textStyle = typography.bodyLarge.copy(color = colorScheme.onBackground),
+                cursorBrush = SolidColor(colorScheme.onPrimary),
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
 
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            singleLine = true,
-            visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = keyboardType,
-                imeAction = imeAction
-            ),
-            textStyle = typography.bodyLarge.copy(color = colorScheme.onBackground),
-            cursorBrush = SolidColor(colorScheme.onPrimary),
-            decorationBox = { innerTextField ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                ) {
-
-                    if (value.isEmpty()) {
-                        Text(
-                            text = label,
-                            color = labelColor,
-                            style = typography.bodyMedium
-                        )
+                        if (value.isEmpty()) {
+                            Text(
+                                text = label,
+                                color = labelColor,
+                                style = typography.bodyMedium
+                            )
+                        }
+                        if (isPassword) {
+                            Icon(
+                                imageVector = Icons.Default.AccountBox,
+                                "",
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .clickable {
+                                        passwordVisible!!.value = !passwordVisible.value
+                                    }
+                            )
+                        }
+                        innerTextField()
                     }
-                    innerTextField()
-                }
-            },
-
-        )
+                },
+            )
 
         HorizontalDivider(
             modifier = Modifier
