@@ -16,8 +16,6 @@ import com.example.chronolens.workers.BackgroundChecksumWorker
 import kotlinx.coroutines.flow.Flow
 import java.time.Duration
 
-// TODO: allow schedulling by hour of the day?
-// TODO: settings check "from now on"?
 class WorkManagerRepository(
     context: Context, mediaGridRepository: MediaGridRepository
 ) {
