@@ -85,7 +85,7 @@ fun Profile(state: State<UserState>, viewModel: UserViewModel, navController: Na
                 popUpTo(0) { inclusive = true }
             }
         }) {
-            Text("Logout")
+            Text(stringResource(R.string.logout))
         }
     }
 }

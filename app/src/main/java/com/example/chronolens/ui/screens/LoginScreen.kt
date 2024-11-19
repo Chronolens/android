@@ -20,6 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -124,7 +125,7 @@ fun LoginPrompt(
         CustomTextField(
             value = server.value,
             onValueChange = { server.value = it },
-            label = "Server",
+            label = stringResource(R.string.server),
             isError = userState.value.userLoginState == UserLoginState.CredentialsWrong,
             keyboardType = KeyboardType.Uri,
             imeAction = ImeAction.Next
@@ -135,7 +136,7 @@ fun LoginPrompt(
         CustomTextField(
             value = username.value,
             onValueChange = { username.value = it },
-            label = "Username",
+            label = stringResource(R.string.username),
             isError = userState.value.userLoginState == UserLoginState.CredentialsWrong,
             keyboardType = KeyboardType.Text,
             imeAction = ImeAction.Next
@@ -146,7 +147,7 @@ fun LoginPrompt(
         CustomTextField(
             value = password.value,
             onValueChange = { password.value = it },
-            label = "Password",
+            label = stringResource(R.string.password),
             isPassword = true,
             isError = userState.value.userLoginState == UserLoginState.CredentialsWrong,
             keyboardType = KeyboardType.Password,
@@ -170,7 +171,7 @@ fun LoginPrompt(
         ) {
 
             Text(
-                "Log In",
+                stringResource(R.string.login),
                 color = colorScheme.secondaryContainer,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -207,6 +208,11 @@ fun CustomTextField(
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
         )
 
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+        )
+
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
@@ -234,7 +240,8 @@ fun CustomTextField(
                     }
                     innerTextField()
                 }
-            }
+            },
+
         )
 
         HorizontalDivider(
