@@ -112,7 +112,7 @@ class MediaGridRepository(
         return APIUtils.getClusterPreviewsPage(sharedPreferences, clusterId, page, pageSize, requestType)
     }
 
-    fun apiGetNextClipSearchPage(search: String, page: Int, pageSize: Int): List<Map<String, String>>? {
+    suspend fun apiGetNextClipSearchPage(search: String, page: Int, pageSize: Int): List<Map<String, String>>? {
         return APIUtils.loadNextClipSearchPage(sharedPreferences, search, page, pageSize)
 
 

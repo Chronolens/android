@@ -1,6 +1,7 @@
 package com.example.chronolens.utils
 
 import android.content.SharedPreferences
+import android.net.Uri
 import android.util.Log
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.LocalMedia
@@ -16,6 +17,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
@@ -436,7 +438,8 @@ class APIUtils {
         }
 
 
-        fun loadNextClipSearchPage(
+        // Ensure that this function is called from a coroutine scope (e.g., in a ViewModel or activity)
+        suspend fun loadNextClipSearchPage(
             sharedPreferences: SharedPreferences,
             search: String,
             page: Int = 1,
@@ -445,42 +448,57 @@ class APIUtils {
             val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return null
             val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return null
 
-            val url = URL("$server/search/$search?page=$page&page_size=$pageSize")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                setRequestProperty("Authorization", "Bearer $accessToken")
-                setRequestProperty("Accept", "application/json")
-                requestMethod = "GET"
-            }
+            // Log the API call
+            Log.i("APIUtils", "loadNextClipSearchPage")
+            val url = "$server/search?query=$search&page=$page&page_size=$pageSize".toHttpUrlOrNull()!!.newBuilder()
+                .build().toUrl()
+
+            Log.i("APIUtils", url.toString())
 
             return try {
-                val responseCode = connection.responseCode
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    connection.inputStream.use { inputStream ->
-                        val responseJson = JSONArray(inputStream.bufferedReader().readText())
-                        val previews = mutableListOf<Map<String, String>>()
-
-                        for (i in 0 until responseJson.length()) {
-                            val item = responseJson.getJSONObject(i)
-                            val preview = mapOf(
-                                "id" to item.getString("id"),
-                                "preview_url" to item.getString("preview_url")
-                            )
-                            previews.add(preview)
-                        }
-
-                        previews
+                // Run the network operation on the background thread using withContext
+                withContext(Dispatchers.IO) {
+                    val connection = (url.openConnection() as HttpURLConnection).apply {
+                        setRequestProperty("Authorization", "Bearer $accessToken")
+                        setRequestProperty("Accept", "application/json")
+                        requestMethod = "GET"
                     }
-                } else {
-                    null
+
+                    val responseCode = connection.responseCode
+                    Log.i("APIUtils", "Response Code: $responseCode")
+
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        connection.inputStream.use { inputStream ->
+                            val responseText = inputStream.bufferedReader().readText()
+                            Log.i("APIUtils", "Response: $responseText")
+                            try {
+                                val responseJson = JSONArray(responseText)
+                                val previews = mutableListOf<Map<String, String>>()
+
+                                for (i in 0 until responseJson.length()) {
+                                    val item = responseJson.getJSONObject(i)
+                                    val preview = mapOf(
+                                        "id" to item.getString("id"),
+                                        "preview_url" to item.getString("preview_url")
+                                    )
+                                    previews.add(preview)
+                                }
+                                Log.i("APIUtils", previews.toString())
+                                return@withContext previews
+                            } catch (e: JSONException) {
+                                Log.e("APIUtils", "Error parsing JSON response", e)
+                                return@withContext null
+                            }
+                        }
+                    } else {
+                        Log.e("APIUtils", "HTTP Error: $responseCode")
+                        return@withContext null
+                    }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            } finally {
-                connection.disconnect()
+                Log.e("APIUtils", "Exception during API call", e)
+                return null
             }
         }
-
     }
-
 }
