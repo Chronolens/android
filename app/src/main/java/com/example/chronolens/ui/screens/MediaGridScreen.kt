@@ -119,7 +119,6 @@ fun loadThumbnail(context: Context, uri: Uri, width: Int, height: Int): Bitmap? 
 }
 
 // TODO : Investigate the possibility of having a composable builder in the class itself to reduce conditional logic
-
 @Composable
 fun ImageItem(
     viewModel: MediaGridScreenViewModel,

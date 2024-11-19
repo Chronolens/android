@@ -210,7 +210,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         return mediaGridRepository.apiGetFullImage(id)
     }
 
-    // TODO: is it worth to "mergeMediaAssets()" or to do this??
     private fun updateMediaList(remoteId: String, checksum: String) {
         viewModelScope.launch {
 
