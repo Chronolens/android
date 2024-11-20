@@ -50,7 +50,7 @@ fun ChronoLens() {
         val mediaGridScreenViewModel: MediaGridScreenViewModel =
             viewModel(factory = ViewModelProvider.Factory)
 
-        val mediaGridScreenState = mediaGridScreenViewModel.mediaGridState.collectAsState()
+        val mediaGridState = mediaGridScreenViewModel.mediaGridState.collectAsState()
 
         val fullscreenMediaState =
             mediaGridScreenViewModel.fullscreenImageState.collectAsState()
@@ -74,7 +74,8 @@ fun ChronoLens() {
                     canNavigateBack = navController.previousBackStackEntry != null,
                     navigateUp = { navController.navigateUp() },
                     currentScreen = currentScreen,
-                    userLoginState = userState.value.userLoginState
+                    userLoginState = userState.value.userLoginState,
+                    mediaGridState = mediaGridState
                 )
             },
             bottomBar = {
@@ -94,7 +95,7 @@ fun ChronoLens() {
                 composable(ChronolensNav.MediaGrid.name) {
                     MediaGridScreen(
                         viewModel = mediaGridScreenViewModel,
-                        state = mediaGridScreenState,
+                        state = mediaGridState,
                         navController = navController,
                         work = workManagerViewModel,
                         modifier = Modifier
@@ -106,7 +107,7 @@ fun ChronoLens() {
                 composable(ChronolensNav.FullScreenMedia.name) {
                     FullscreenMediaView(
                         viewModel = mediaGridScreenViewModel,
-                        mediaGridState = mediaGridScreenState,
+                        mediaGridState = mediaGridState,
                         fullscreenMediaState = fullscreenMediaState,
                         navController = navController,
                         modifier = Modifier
@@ -134,7 +135,7 @@ fun ChronoLens() {
                     AlbumsScreen(
                         viewModel = mediaGridScreenViewModel,
                         navController = navController,
-                        state = mediaGridScreenState,
+                        state = mediaGridState,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

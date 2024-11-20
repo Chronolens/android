@@ -1,11 +1,13 @@
 package com.example.chronolens.ui.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -19,10 +21,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -30,6 +34,7 @@ import com.example.chronolens.R
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.utils.noBottomBar
 import com.example.chronolens.utils.noTopBar
+import com.example.chronolens.viewModels.MediaGridState
 import com.example.chronolens.viewModels.UserLoginState
 
 @Composable
@@ -147,17 +152,26 @@ fun ChronolensTopAppBar(
     currentScreen: ChronolensNav,
     navigateUp: () -> Unit,
     modifier: Modifier = Modifier,
-    userLoginState: UserLoginState
-
+    userLoginState: UserLoginState,
+    mediaGridState: State<MediaGridState>
 ) {
 
     if (userLoginState != UserLoginState.Loading && !noTopBar.contains(currentScreen)) {
         TopAppBar(
-            title = { Text(text = currentScreen.name) },
+            title = {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text(text = currentScreen.name)
+                    if (mediaGridState.value.isSelecting) {
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(text = mediaGridState.value.selected.size.toString())
+                        Spacer(modifier = Modifier.padding(end = 16.dp))
+                    }
+                }
+            },
             colors = TopAppBarDefaults.mediumTopAppBarColors(
                 containerColor = Color.Transparent
             ),
-            modifier = modifier,
+            modifier = modifier.border(2.dp, Color.White),
             navigationIcon = {
                 if (canNavigateBack) {
                     IconButton(onClick = navigateUp) {

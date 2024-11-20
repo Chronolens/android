@@ -17,10 +17,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+enum class SelectingType {
+    Remote,
+    Local,
+    None
+}
+
 data class MediaGridState(
     val media: List<MediaAsset> = listOf(),
     val isLoading: Boolean = true,
-
+    val selected: Map<String, MediaAsset> = mapOf(),
+    val isSelecting: Boolean = false,
+    val selectingType: SelectingType = SelectingType.None,
     val people: List<Person> = listOf()
 )
 
@@ -33,20 +41,19 @@ data class FullscreenImageState(
 // that randomly displays one of the images from the previous screen
 data class PersonPhotoGridState(
     val person: Person? = null,
-    val photos: List<Map<String,String>> = listOf(),
-    var currentPage: Int = 1,
-    var isLoading: Boolean = false,
-    var hasMore: Boolean = true
+    val photos: List<Map<String, String>> = listOf(),
+    val currentPage: Int = 1,
+    val isLoading: Boolean = false,
+    val hasMore: Boolean = true
 )
 
 data class ClipSearchState(
-    val currentSearch : String = "",
-    val photos: List<Map<String,String>> = listOf(),
-    var currentPage: Int = 1,
-    var isLoading: Boolean = false,
-    var hasMore: Boolean = true
+    val currentSearch: String = "",
+    val photos: List<Map<String, String>> = listOf(),
+    val currentPage: Int = 1,
+    val isLoading: Boolean = false,
+    val hasMore: Boolean = true
 )
-
 
 
 class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
@@ -148,8 +155,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-    fun updateCurrentAssetHelper(preview: Map<String,String>)
-    {
+    fun updateCurrentAssetHelper(preview: Map<String, String>) {
         val remoteId = preview["id"] ?: ""
         val checksum = preview["checksum"] ?: ""
         val timestamp = preview["timestamp"]?.toLong() ?: 0
@@ -176,7 +182,8 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             try {
                 val nextPage = state.currentPage
                 val pageSize = 10
-                val newPhotos = mediaGridRepository.apiGetNextClipSearchPage(searchInput, nextPage, pageSize)
+                val newPhotos =
+                    mediaGridRepository.apiGetNextClipSearchPage(searchInput, nextPage, pageSize)
 
                 _clipSearchState.update {
                     it.copy(
@@ -192,7 +199,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             }
         }
     }
-
 
 
     fun clearSearchResults() {
@@ -218,7 +224,12 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             try {
                 val nextPage = state.currentPage
                 val pageSize = 10
-                val newPhotos = mediaGridRepository.apiGetClusterPreviewsPage(clusterId, nextPage, pageSize, requestType)
+                val newPhotos = mediaGridRepository.apiGetClusterPreviewsPage(
+                    clusterId,
+                    nextPage,
+                    pageSize,
+                    requestType
+                )
 
                 _personPhotoGridState.update {
                     it.copy(
@@ -257,9 +268,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-
-
-
     suspend fun getRemoteAssetPreviewUrl(id: String): String {
         return mediaGridRepository.apiGetPreview(id)
     }
@@ -285,7 +293,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-
     private fun setIsLoading() {
         viewModelScope.launch {
             _mediaGridState.update { currState ->
@@ -302,16 +309,42 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-
     private fun loadPeople() {
         viewModelScope.launch {
-
             val peopleThumbnails = mediaGridRepository.apiGetPeople()
             _mediaGridState.update { currState ->
+                currState.copy(people = peopleThumbnails)
+            }
+        }
+    }
+
+    fun selectOrDeselect(id: String, media: MediaAsset) {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                val oldSelected = currState.selected.toMutableMap()
+                var selectingType: SelectingType = currState.selectingType
+                if (oldSelected.containsKey(id)) {
+                    oldSelected.remove(id)
+                    if (oldSelected.isEmpty()) {
+                        selectingType = SelectingType.None
+                    }
+                } else {
+                    if (media is LocalMedia && selectingType != SelectingType.Remote) {
+                        oldSelected[id] = media
+                        selectingType = SelectingType.Local
+                    } else if (media is RemoteMedia && selectingType != SelectingType.Local) {
+                        oldSelected[id] = media
+                        selectingType = SelectingType.Remote
+                    }
+                }
                 currState.copy(
-                    people = peopleThumbnails
+                    selected = oldSelected,
+                    isSelecting = oldSelected.isNotEmpty(),
+                    selectingType = selectingType
                 )
             }
         }
     }
+
+
 }
