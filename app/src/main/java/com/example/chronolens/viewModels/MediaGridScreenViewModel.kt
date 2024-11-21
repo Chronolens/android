@@ -11,6 +11,7 @@ import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.repositories.MediaGridRepository
 import com.example.chronolens.utils.SyncManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,13 +24,22 @@ enum class SelectingType {
     None
 }
 
+enum class SyncState {
+    Synced,
+    FetchingRemote,
+    FetchingLocal,
+    Merging
+}
+
 data class MediaGridState(
     val media: List<MediaAsset> = listOf(),
-    val isLoading: Boolean = true,
+    val isLoading: Boolean = true, // TODO: remove?
     val selected: Map<String, MediaAsset> = mapOf(),
     val isSelecting: Boolean = false,
     val selectingType: SelectingType = SelectingType.None,
-    val people: List<Person> = listOf()
+    val people: List<Person> = listOf(),
+    val syncState: SyncState = SyncState.Synced,
+    val syncProgress: Pair<Int,Int>? = null
 )
 
 data class FullscreenImageState(
@@ -77,22 +87,27 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     fun init() {
         viewModelScope.launch {
             loadMediaGrid()
-            setIsLoaded()
+            setIsLoading(false)
             loadPeople()
+
         }
     }
 
     private suspend fun loadMediaGrid() {
+        setSyncState(SyncState.FetchingRemote)
+        delay(2000L)
         remoteAssets = syncManager.getRemoteAssets()
+        setSyncState(SyncState.Merging)
         mergeMediaAssets()
+        setSyncState(SyncState.FetchingLocal)
         loadLocalAssets()
     }
 
     fun refreshMediaGrid() {
         viewModelScope.launch {
-            setIsLoading()
+            setIsLoading(true)
             loadMediaGrid()
-            setIsLoaded()
+            setIsLoading(false)
         }
     }
 
@@ -106,34 +121,43 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
             val localMediaNotCalculated: MutableList<LocalMedia> = mutableListOf()
             val localMediaCalculated: MutableList<LocalMedia> = mutableListOf()
-
+            setProgress(0,localMedia.size)
+            var i = 0
             for (media in localMedia) {
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {
                     media.checksum = checksum
                     localMediaCalculated += media
+                    setProgress(++i,localMedia.size)
                 } else {
                     localMediaNotCalculated += media
                 }
+                delay(500L)
             }
 
             localAssets = localMediaCalculated.toList()
+
             mergeMediaAssets()
+            setSyncState(SyncState.FetchingLocal)
             localMediaCalculated.clear()
 
             for (media in localMediaNotCalculated) {
                 val checksum = mediaGridRepository.getOrComputeChecksum(media.id, media.path)
                 media.checksum = checksum
                 localMediaCalculated += media
+                setProgress(++i,localMedia.size)
+                delay(500L)
             }
             localAssets += localMediaCalculated
 
             mergeMediaAssets()
+            setSyncState(SyncState.Synced)
         }
     }
 
     // Merge local and remote assets
     private fun mergeMediaAssets() {
+        setSyncState(SyncState.Merging)
         _mediaGridState.update { currState ->
             currState.copy(
                 media = syncManager.mergeAssets(localAssets, remoteAssets)
@@ -293,18 +317,10 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-    private fun setIsLoading() {
+    private fun setIsLoading(isLoading:Boolean) {
         viewModelScope.launch {
             _mediaGridState.update { currState ->
-                currState.copy(isLoading = true)
-            }
-        }
-    }
-
-    private fun setIsLoaded() {
-        viewModelScope.launch {
-            _mediaGridState.update { currState ->
-                currState.copy(isLoading = false)
+                currState.copy(isLoading = isLoading)
             }
         }
     }
@@ -346,5 +362,20 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+    private fun setSyncState(syncState: SyncState) {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(syncState = syncState)
+            }
+        }
+    }
+
+    private fun setProgress(progress: Int,max:Int){
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(syncProgress = Pair(progress,max))
+            }
+        }
+    }
 
 }

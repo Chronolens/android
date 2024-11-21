@@ -54,5 +54,7 @@
     <string name="upload_periodic">Periodic Upload</string>
     <string name="upload_periodic_desc">Every %s your app will run a job in the background uploading every media that remains</string>
 
+    <string name="selecting_remotes">Selecting Remotes</string>
+    <string name="selecting_locals">Selecting Locals</string>
 
 </resources>
