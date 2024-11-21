@@ -89,7 +89,7 @@ data class KnownPerson(
         suspend fun fromJson(personJson: JSONObject): KnownPerson {
             val personId = personJson.optInt("face_id")
             val name = personJson.optString("name", "")
-            val photoLink = personJson.optString("photo_link", "")
+            val photoLink = personJson.optString("photo_url", "")
             val boundingBoxArray = personJson.optJSONArray("bbox")
 
             val boundingBox = mutableListOf<Int>().apply {
@@ -125,7 +125,7 @@ data class UnknownPerson(
     companion object {
         suspend fun fromJson(personJson: JSONObject): UnknownPerson {
             val personId = personJson.optInt("cluster_id")
-            val photoLink = personJson.optString("photo_link", "")
+            val photoLink = personJson.optString("photo_url", "")
             val boundingBoxArray = personJson.optJSONArray("bbox")
 
             val boundingBox = mutableListOf<Int>().apply {

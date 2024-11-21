@@ -176,7 +176,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
             try {
                 val nextPage = state.currentPage
-                val pageSize = 10
+                val pageSize = 20
                 val newPhotos = mediaGridRepository.apiGetNextClipSearchPage(searchInput, nextPage, pageSize)
 
                 _clipSearchState.update {

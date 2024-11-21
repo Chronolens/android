@@ -435,12 +435,11 @@ class APIUtils {
         }
 
 
-        // Ensure that this function is called from a coroutine scope (e.g., in a ViewModel or activity)
         suspend fun loadNextClipSearchPage(
             sharedPreferences: SharedPreferences,
             search: String,
             page: Int = 1,
-            pageSize: Int = 10
+            pageSize: Int = 20
         ): List<Pair<String, String>>? {
             val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return null
             val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return null
