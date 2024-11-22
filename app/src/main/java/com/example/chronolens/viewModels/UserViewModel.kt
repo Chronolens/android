@@ -42,6 +42,8 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
                 _userState.update { currState ->
                     currState.copy(
                         userLoginState = state,
+                        server = getServer(),
+                        username = getUsername()
                     )
                 }
             } else {
