@@ -12,7 +12,6 @@ import com.example.chronolens.utils.showUploadNotification
 import com.example.chronolens.utils.showSyncNotification
 import com.example.chronolens.utils.updateSyncNotificationProgress
 import com.example.chronolens.utils.updateUploadNotificationProgress
-import kotlinx.coroutines.delay
 
 private const val TAG = "UploadWorker"
 
@@ -75,7 +74,7 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
             // Upload Phase Logic
             var uploaded = 0
             mediaToUpload.forEach {
-                mediaGridRepository.apiUploadFileStream(it)
+                mediaGridRepository.uploadMedia(it)
                 uploaded++
                 updateUploadNotificationProgress(applicationContext, uploaded, mediaToUpload.size)
             }

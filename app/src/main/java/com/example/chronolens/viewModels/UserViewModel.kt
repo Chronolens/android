@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chronolens.repositories.UserRepository
+import com.example.chronolens.utils.EventBus
 import com.example.chronolens.utils.Prefs
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +25,6 @@ data class UserState(
     val username: String = "",
     val server: String = "",
     val userLoginState: UserLoginState = UserLoginState.LoggedOut
-    // TODO: the rest of the user's stuff
 )
 
 class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
@@ -32,13 +32,29 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
     private val _userState = MutableStateFlow(UserState())
     val userState: StateFlow<UserState> = _userState.asStateFlow()
 
-
     init {
         viewModelScope.launch {
             val loggedIn = userRepository.checkLogin()
-            val state = if (loggedIn) UserLoginState.LoggedIn else UserLoginState.LoggedOut
-            _userState.update { currState ->
-                currState.copy(userLoginState = state)
+            val state: UserLoginState
+            if (loggedIn) {
+                state = UserLoginState.LoggedIn
+                observeLogoutEvents()
+                _userState.update { currState ->
+                    currState.copy(
+                        userLoginState = state,
+                    )
+                }
+            } else {
+                logout()
+            }
+        }
+    }
+
+    // Listener for
+    private fun observeLogoutEvents() {
+        viewModelScope.launch {
+            EventBus.logoutEvent.collect {
+                logout()
             }
         }
     }
@@ -67,11 +83,13 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
                         server = server
                     )
                 }
+
                 HttpURLConnection.HTTP_UNAUTHORIZED -> _userState.update { currState ->
                     currState.copy(
                         userLoginState = UserLoginState.CredentialsWrong,
                     )
                 }
+
                 else -> _userState.update { currState ->
                     currState.copy(
                         userLoginState = UserLoginState.Error,

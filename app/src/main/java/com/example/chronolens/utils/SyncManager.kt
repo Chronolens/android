@@ -1,6 +1,5 @@
 package com.example.chronolens.utils
 
-import android.media.ExifInterface
 import android.provider.MediaStore
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset

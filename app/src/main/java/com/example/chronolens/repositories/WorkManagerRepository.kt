@@ -17,7 +17,8 @@ import kotlinx.coroutines.flow.Flow
 import java.time.Duration
 
 class WorkManagerRepository(
-    context: Context, mediaGridRepository: MediaGridRepository
+    context: Context,
+    mediaGridRepository: MediaGridRepository
 ) {
 
     private val workManager = WorkManager.getInstance(context)

@@ -13,6 +13,7 @@ import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.utils.ChecksumUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
 
 class MediaGridRepository(
     private val checksumDao: ChecksumDao,
@@ -21,7 +22,7 @@ class MediaGridRepository(
     val contentResolver: ContentResolver
 ) {
 
-    suspend fun apiUploadFileStream(localMedia: LocalMedia) :String? {
+    suspend fun uploadMedia(localMedia: LocalMedia) :String? {
         return APIUtils.uploadMedia(sharedPreferences, localMedia)
     }
 
@@ -112,9 +113,7 @@ class MediaGridRepository(
         return APIUtils.getClusterPreviewsPage(sharedPreferences, clusterId, page, pageSize, requestType)
     }
 
-    fun apiGetNextClipSearchPage(search: String, page: Int, pageSize: Int): List<Map<String, String>>? {
+    suspend fun apiGetNextClipSearchPage(search: String, page: Int, pageSize: Int): List<Map<String, String>>? {
         return APIUtils.loadNextClipSearchPage(sharedPreferences, search, page, pageSize)
-
-
     }
 }
