@@ -23,7 +23,6 @@ class SyncManager(
             val (uploaded, deleted) = mediaGridRepository.apiSyncPartialRemote(lastSync)
             mediaGridRepository.dbUpsertRemoteAssets(uploaded)
             mediaGridRepository.dbDeleteRemoteAssets(deleted)
-            // FIXME: ??
             mediaGridRepository.dbGetRemoteAssets()
         }
 

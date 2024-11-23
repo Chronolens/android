@@ -38,7 +38,6 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
             val state: UserLoginState
             if (loggedIn) {
                 state = UserLoginState.LoggedIn
-                observeLogoutEvents()
                 _userState.update { currState ->
                     currState.copy(
                         userLoginState = state,
@@ -52,14 +51,6 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
         }
     }
 
-    // Listener for SessionExpiredException
-    private fun observeLogoutEvents() {
-        viewModelScope.launch {
-            EventBus.logoutEvent.collect {
-                logout()
-            }
-        }
-    }
 
     fun getServer(): String {
         return userRepository.sharedPreferences.getString(Prefs.SERVER, "")!!

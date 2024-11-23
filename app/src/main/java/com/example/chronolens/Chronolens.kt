@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ import com.example.chronolens.ui.screens.settings.ActivityHistoryScreen
 import com.example.chronolens.ui.screens.settings.MachineLearningScreen
 import com.example.chronolens.ui.theme.ChronoLensTheme
 import com.example.chronolens.utils.ChronolensNav
+import com.example.chronolens.utils.EventBus
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.UserViewModel
 import com.example.chronolens.viewModels.ViewModelProvider
@@ -59,7 +61,6 @@ fun ChronoLens() {
             viewModel(factory = ViewModelProvider.Factory)
         val workManagerState = workManagerViewModel.workManagerState.collectAsState()
 
-
         val backStackEntry by navController.currentBackStackEntryAsState()
 
         val currentRoute = backStackEntry?.destination?.route ?: ChronolensNav.Login.name
@@ -67,6 +68,16 @@ fun ChronoLens() {
 
         val navigationBarPadding =
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
+        // TODO: get better solution?
+        LaunchedEffect(Unit) {
+            EventBus.logoutEvent.collect {
+                userViewModel.logout()
+                navController.navigate(ChronolensNav.Login.name) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        }
 
         Scaffold(
             topBar = {
