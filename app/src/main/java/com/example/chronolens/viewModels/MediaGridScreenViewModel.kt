@@ -4,14 +4,15 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
+import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.repositories.MediaGridRepository
 import com.example.chronolens.utils.SyncManager
+import com.example.chronolens.utils.loadExifData
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,7 +45,8 @@ data class MediaGridState(
 
 data class FullscreenImageState(
     val image: BitmapImage? = null,
-    val currentMedia: MediaAsset? = null
+    val currentMediaAsset: MediaAsset? = null,
+    val currentFullMedia: FullMedia? = null
 )
 
 // We have to null all these values after the user leaves the screen, there's a weird bug
@@ -95,7 +97,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     private suspend fun loadMediaGrid() {
         setSyncState(SyncState.FetchingRemote)
-        delay(2000L)
+//        delay(2000L)
         remoteAssets = syncManager.getRemoteAssets()
         setSyncState(SyncState.Merging)
         mergeMediaAssets()
@@ -132,7 +134,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                 } else {
                     localMediaNotCalculated += media
                 }
-                delay(500L)
+//                delay(500L)
             }
 
             localAssets = localMediaCalculated.toList()
@@ -146,7 +148,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                 media.checksum = checksum
                 localMediaCalculated += media
                 setProgress(++i,localMedia.size)
-                delay(500L)
+//                delay(500L)
             }
             localAssets += localMediaCalculated
 
@@ -190,10 +192,24 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
     fun updateCurrentAsset(mediaAsset: MediaAsset) {
-        _fullscreenImageState.update { currState ->
-            currState.copy(
-                currentMedia = mediaAsset
-            )
+        viewModelScope.launch {
+            if (mediaAsset is RemoteMedia) {
+                val fullMedia = mediaGridRepository.apiGetFullImage(mediaAsset.id)
+                _fullscreenImageState.update { currState ->
+                    currState.copy(
+                        currentMediaAsset = mediaAsset,
+                        currentFullMedia = fullMedia
+                    )
+                }
+            } else if (mediaAsset is LocalMedia) {
+                val fullMedia = loadExifData(mediaAsset.path, mediaAsset.id)
+                _fullscreenImageState.update { currState ->
+                    currState.copy(
+                        currentMediaAsset = mediaAsset,
+                        currentFullMedia = fullMedia
+                    )
+                }
+            }
         }
     }
 
@@ -286,7 +302,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             val remoteId: String? = mediaGridRepository.apiUploadFileStream(localMedia)
             _fullscreenImageState.update { currState ->
                 currState.copy(
-                    currentMedia = localMedia.copy(remoteId = remoteId)
+                    currentMediaAsset = localMedia.copy(remoteId = remoteId)
                 )
             }
             if (remoteId != null) {
@@ -300,7 +316,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         return mediaGridRepository.apiGetPreview(id)
     }
 
-    suspend fun getRemoteAssetFullImageUrl(id: String): String {
+    suspend fun getRemoteAssetFullImage(id: String): FullMedia? {
         return mediaGridRepository.apiGetFullImage(id)
     }
 
