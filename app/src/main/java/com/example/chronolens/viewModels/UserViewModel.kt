@@ -52,7 +52,7 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
         }
     }
 
-    // Listener for
+    // Listener for SessionExpiredException
     private fun observeLogoutEvents() {
         viewModelScope.launch {
             EventBus.logoutEvent.collect {

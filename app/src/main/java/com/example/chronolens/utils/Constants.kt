@@ -15,9 +15,20 @@ object Json {
         const val EXPIRES_AT = "expires_at"
         const val UPLOADED = "uploaded"
         const val DELETED = "deleted"
+
         const val ID = "id"
         const val HASH = "hash"
         const val CREATED_AT = "created_at"
+
+        const val USERNAME = "username"
+        const val PASSWORD = "password"
+
+        const val KNOWN_PEOPLE = "knownPeople"
+        const val UNKNOWN_PEOPLE = "unknownPeople"
+
+        const val MEDIA_URL = "media_url"
+        const val PREVIEW_URL = "preview_url"
+
 }
 
 object Work {

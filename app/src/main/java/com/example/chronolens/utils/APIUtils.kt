@@ -9,7 +9,6 @@ import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.models.UnknownPerson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -81,7 +80,6 @@ class APIUtils {
                 } catch (e: Exception) {
                     e.printStackTrace()
                     return@withContext false
-
                 } finally {
                     connection?.disconnect()
                 }
@@ -94,8 +92,8 @@ class APIUtils {
             password: String
         ): Int? = withContext(Dispatchers.IO) {
             val payload = JSONObject().apply {
-                put("username", username)
-                put("password", password)
+                put(Json.USERNAME, username)
+                put(Json.PASSWORD, password)
             }
             val body = payload.toString()
             var connection: HttpURLConnection? = null
@@ -117,11 +115,14 @@ class APIUtils {
                     val expiresAt = jsonResponse.getLong(Json.EXPIRES_AT)
                     val refreshToken = jsonResponse.getString(Json.REFRESH_TOKEN)
 
-                    sharedPreferences.edit().putString(Prefs.SERVER, server).apply()
-                    sharedPreferences.edit().putString(Prefs.USERNAME, username).apply()
-                    sharedPreferences.edit().putString(Prefs.ACCESS_TOKEN, token).apply()
-                    sharedPreferences.edit().putLong(Prefs.EXPIRES_AT, expiresAt).apply()
-                    sharedPreferences.edit().putString(Prefs.REFRESH_TOKEN, refreshToken).apply()
+                    sharedPreferences.edit().apply {
+                        putString(Prefs.SERVER, server)
+                        putString(Prefs.USERNAME, username)
+                        putString(Prefs.ACCESS_TOKEN, token)
+                        putLong(Prefs.EXPIRES_AT, expiresAt)
+                        putString(Prefs.REFRESH_TOKEN, refreshToken)
+                        apply()
+                    }
                 }
                 responseCode
             } catch (e: Exception) {
@@ -132,18 +133,21 @@ class APIUtils {
             }
         }
 
-        // TODO: handle other error codes
+
         suspend fun uploadMedia(
             sharedPreferences: SharedPreferences,
             asset: LocalMedia
         ): String? = withContext(Dispatchers.IO) {
-            val server = sharedPreferences.getString(Prefs.SERVER, "")
-            val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-            val url = "$server/image/upload"
+            val server = sharedPreferences.getString(Prefs.SERVER, null)
+            val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
+
+            if (server == null || jwtToken == null) {
+                throw SessionExpiredException()
+            }
 
             val file = try {
                 File(Path(asset.path).toUri())
-            }catch (_:Exception){
+            } catch (_: Exception) {
                 return@withContext null
             }
             val mimeType = asset.mimeType
@@ -159,6 +163,7 @@ class APIUtils {
                 )
                 .build()
 
+            val url = "$server/image/upload"
             val request = Request.Builder()
                 .url(url)
                 .header("Authorization", "Bearer $jwtToken")
@@ -169,17 +174,23 @@ class APIUtils {
             try {
                 client.newCall(request).execute().use { response ->
                     Log.i("UPLOAD", response.code.toString())
-                    if (response.code == HttpURLConnection.HTTP_OK) {
-                        return@withContext response.body?.string()
-                    } else if (response.code == HttpURLConnection.HTTP_UNAUTHORIZED) {
-                        val authed = refreshToken(sharedPreferences)
-                        if (authed) {
-                            return@withContext uploadMedia(sharedPreferences, asset)
-                        } else {
-                            throw SessionExpiredException()
+                    when (response.code) {
+                        HttpURLConnection.HTTP_OK -> {
+                            return@withContext response.body?.string()
                         }
-                    } else {
-                        return@withContext null
+
+                        HttpURLConnection.HTTP_UNAUTHORIZED -> {
+                            val authed = refreshToken(sharedPreferences)
+                            if (authed) {
+                                return@withContext uploadMedia(sharedPreferences, asset)
+                            } else {
+                                throw SessionExpiredException()
+                            }
+                        }
+
+                        else -> {
+                            return@withContext null
+                        }
                     }
                 }
             } catch (e: IOException) {
@@ -190,15 +201,14 @@ class APIUtils {
         suspend fun syncFullRemote(
             sharedPreferences: SharedPreferences
         ): List<RemoteMedia> = withContext(Dispatchers.IO) {
-            val server = sharedPreferences.getString(Prefs.SERVER, "")
-            val accessToken =
-                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-                    ?: return@withContext emptyList()
+            val server = sharedPreferences.getString(Prefs.SERVER, null)
+            val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
+            if (server == null || accessToken == null) {
+                throw SessionExpiredException()
+            }
             var connection: HttpURLConnection? = null
-
             try {
-
                 val url = URL("$server/sync/full")
                 connection = (url.openConnection() as HttpURLConnection).apply {
                     setRequestProperty("Authorization", "Bearer $accessToken")
@@ -250,17 +260,17 @@ class APIUtils {
             sharedPreferences: SharedPreferences,
             lastSync: Long
         ): Pair<List<RemoteMedia>, List<String>> = withContext(Dispatchers.IO) {
-            val server = sharedPreferences.getString(Prefs.SERVER, "")
-            val jwtToken =
-                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext Pair(
-                    emptyList(),
-                    emptyList()
-                )
-            val url = URL("$server/sync/partial")
+            val server = sharedPreferences.getString(Prefs.SERVER, null)
+            val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
+
+            if (server == null || jwtToken == null) {
+                throw SessionExpiredException()
+            }
 
             var connection: HttpURLConnection? = null
 
             try {
+                val url = URL("$server/sync/partial")
                 connection = (url.openConnection() as HttpURLConnection).apply {
                     setRequestProperty("Authorization", "Bearer $jwtToken")
                     setRequestProperty("Since", lastSync.toString())
@@ -317,13 +327,16 @@ class APIUtils {
             sharedPreferences: SharedPreferences,
             uuid: String
         ): String = withContext(Dispatchers.IO) {
-            val server = sharedPreferences.getString(Prefs.SERVER, "")
-            val jwtToken =
-                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext ""
-            val url = URL("$server/preview/$uuid")
-            var connection: HttpURLConnection? = null
+            val server = sharedPreferences.getString(Prefs.SERVER, null)
+            val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
+            if (server == null || jwtToken == null) {
+                throw SessionExpiredException()
+            }
+
+            var connection: HttpURLConnection? = null
             try {
+                val url = URL("$server/preview/$uuid")
                 connection = (url.openConnection() as HttpURLConnection).apply {
                     setRequestProperty("Authorization", "Bearer $jwtToken")
                     requestMethod = "GET"
@@ -360,13 +373,16 @@ class APIUtils {
             uuid: String
         ): String = withContext(Dispatchers.IO) {
 
-            val jwtToken =
-                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext ""
-            val server = sharedPreferences.getString(Prefs.SERVER, "")
-            val url = URL("$server/media/$uuid")
-            var connection: HttpURLConnection? = null
+            val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
+            val server = sharedPreferences.getString(Prefs.SERVER, null)
 
+            if (server == null || jwtToken == null) {
+                throw SessionExpiredException()
+            }
+
+            var connection: HttpURLConnection? = null
             try {
+                val url = URL("$server/media/$uuid")
                 connection = (url.openConnection() as HttpURLConnection).apply {
                     setRequestProperty("Authorization", "Bearer $jwtToken")
                     requestMethod = "GET"
@@ -376,13 +392,13 @@ class APIUtils {
                     HttpURLConnection.HTTP_OK -> {
                         val responseText = connection.inputStream.bufferedReader().readText()
                         val jsonResponse = JSONObject(responseText)
-                        jsonResponse.getString("media_url")
+                        jsonResponse.getString(Json.MEDIA_URL)
                     }
 
                     HttpURLConnection.HTTP_UNAUTHORIZED -> {
                         val authed = refreshToken(sharedPreferences)
                         if (authed) {
-                            return@withContext getPreview(sharedPreferences, uuid)
+                            return@withContext getFullImage(sharedPreferences, uuid)
                         } else {
                             throw SessionExpiredException()
                         }
@@ -404,20 +420,22 @@ class APIUtils {
         suspend fun getPeople(sharedPreferences: SharedPreferences): List<Person> =
             withContext(Dispatchers.IO) {
 
+                // FIXME
                 Log.i("APIUtils", "getPeople")
                 sharedPreferences.getString(Prefs.SERVER, "")?.let { Log.i("APIUtils", it) }
                 sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")?.let { Log.i("APIUtils", it) }
 
-                val server = sharedPreferences.getString(Prefs.SERVER, "")
-                val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-                    ?: return@withContext emptyList()
+                val server = sharedPreferences.getString(Prefs.SERVER, null)
+                val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
-                val url = "$server/faces".toHttpUrlOrNull()!!.newBuilder()
-                    .build().toUrl()
+                if (server == null || accessToken == null) {
+                    throw SessionExpiredException()
+                }
 
                 var connection: HttpURLConnection? = null
 
                 try {
+                    val url = URL("$server/faces")
                     connection = (url.openConnection() as HttpURLConnection).apply {
                         setRequestProperty("Authorization", "Bearer $accessToken")
                         setRequestProperty("Accept", "application/json")
@@ -429,8 +447,8 @@ class APIUtils {
                             connection.inputStream.use { inputStream ->
                                 val responseJson =
                                     JSONObject(inputStream.bufferedReader().readText())
-                                val knownPeople = responseJson.getJSONArray("faces")
-                                val unknownPeople = responseJson.getJSONArray("clusters")
+                                val knownPeople = responseJson.getJSONArray(Json.KNOWN_PEOPLE)
+                                val unknownPeople = responseJson.getJSONArray(Json.UNKNOWN_PEOPLE)
 
                                 Log.i("APIUtils", responseJson.toString())
                                 val peopleList = mutableListOf<Person>()
@@ -448,6 +466,7 @@ class APIUtils {
                                 }
 
                                 println(peopleList)
+                                // FIXME: ??
                                 return@use peopleList
                             }
                         }
@@ -465,7 +484,7 @@ class APIUtils {
                             emptyList()
                         }
                     }
-                } catch (e: Exception) {
+                } catch (e: IOException) {
                     e.printStackTrace()
                     emptyList()
                 } finally {
@@ -482,17 +501,17 @@ class APIUtils {
             pageSize: Int = 10,
             requestType: String
         ): List<Map<String, String>>? = withContext(Dispatchers.IO) {
-            val server =
-                sharedPreferences.getString(Prefs.SERVER, "") ?: return@withContext null
-            val accessToken =
-                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
-                    ?: return@withContext null
+            val server = sharedPreferences.getString(Prefs.SERVER, null)
+            val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
-            val url = URL("$server/$requestType/$clusterId?page=$page&page_size=$pageSize")
+            if (server == null || accessToken == null) {
+                throw SessionExpiredException()
+            }
 
             var connection: HttpURLConnection? = null
 
             try {
+                val url = URL("$server/$requestType/$clusterId?page=$page&page_size=$pageSize")
                 connection = (url.openConnection() as HttpURLConnection).apply {
                     setRequestProperty("Authorization", "Bearer $accessToken")
                     setRequestProperty("Accept", "application/json")
@@ -508,8 +527,8 @@ class APIUtils {
                             for (i in 0 until responseJson.length()) {
                                 val item = responseJson.getJSONObject(i)
                                 val preview = mapOf(
-                                    "id" to item.getString("id"),
-                                    "preview_url" to item.getString("preview_url")
+                                    Json.ID to item.getString(Json.ID),
+                                    Json.PREVIEW_URL to item.getString(Json.PREVIEW_URL)
                                 )
                                 previews.add(preview)
                             }
@@ -537,7 +556,7 @@ class APIUtils {
                     }
                 }
 
-            } catch (e: Exception) {
+            } catch (e: IOException) {
                 e.printStackTrace()
                 null
             } finally {
@@ -552,14 +571,17 @@ class APIUtils {
             page: Int = 1,
             pageSize: Int = 10
         ): List<Map<String, String>>? = withContext(Dispatchers.IO) {
-            val server = sharedPreferences.getString(Prefs.SERVER, "")
-            val accessToken =
-                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "")
+            val server = sharedPreferences.getString(Prefs.SERVER, null)
+            val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
-            val url = URL("$server/search/$search?page=$page&page_size=$pageSize")
+            if (server == null || accessToken == null) {
+                throw SessionExpiredException()
+            }
+
             var connection: HttpURLConnection? = null
 
             try {
+                val url = URL("$server/search/$search?page=$page&page_size=$pageSize")
                 connection = (url.openConnection() as HttpURLConnection).apply {
                     setRequestProperty("Authorization", "Bearer $accessToken")
                     setRequestProperty("Accept", "application/json")
@@ -575,8 +597,8 @@ class APIUtils {
                             for (i in 0 until responseJson.length()) {
                                 val item = responseJson.getJSONObject(i)
                                 val preview = mapOf(
-                                    "id" to item.getString("id"),
-                                    "preview_url" to item.getString("preview_url")
+                                    Json.ID to item.getString(Json.ID),
+                                    Json.PREVIEW_URL to item.getString(Json.PREVIEW_URL)
                                 )
                                 previews.add(preview)
                             }

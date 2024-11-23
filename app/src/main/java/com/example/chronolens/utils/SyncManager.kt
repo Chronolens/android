@@ -11,7 +11,7 @@ class SyncManager(
     val mediaGridRepository: MediaGridRepository
 ) {
     suspend fun getRemoteAssets(): List<RemoteMedia> {
-        val lastSync = mediaGridRepository.sharedPreferences.getLong("last_sync", 0L)
+        val lastSync = mediaGridRepository.sharedPreferences.getLong(Prefs.LAST_SYNC, 0L)
 
         var remoteAssets: List<RemoteMedia> = if (lastSync == 0L) {
             // Full Sync

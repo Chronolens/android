@@ -22,7 +22,7 @@ class MediaGridRepository(
     val contentResolver: ContentResolver
 ) {
 
-    suspend fun uploadMedia(localMedia: LocalMedia) :String? {
+    suspend fun uploadMedia(localMedia: LocalMedia): String? {
         return APIUtils.uploadMedia(sharedPreferences, localMedia)
     }
 
@@ -50,14 +50,6 @@ class MediaGridRepository(
         return APIUtils.getPeople(sharedPreferences)
     }
 
-    suspend fun dbStoreChecksumInDatabase(localId: String, checksum: String) {
-        val newChecksum = Checksum(localId, checksum)
-        checksumDao.insertChecksum(newChecksum)
-    }
-
-    suspend fun dbCheckChecksumInDatabase(localId: String): String? {
-        return checksumDao.getChecksum(localId)?.checksum
-    }
 
     suspend fun dbGetChecksumsFromList(ids: List<String>): List<Checksum> {
         val batchSize = 500
@@ -109,11 +101,26 @@ class MediaGridRepository(
         return checksum
     }
 
-    suspend fun apiGetClusterPreviewsPage(clusterId: Int, page: Int, pageSize: Int, requestType: String): List<Map<String, String>>? {
-        return APIUtils.getClusterPreviewsPage(sharedPreferences, clusterId, page, pageSize, requestType)
+    suspend fun apiGetClusterPreviewsPage(
+        clusterId: Int,
+        page: Int,
+        pageSize: Int,
+        requestType: String
+    ): List<Map<String, String>>? {
+        return APIUtils.getClusterPreviewsPage(
+            sharedPreferences,
+            clusterId,
+            page,
+            pageSize,
+            requestType
+        )
     }
 
-    suspend fun apiGetNextClipSearchPage(search: String, page: Int, pageSize: Int): List<Map<String, String>>? {
+    suspend fun apiGetNextClipSearchPage(
+        search: String,
+        page: Int,
+        pageSize: Int
+    ): List<Map<String, String>>? {
         return APIUtils.loadNextClipSearchPage(sharedPreferences, search, page, pageSize)
     }
 }

@@ -96,12 +96,16 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
     private suspend fun loadMediaGrid() {
-        setSyncState(SyncState.FetchingRemote)
-        remoteAssets = syncManager.getRemoteAssets()
-        setSyncState(SyncState.Merging)
-        mergeMediaAssets()
-        setSyncState(SyncState.FetchingLocal)
-        loadLocalAssets()
+        try {
+            setSyncState(SyncState.FetchingRemote)
+            remoteAssets = syncManager.getRemoteAssets()
+            setSyncState(SyncState.Merging)
+            mergeMediaAssets()
+            setSyncState(SyncState.FetchingLocal)
+            loadLocalAssets()
+        } catch (_: SessionExpiredException) {
+            EventBus.logoutEvent.emit(Unit)
+        }
     }
 
     fun refreshMediaGrid() {
@@ -122,8 +126,9 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
             val localMediaNotCalculated: MutableList<LocalMedia> = mutableListOf()
             val localMediaCalculated: MutableList<LocalMedia> = mutableListOf()
-            setProgress(0, localMedia.size)
+
             var i = 0
+            setProgress(i, localMedia.size)
             for (media in localMedia) {
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {
@@ -216,6 +221,8 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                         hasMore = !newPhotos.isNullOrEmpty()
                     )
                 }
+            } catch (_: SessionExpiredException) {
+                EventBus.logoutEvent.emit(Unit)
             } catch (e: Exception) {
                 e.printStackTrace()
                 _clipSearchState.update { it.copy(isLoading = false) }
@@ -262,6 +269,8 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                         hasMore = !newPhotos.isNullOrEmpty()
                     )
                 }
+            } catch (_: SessionExpiredException) {
+                EventBus.logoutEvent.emit(Unit)
             } catch (e: Exception) {
                 e.printStackTrace()
                 _personPhotoGridState.update { it.copy(isLoading = false) }
@@ -289,19 +298,29 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                     updateMediaList(remoteId, localMedia.checksum!!)
                 }
             } catch (e: SessionExpiredException) {
-                Log.i("EXCEPTION","here")
                 EventBus.logoutEvent.emit(Unit)
             }
         }
     }
 
-
+    // FIXME
     suspend fun getRemoteAssetPreviewUrl(id: String): String {
-        return mediaGridRepository.apiGetPreview(id)
+        return try {
+            mediaGridRepository.apiGetPreview(id)
+        } catch (_: SessionExpiredException) {
+            EventBus.logoutEvent.emit(Unit)
+            ""
+        }
     }
 
+    // FIXME
     suspend fun getRemoteAssetFullImageUrl(id: String): String {
-        return mediaGridRepository.apiGetFullImage(id)
+        return try {
+            mediaGridRepository.apiGetFullImage(id)
+        } catch (_: SessionExpiredException) {
+            EventBus.logoutEvent.emit(Unit)
+            ""
+        }
     }
 
     private fun updateMediaList(remoteId: String, checksum: String) {
@@ -331,9 +350,13 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     private fun loadPeople() {
         viewModelScope.launch {
-            val peopleThumbnails = mediaGridRepository.apiGetPeople()
-            _mediaGridState.update { currState ->
-                currState.copy(people = peopleThumbnails)
+            try {
+                val peopleThumbnails = mediaGridRepository.apiGetPeople()
+                _mediaGridState.update { currState ->
+                    currState.copy(people = peopleThumbnails)
+                }
+            } catch (_: SessionExpiredException) {
+                EventBus.logoutEvent.emit(Unit)
             }
         }
     }
