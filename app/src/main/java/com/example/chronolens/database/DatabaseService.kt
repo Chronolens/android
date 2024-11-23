@@ -29,4 +29,8 @@ interface RemoteAssetDao {
 
     @Query("SELECT * FROM remote_assets")
     suspend fun getRemoteAssets(): List<RemoteAssetDb>
+
+    @Query("DELETE FROM remote_assets")
+    suspend fun deleteAllRemoteAssets()
+
 }

@@ -22,15 +22,14 @@ class UserRepository(
         return APIUtils.login(sharedPreferences, server, username, password)
 
     }
-
-    // TODO: clear db?
+ 
     suspend fun logout() {
         withContext(Dispatchers.IO) {
             sharedPreferences.edit().clear().apply()
-            appDatabase.clearAllTables()
+            appDatabase.remoteAssetDao().deleteAllRemoteAssets()
             WorkManager.getInstance(context).cancelAllWork()
         }
-
     }
 
 }
+
