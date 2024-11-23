@@ -6,12 +6,15 @@ import java.io.File
 fun loadExifData(path: String): Map<String, String?> {
     val exif = ExifInterface(path)
     val latLong = FloatArray(2)
-    val latitude = if (exif.getLatLong(latLong)) latLong[0].toString() else null
-    val longitude = if (exif.getLatLong(latLong)) latLong[1].toString() else null
+
+    val hasGps = exif.getLatLong(latLong)
+    val latitude = if (hasGps) latLong[0] else null
+    val longitude = if (hasGps) latLong[1] else null
 
     val file = File(path)
     val fileName = file.name
     val fileSize = file.length().toString()
+
 
     return mapOf(
         "fileName" to fileName,
@@ -40,8 +43,8 @@ fun loadExifData(path: String): Map<String, String?> {
         "flash" to exif.getAttribute(ExifInterface.TAG_FLASH),
 
         // GPS Information
-        "latitude" to latitude,
-        "longitude" to longitude,
+        "latitude" to latitude.toString(),
+        "longitude" to longitude.toString(),
         "altitude" to exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE),
         "latitudeRef" to exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF),
         "longitudeRef" to exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF),
