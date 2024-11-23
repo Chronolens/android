@@ -24,14 +24,18 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+
 @Composable
 fun MetadataDisplay(fullMedia: FullMedia) {
+    var hasDetails = false
+
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp, start = 16.dp, end = 16.dp)
     ) {
         fullMedia.createdAt?.let { timestamp ->
+            hasDetails = true
             item {
                 val formattedDate = SimpleDateFormat("dd MMMM yyyy - HH:mm", Locale.getDefault())
                     .format(Date(timestamp))
@@ -44,32 +48,10 @@ fun MetadataDisplay(fullMedia: FullMedia) {
             }
         }
 
-        if (fullMedia.make == null &&
-            fullMedia.model == null &&
-            fullMedia.exposureTime == null &&
-            fullMedia.fNumber == null &&
-            fullMedia.photographicSensitivity == null &&
-            fullMedia.imageWidth == null &&
-            fullMedia.imageLength == null &&
-            fullMedia.latitude == null &&
-            fullMedia.longitude == null
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "No details available",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onTertiary
-                )
-            }
-        }
+        if (fullMedia.make != null || fullMedia.model != null || fullMedia.exposureTime != null ||
+            fullMedia.fNumber != null || fullMedia.photographicSensitivity != null) {
 
-        if (fullMedia.make != null ||
-            fullMedia.model != null ||
-            fullMedia.exposureTime != null ||
-            fullMedia.fNumber != null ||
-            fullMedia.photographicSensitivity != null
-        ) {
+            hasDetails = true
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 CameraDetails(
@@ -82,11 +64,10 @@ fun MetadataDisplay(fullMedia: FullMedia) {
             }
         }
 
-        if (fullMedia.imageWidth != null ||
-            fullMedia.imageLength != null ||
-            fullMedia.fileName != null ||
-            fullMedia.fileSize != null
-        ) {
+        if (fullMedia.imageWidth != null || fullMedia.imageLength != null ||
+            fullMedia.fileName != null || fullMedia.fileSize != null) {
+
+            hasDetails = true
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 PhotoDetails(
@@ -99,6 +80,8 @@ fun MetadataDisplay(fullMedia: FullMedia) {
         }
 
         if (fullMedia.latitude != null || fullMedia.longitude != null) {
+
+            hasDetails = true
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 PhotoGPSInfo(
@@ -107,8 +90,22 @@ fun MetadataDisplay(fullMedia: FullMedia) {
                 )
             }
         }
+
+        if (!hasDetails) {
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "No details available",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onTertiary
+                )
+            }
+        }
     }
 }
+
+
+
 
 
 @Composable
@@ -244,26 +241,3 @@ fun PhotoDetails(
     }
 }
 
-
-@Composable
-fun MetadataItem(key: String, value: String?) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = key,
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.White,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = value ?: "N/A",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}

@@ -4,7 +4,7 @@ import android.media.ExifInterface
 import com.example.chronolens.models.FullMedia
 import java.io.File
 
-fun loadExifData(path: String, id: String): FullMedia {
+fun loadExifData(path: String, id: String, timestamp: Long): FullMedia {
     val exif = ExifInterface(path)
     val latLong = FloatArray(2)
 
@@ -19,7 +19,7 @@ fun loadExifData(path: String, id: String): FullMedia {
     return FullMedia(
         id = id,
         mediaUrl = null,
-        createdAt = null,
+        createdAt = timestamp,
         fileSize = fileSize,
         fileName = fileName,
         longitude = longitude,

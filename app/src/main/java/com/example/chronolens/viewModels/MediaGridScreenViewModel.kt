@@ -202,7 +202,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                     )
                 }
             } else if (mediaAsset is LocalMedia) {
-                val fullMedia = loadExifData(mediaAsset.path, mediaAsset.id)
+                val fullMedia = loadExifData(mediaAsset.path, mediaAsset.id, mediaAsset.timestamp)
                 _fullscreenImageState.update { currState ->
                     currState.copy(
                         currentMediaAsset = mediaAsset,
