@@ -17,12 +17,10 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
-import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.io.path.Path
 
-// TODO: error checking ALL OVER THIS CLASS
 class APIUtils {
     companion object {
 
@@ -30,7 +28,6 @@ class APIUtils {
             return refreshToken(sharedPreferences)
         }
 
-        // FIXME: use exception here or bool?
         private suspend fun refreshToken(sharedPreferences: SharedPreferences): Boolean =
             withContext(Dispatchers.IO) {
 
@@ -43,14 +40,14 @@ class APIUtils {
                     return@withContext false
                 }
 
-                val url = URL("$server/refresh")
-                val payload = JSONObject().apply {
-                    put(Json.ACCESS_TOKEN, oldAccessToken)
-                    put(Json.REFRESH_TOKEN, oldRefreshToken)
-                }
-                val body = payload.toString()
                 var connection: HttpURLConnection? = null
                 try {
+                    val url = URL("$server/refresh")
+                    val payload = JSONObject().apply {
+                        put(Json.ACCESS_TOKEN, oldAccessToken)
+                        put(Json.REFRESH_TOKEN, oldRefreshToken)
+                    }
+                    val body = payload.toString()
                     connection = (url.openConnection() as HttpURLConnection).apply {
                         setRequestProperty("Content-Type", "application/json")
                         setRequestProperty("Accept", "application/json")
@@ -66,12 +63,12 @@ class APIUtils {
                         val token = jsonResponse.getString(Json.ACCESS_TOKEN)
                         val expiresAt = jsonResponse.getLong(Json.EXPIRES_AT)
                         val refreshToken = jsonResponse.getString(Json.REFRESH_TOKEN)
-
-                        sharedPreferences.edit().putString(Prefs.ACCESS_TOKEN, token).apply()
-                        sharedPreferences.edit().putLong(Prefs.EXPIRES_AT, expiresAt).apply()
-                        sharedPreferences.edit().putString(Prefs.REFRESH_TOKEN, refreshToken)
-                            .apply()
-
+                        sharedPreferences.edit().apply {
+                            putString(Prefs.ACCESS_TOKEN, token)
+                            putLong(Prefs.EXPIRES_AT, expiresAt)
+                            putString(Prefs.REFRESH_TOKEN, refreshToken)
+                            apply()
+                        }
                         return@withContext true
                     } else {
                         return@withContext false
@@ -142,7 +139,7 @@ class APIUtils {
             val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
             if (server == null || jwtToken == null) {
-                throw SessionExpiredException()
+                EventBus.logoutEvent.emit(Unit)
             }
 
             val file = try {
@@ -153,25 +150,25 @@ class APIUtils {
             val mimeType = asset.mimeType
             val checksum = asset.checksum!!
 
-            val client = OkHttpClient()
-            val requestBody = MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart(
-                    checksum,
-                    file.name,
-                    file.asRequestBody(mimeType.toMediaTypeOrNull())
-                )
-                .build()
-
-            val url = "$server/image/upload"
-            val request = Request.Builder()
-                .url(url)
-                .header("Authorization", "Bearer $jwtToken")
-                .header("Timestamp", asset.timestamp.toString())
-                .post(requestBody)
-                .build()
-
             try {
+                val client = OkHttpClient()
+                val requestBody = MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart(
+                        checksum,
+                        file.name,
+                        file.asRequestBody(mimeType.toMediaTypeOrNull())
+                    )
+                    .build()
+
+                val url = "$server/image/upload"
+                val request = Request.Builder()
+                    .url(url)
+                    .header("Authorization", "Bearer $jwtToken")
+                    .header("Timestamp", asset.timestamp.toString())
+                    .post(requestBody)
+                    .build()
+
                 client.newCall(request).execute().use { response ->
                     Log.i("UPLOAD", response.code.toString())
                     when (response.code) {
@@ -184,7 +181,8 @@ class APIUtils {
                             if (authed) {
                                 return@withContext uploadMedia(sharedPreferences, asset)
                             } else {
-                                throw SessionExpiredException()
+                                EventBus.logoutEvent.emit(Unit)
+                                null
                             }
                         }
 
@@ -193,7 +191,7 @@ class APIUtils {
                         }
                     }
                 }
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 return@withContext null
             }
         }
@@ -205,7 +203,7 @@ class APIUtils {
             val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
             if (server == null || accessToken == null) {
-                throw SessionExpiredException()
+                EventBus.logoutEvent.emit(Unit)
             }
             var connection: HttpURLConnection? = null
             try {
@@ -240,7 +238,8 @@ class APIUtils {
                         if (authed) {
                             return@withContext syncFullRemote(sharedPreferences)
                         } else {
-                            throw SessionExpiredException()
+                            EventBus.logoutEvent.emit(Unit)
+                            emptyList()
                         }
                     }
 
@@ -248,7 +247,7 @@ class APIUtils {
                         emptyList()
                     }
                 }
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 e.printStackTrace()
                 emptyList()
             } finally {
@@ -264,7 +263,7 @@ class APIUtils {
             val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
             if (server == null || jwtToken == null) {
-                throw SessionExpiredException()
+                EventBus.logoutEvent.emit(Unit)
             }
 
             var connection: HttpURLConnection? = null
@@ -307,7 +306,8 @@ class APIUtils {
                         if (authed) {
                             return@withContext syncPartialRemote(sharedPreferences, lastSync)
                         } else {
-                            throw SessionExpiredException()
+                            EventBus.logoutEvent.emit(Unit)
+                            Pair(emptyList(), emptyList())
                         }
                     }
 
@@ -315,7 +315,7 @@ class APIUtils {
                         Pair(emptyList(), emptyList())
                     }
                 }
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 e.printStackTrace()
                 Pair(emptyList(), emptyList())
             } finally {
@@ -331,7 +331,7 @@ class APIUtils {
             val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
             if (server == null || jwtToken == null) {
-                throw SessionExpiredException()
+                EventBus.logoutEvent.emit(Unit)
             }
 
             var connection: HttpURLConnection? = null
@@ -352,7 +352,8 @@ class APIUtils {
                         if (authed) {
                             return@withContext getPreview(sharedPreferences, uuid)
                         } else {
-                            throw SessionExpiredException()
+                            EventBus.logoutEvent.emit(Unit)
+                            ""
                         }
                     }
 
@@ -360,7 +361,7 @@ class APIUtils {
                         ""
                     }
                 }
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 e.printStackTrace()
                 ""
             } finally {
@@ -377,7 +378,7 @@ class APIUtils {
             val server = sharedPreferences.getString(Prefs.SERVER, null)
 
             if (server == null || jwtToken == null) {
-                throw SessionExpiredException()
+                EventBus.logoutEvent.emit(Unit)
             }
 
             var connection: HttpURLConnection? = null
@@ -400,7 +401,8 @@ class APIUtils {
                         if (authed) {
                             return@withContext getFullImage(sharedPreferences, uuid)
                         } else {
-                            throw SessionExpiredException()
+                            EventBus.logoutEvent.emit(Unit)
+                            ""
                         }
                     }
 
@@ -409,7 +411,7 @@ class APIUtils {
                     }
                 }
 
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 e.printStackTrace()
                 ""
             } finally {
@@ -429,7 +431,7 @@ class APIUtils {
                 val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
                 if (server == null || accessToken == null) {
-                    throw SessionExpiredException()
+                    EventBus.logoutEvent.emit(Unit)
                 }
 
                 var connection: HttpURLConnection? = null
@@ -476,7 +478,8 @@ class APIUtils {
                             if (authed) {
                                 return@withContext getPeople(sharedPreferences)
                             } else {
-                                throw SessionExpiredException()
+                                EventBus.logoutEvent.emit(Unit)
+                                emptyList()
                             }
                         }
 
@@ -484,7 +487,7 @@ class APIUtils {
                             emptyList()
                         }
                     }
-                } catch (e: IOException) {
+                } catch (e: Exception) {
                     e.printStackTrace()
                     emptyList()
                 } finally {
@@ -505,7 +508,7 @@ class APIUtils {
             val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
             if (server == null || accessToken == null) {
-                throw SessionExpiredException()
+                EventBus.logoutEvent.emit(Unit)
             }
 
             var connection: HttpURLConnection? = null
@@ -547,7 +550,8 @@ class APIUtils {
                                 requestType = requestType,
                             )
                         } else {
-                            throw SessionExpiredException()
+                            EventBus.logoutEvent.emit(Unit)
+                            emptyList()
                         }
                     }
 
@@ -556,7 +560,7 @@ class APIUtils {
                     }
                 }
 
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 e.printStackTrace()
                 null
             } finally {
@@ -575,7 +579,7 @@ class APIUtils {
             val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
             if (server == null || accessToken == null) {
-                throw SessionExpiredException()
+                EventBus.logoutEvent.emit(Unit)
             }
 
             var connection: HttpURLConnection? = null
@@ -617,7 +621,8 @@ class APIUtils {
                                 pageSize = pageSize
                             )
                         } else {
-                            throw SessionExpiredException()
+                            EventBus.logoutEvent.emit(Unit)
+                            emptyList()
                         }
                     }
 
@@ -625,7 +630,7 @@ class APIUtils {
                         return@withContext null
                     }
                 }
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 e.printStackTrace()
                 return@withContext null
             } finally {
