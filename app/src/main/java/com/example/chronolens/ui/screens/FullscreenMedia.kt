@@ -119,7 +119,7 @@ fun FullscreenMediaView(
             ShareButton()
             Spacer(modifier = Modifier.width(16.dp))
 
-            UploadOrRemoveButton(mediaAsset, viewModel)
+            UploadOrRemoveButton(mediaAsset, viewModel,fullscreenMediaState)
             Spacer(modifier = Modifier.width(16.dp))
 
             MenuButton({ isBoxVisible = true })

@@ -43,7 +43,8 @@ data class MediaGridState(
 
 data class FullscreenImageState(
     val image: BitmapImage? = null,
-    val currentMedia: MediaAsset? = null
+    val currentMedia: MediaAsset? = null,
+    val uploading: Boolean = false
 )
 
 // We have to null all these values after the user leaves the screen, there's a weird bug
@@ -271,6 +272,11 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     fun uploadMedia(localMedia: LocalMedia) {
         viewModelScope.launch(Dispatchers.IO) {
+            _fullscreenImageState.update { currState ->
+                currState.copy(
+                    uploading = true
+                )
+            }
             if (localMedia.checksum == null) {
                 val checksum =
                     mediaGridRepository.getOrComputeChecksum(localMedia.id, localMedia.path)
@@ -280,7 +286,8 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             val remoteId: String? = mediaGridRepository.uploadMedia(localMedia)
             _fullscreenImageState.update { currState ->
                 currState.copy(
-                    currentMedia = localMedia.copy(remoteId = remoteId)
+                    currentMedia = localMedia.copy(remoteId = remoteId),
+                    uploading = false
                 )
             }
             if (remoteId != null) {
