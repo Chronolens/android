@@ -157,7 +157,7 @@ fun ImageItem(
                     withContext(Dispatchers.IO) {
                         val uri = Uri.withAppendedPath(
                             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                            mediaAsset.id
+                            mediaAsset.id.toString()
                         )
                         val bitmap = loadThumbnail(context, uri, 120, 120)
                         mediaAsset.thumbnail = bitmap

@@ -13,12 +13,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.chronolens.R
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
+import com.example.chronolens.utils.shareImage
+import com.example.chronolens.utils.shareImages
 import com.example.chronolens.viewModels.FullscreenImageState
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
@@ -53,8 +56,14 @@ fun DeleteOrTransferButton(asset: MediaAsset) {
 
 
 @Composable
-fun ShareButton() {
-    IconButton(onClick = { Log.i("FullscreenMediaView", "Share button pressed") }) {
+fun ShareButton(mediaAsset: MediaAsset) {
+    val context = LocalContext.current
+    IconButton(onClick = {
+        Log.i("FullscreenMediaView", "Share button pressed")
+        if (mediaAsset is LocalMedia) {
+            shareImage(context, mediaAsset)
+        }
+    }) {
         Icon(
             imageVector = Icons.Default.Share,
             contentDescription = "Share",

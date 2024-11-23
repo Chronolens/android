@@ -116,7 +116,7 @@ fun FullscreenMediaView(
             DeleteOrTransferButton(mediaAsset)
             Spacer(modifier = Modifier.width(16.dp))
 
-            ShareButton()
+            ShareButton(mediaAsset)
             Spacer(modifier = Modifier.width(16.dp))
 
             UploadOrRemoveButton(mediaAsset, viewModel,fullscreenMediaState)
