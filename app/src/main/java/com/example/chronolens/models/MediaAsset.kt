@@ -15,7 +15,7 @@ abstract class MediaAsset(
 data class LocalMedia(
     var remoteId: String?,
     var path: String,
-    var id: String,
+    var id: Long,
     var mimeType: String,
     override var checksum: String?,
     override var timestamp: Long,

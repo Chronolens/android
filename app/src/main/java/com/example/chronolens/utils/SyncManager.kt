@@ -54,7 +54,7 @@ class SyncManager(
             val mimeTypeColumn = it.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE)
 
             while (cursor.moveToNext()) {
-                val id = cursor.getString(idColumn)
+                val id = cursor.getLong(idColumn)
                 val path = cursor.getString(pathColumn)
                 val dateTaken =
                     if (dateTakenColumn != -1) it.getLong(dateTakenColumn) else null // Get the DATE_TAKEN value, can be null

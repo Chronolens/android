@@ -30,17 +30,17 @@ class BackgroundUploadWorker(ctx: Context, params: WorkerParameters) :
 
             val mediaGridRepository = syncManager.mediaGridRepository
             val loggedIn = APIUtils.checkLogin(mediaGridRepository.sharedPreferences)
-            if (!loggedIn){
+            if (!loggedIn) {
                 EventBus.logoutEvent.emit(Unit)
                 return Result.failure()
             }
             // Sync Phase
             showSyncNotification(applicationContext)
             val localMedia: List<LocalMedia> = syncManager.getLocalAssets()
-            val localMediaIds: List<String> = localMedia.map { it.id }
+            val localMediaIds: List<Long> = localMedia.map { it.id }
             val remoteAssets: Set<String> =
                 syncManager.getRemoteAssets().map { it.checksum!! }.toSet()
-            val checkSumsMap: Map<String, String> =
+            val checkSumsMap: Map<Long, String> =
                 mediaGridRepository.dbGetChecksumsFromList(localMediaIds)
                     .associate { it.localId to it.checksum }
 
