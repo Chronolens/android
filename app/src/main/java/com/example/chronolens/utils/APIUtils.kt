@@ -1,7 +1,6 @@
 package com.example.chronolens.utils
 
 import android.content.SharedPreferences
-import android.net.Uri
 import android.util.Log
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.LocalMedia
@@ -437,7 +436,7 @@ class APIUtils {
 
         suspend fun loadNextClipSearchPage(
             sharedPreferences: SharedPreferences,
-            search: String,
+            query: String,
             page: Int = 1,
             pageSize: Int = 20
         ): List<Pair<String, String>>? {
@@ -446,7 +445,7 @@ class APIUtils {
 
             // Log the API call
             Log.i("APIUtils", "loadNextClipSearchPage")
-            val url = "$server/search?query=$search&page=$page&page_size=$pageSize".toHttpUrlOrNull()!!.newBuilder()
+            val url = "$server/search?query=$query&page=$page&page_size=$pageSize".toHttpUrlOrNull()!!.newBuilder()
                 .build().toUrl()
 
             Log.i("APIUtils", url.toString())
