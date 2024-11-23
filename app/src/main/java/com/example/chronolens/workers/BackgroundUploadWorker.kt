@@ -6,6 +6,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.repositories.WorkManagerRepository
+import com.example.chronolens.utils.APIUtils
+import com.example.chronolens.utils.EventBus
 import com.example.chronolens.utils.Notification
 import com.example.chronolens.utils.showFinishedNotification
 import com.example.chronolens.utils.showUploadNotification
@@ -15,10 +17,9 @@ import com.example.chronolens.utils.updateUploadNotificationProgress
 
 private const val TAG = "UploadWorker"
 
-class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
+class BackgroundUploadWorker(ctx: Context, params: WorkerParameters) :
     CoroutineWorker(ctx, params) {
 
-    // FIXME: check for login or token
     override suspend fun doWork(): Result {
 
         val syncManager = WorkManagerRepository.syncManager
@@ -27,10 +28,14 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
 
         if (syncManager != null) {
 
+            val mediaGridRepository = syncManager.mediaGridRepository
+            val loggedIn = APIUtils.checkLogin(mediaGridRepository.sharedPreferences)
+            if (!loggedIn){
+                EventBus.logoutEvent.emit(Unit)
+                return Result.failure()
+            }
             // Sync Phase
             showSyncNotification(applicationContext)
-//            delay(8000L)
-            val mediaGridRepository = syncManager.mediaGridRepository
             val localMedia: List<LocalMedia> = syncManager.getLocalAssets()
             val localMediaIds: List<String> = localMedia.map { it.id }
             val remoteAssets: Set<String> =
@@ -43,7 +48,7 @@ class BackgroundChecksumWorker(ctx: Context, params: WorkerParameters) :
             var calculated = 0
 
             updateSyncNotificationProgress(applicationContext, 0, localMedia.size)
-//            delay(5000L)
+
             for (media in localMedia) {
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {

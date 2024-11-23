@@ -20,9 +20,8 @@ class UserRepository(
 
     suspend fun apiLogin(server: String, username: String, password: String): Int? {
         return APIUtils.login(sharedPreferences, server, username, password)
-
     }
- 
+
     suspend fun logout() {
         withContext(Dispatchers.IO) {
             sharedPreferences.edit().clear().apply()
@@ -32,4 +31,3 @@ class UserRepository(
     }
 
 }
-

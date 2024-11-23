@@ -2,7 +2,6 @@ package com.example.chronolens.repositories
 
 import android.content.Context
 import androidx.work.Constraints
-import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
@@ -12,7 +11,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.example.chronolens.utils.SyncManager
 import com.example.chronolens.utils.Work
-import com.example.chronolens.workers.BackgroundChecksumWorker
+import com.example.chronolens.workers.BackgroundUploadWorker
 import kotlinx.coroutines.flow.Flow
 import java.time.Duration
 
@@ -44,7 +43,7 @@ class WorkManagerRepository(
             .setRequiresBatteryNotLow(requireBatteryNotLow)
             .build()
 
-        val job = PeriodicWorkRequestBuilder<BackgroundChecksumWorker>(
+        val job = PeriodicWorkRequestBuilder<BackgroundUploadWorker>(
             repeatInterval = Duration.ofMinutes(period),
         ).setConstraints(constraints)
 
@@ -62,7 +61,7 @@ class WorkManagerRepository(
 
     // TODO: ExistingWorkPolicy??
     fun oneTimeBackgroundSync(): Flow<MutableList<WorkInfo>> {
-        val job = OneTimeWorkRequestBuilder<BackgroundChecksumWorker>().build()
+        val job = OneTimeWorkRequestBuilder<BackgroundUploadWorker>().build()
 
         workManager.enqueueUniqueWork(
             Work.ONE_TIME_BACKGROUND_UPLOAD_WORK_NAME, ExistingWorkPolicy.KEEP, job
