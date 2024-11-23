@@ -16,6 +16,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
@@ -394,7 +395,7 @@ class APIUtils {
             page: Int = 1,
             pageSize: Int = 10,
             requestType: String
-        ): List<Map<String, String>>? = withContext(Dispatchers.IO) {
+        ): List<Pair<String, String>>? = withContext(Dispatchers.IO) {
             val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return@withContext null
             val accessToken =
                 sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext null
@@ -411,14 +412,11 @@ class APIUtils {
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     connection.inputStream.use { inputStream ->
                         val responseJson = JSONArray(inputStream.bufferedReader().readText())
-                        val previews = mutableListOf<Map<String, String>>()
+                        val previews = mutableListOf<Pair<String, String>>()
 
                         for (i in 0 until responseJson.length()) {
                             val item = responseJson.getJSONObject(i)
-                            val preview = mapOf(
-                                "id" to item.getString("id"),
-                                "preview_url" to item.getString("preview_url")
-                            )
+                            val preview = Pair(item.getString("id"), item.getString("preview_url"))
                             previews.add(preview)
                         }
 
@@ -436,51 +434,63 @@ class APIUtils {
         }
 
 
-        fun loadNextClipSearchPage(
+        suspend fun loadNextClipSearchPage(
             sharedPreferences: SharedPreferences,
-            search: String,
+            query: String,
             page: Int = 1,
-            pageSize: Int = 10
-        ): List<Map<String, String>>? {
+            pageSize: Int = 20
+        ): List<Pair<String, String>>? {
             val server = sharedPreferences.getString(Prefs.SERVER, "") ?: return null
             val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return null
 
-            val url = URL("$server/search/$search?page=$page&page_size=$pageSize")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                setRequestProperty("Authorization", "Bearer $accessToken")
-                setRequestProperty("Accept", "application/json")
-                requestMethod = "GET"
-            }
+            // Log the API call
+            Log.i("APIUtils", "loadNextClipSearchPage")
+            val url = "$server/search?query=$query&page=$page&page_size=$pageSize".toHttpUrlOrNull()!!.newBuilder()
+                .build().toUrl()
+
+            Log.i("APIUtils", url.toString())
 
             return try {
-                val responseCode = connection.responseCode
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    connection.inputStream.use { inputStream ->
-                        val responseJson = JSONArray(inputStream.bufferedReader().readText())
-                        val previews = mutableListOf<Map<String, String>>()
-
-                        for (i in 0 until responseJson.length()) {
-                            val item = responseJson.getJSONObject(i)
-                            val preview = mapOf(
-                                "id" to item.getString("id"),
-                                "preview_url" to item.getString("preview_url")
-                            )
-                            previews.add(preview)
-                        }
-
-                        previews
+                // Run the network operation on the background thread using withContext
+                withContext(Dispatchers.IO) {
+                    val connection = (url.openConnection() as HttpURLConnection).apply {
+                        setRequestProperty("Authorization", "Bearer $accessToken")
+                        setRequestProperty("Accept", "application/json")
+                        requestMethod = "GET"
                     }
-                } else {
-                    null
+
+                    val responseCode = connection.responseCode
+                    Log.i("APIUtils", "Response Code: $responseCode")
+
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        connection.inputStream.use { inputStream ->
+                            val responseText = inputStream.bufferedReader().readText()
+                            Log.i("APIUtils", "Response: $responseText")
+                            try {
+                                val responseJson = JSONArray(responseText)
+                                val previews = mutableListOf<Pair<String, String>>()
+
+                                for (i in 0 until responseJson.length()) {
+                                    val item = responseJson.getJSONObject(i)
+                                    val preview = Pair(item.getString("id"), item.getString("preview_url"))
+                                    previews.add(preview)
+                                }
+                                Log.i("APIUtils", previews.toString())
+                                return@withContext previews
+                            } catch (e: JSONException) {
+                                Log.e("APIUtils", "Error parsing JSON response", e)
+                                return@withContext null
+                            }
+                        }
+                    } else {
+                        Log.e("APIUtils", "HTTP Error: $responseCode")
+                        return@withContext null
+                    }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            } finally {
-                connection.disconnect()
+                Log.e("APIUtils", "Exception during API call", e)
+                return null
             }
         }
-
     }
-
 }

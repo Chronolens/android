@@ -33,7 +33,7 @@ data class FullscreenImageState(
 // that randomly displays one of the images from the previous screen
 data class PersonPhotoGridState(
     val person: Person? = null,
-    val photos: List<Map<String,String>> = listOf(),
+    val photos: List<Pair<String,String>> = listOf(),
     var currentPage: Int = 1,
     var isLoading: Boolean = false,
     var hasMore: Boolean = true
@@ -41,7 +41,7 @@ data class PersonPhotoGridState(
 
 data class ClipSearchState(
     val currentSearch : String = "",
-    val photos: List<Map<String,String>> = listOf(),
+    val photos: List<Pair<String,String>> = listOf(),
     var currentPage: Int = 1,
     var isLoading: Boolean = false,
     var hasMore: Boolean = true
@@ -148,13 +148,14 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-    fun updateCurrentAssetHelper(preview: Map<String,String>)
-    {
-        val remoteId = preview["id"] ?: ""
-        val checksum = preview["checksum"] ?: ""
-        val timestamp = preview["timestamp"]?.toLong() ?: 0
-        val media = RemoteMedia(remoteId, checksum, timestamp)
-        updateCurrentAsset(media)
+    fun updateCurrentAssetHelper(preview: Pair<String,String>) {
+        viewModelScope.launch {
+            val remoteId = preview.first
+            val checksum = ""
+            val timestamp = 0.toLong()
+            val media = RemoteMedia(remoteId, checksum, timestamp)
+            updateCurrentAsset(media)
+        }
     }
 
     fun updateCurrentAsset(mediaAsset: MediaAsset) {
@@ -175,7 +176,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
             try {
                 val nextPage = state.currentPage
-                val pageSize = 10
+                val pageSize = 20
                 val newPhotos = mediaGridRepository.apiGetNextClipSearchPage(searchInput, nextPage, pageSize)
 
                 _clipSearchState.update {
@@ -196,14 +197,16 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
 
     fun clearSearchResults() {
-        _clipSearchState.update {
-            it.copy(
-                currentSearch = "",
-                photos = emptyList(),
-                currentPage = 1,
-                isLoading = false,
-                hasMore = true
-            )
+        viewModelScope.launch {
+            _clipSearchState.update {
+                it.copy(
+                    currentSearch = "",
+                    photos = emptyList(),
+                    currentPage = 1,
+                    isLoading = false,
+                    hasMore = true
+                )
+            }
         }
     }
 
