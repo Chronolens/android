@@ -86,14 +86,17 @@ fun ChronoLens() {
                     navigateUp = { navController.navigateUp() },
                     currentScreen = currentScreen,
                     userLoginState = userState.value.userLoginState,
-                    mediaGridState = mediaGridState
+                    mediaGridState = mediaGridState,
+                    mediaGridViewModel = mediaGridScreenViewModel
                 )
             },
             bottomBar = {
                 ChronolensBottomBar(
                     currentScreen = currentScreen,
                     nav = navController,
-                    navigationBarPadding = navigationBarPadding
+                    navigationBarPadding = navigationBarPadding,
+                    mediaGridViewModel = mediaGridScreenViewModel,
+                    mediaGridState = mediaGridState
                 )
             }
         )

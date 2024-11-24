@@ -48,7 +48,6 @@ import com.example.chronolens.viewModels.MediaGridState
 // TODO: Move the photo slightly up when the metadata box is visible
 
 
-
 @Composable
 fun FullscreenMediaView(
     viewModel: MediaGridScreenViewModel,
@@ -80,13 +79,12 @@ fun FullscreenMediaView(
             .background(Color.Black)
     ) {
         LoadFullImage(
-            mediaAsset!!,
-            viewModel,
-            { isBoxVisible = false },
-            { isBoxVisible = true },
-            isBoxVisible
+            mediaAsset = mediaAsset!!,
+            viewModel = viewModel,
+            hideBox = { isBoxVisible = false },
+            showBox = { isBoxVisible = true },
+            isBoxVisible = isBoxVisible
         )
-
 
 
         // Top Bar
@@ -103,24 +101,25 @@ fun FullscreenMediaView(
         }
 
 
-
         // Bottom Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 4.dp)
                 .align(Alignment.BottomCenter),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
             DeleteOrTransferButton(mediaAsset)
-            Spacer(modifier = Modifier.width(16.dp))
+//            Spacer(modifier = Modifier.width(16.dp))
 
-            ShareButton(mediaAsset)
-            Spacer(modifier = Modifier.width(16.dp))
+            if (mediaAsset is LocalMedia) {
+                ShareButton(mediaAsset)
+//              Spacer(modifier = Modifier.width(16.dp))
+            }
 
-            UploadOrRemoveButton(mediaAsset, viewModel,fullscreenMediaState)
-            Spacer(modifier = Modifier.width(16.dp))
+            UploadOrRemoveButton(mediaAsset, viewModel, fullscreenMediaState)
+//            Spacer(modifier = Modifier.width(16.dp))
 
             MenuButton({ isBoxVisible = true })
         }
@@ -151,8 +150,6 @@ fun FullscreenMediaView(
 }
 
 
-
-
 @Composable
 fun LoadFullImage(
     mediaAsset: MediaAsset,
@@ -176,7 +173,10 @@ fun LoadFullImage(
                 isBoxVisible = isBoxVisible
             )
         } else {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { // TODO DOES NOTHING?
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) { // TODO DOES NOTHING?
                 CircularProgressIndicator()
             }
         }

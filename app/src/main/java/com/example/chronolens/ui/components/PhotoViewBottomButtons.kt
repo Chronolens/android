@@ -20,11 +20,9 @@ import com.example.chronolens.R
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
-import com.example.chronolens.utils.shareImage
 import com.example.chronolens.utils.shareImages
 import com.example.chronolens.viewModels.FullscreenImageState
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
-import com.example.chronolens.viewModels.MediaGridState
 
 
 @Composable
@@ -56,13 +54,10 @@ fun DeleteOrTransferButton(asset: MediaAsset) {
 
 
 @Composable
-fun ShareButton(mediaAsset: MediaAsset) {
+fun ShareButton(mediaAsset: LocalMedia) {
     val context = LocalContext.current
     IconButton(onClick = {
-        Log.i("FullscreenMediaView", "Share button pressed")
-        if (mediaAsset is LocalMedia) {
-            shareImage(context, mediaAsset)
-        }
+        shareImages(context, listOf(mediaAsset))
     }) {
         Icon(
             imageVector = Icons.Default.Share,

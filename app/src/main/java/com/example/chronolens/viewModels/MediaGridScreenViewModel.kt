@@ -1,5 +1,6 @@
 package com.example.chronolens.viewModels
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,7 +11,9 @@ import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.repositories.MediaGridRepository
 import com.example.chronolens.utils.SyncManager
+import com.example.chronolens.utils.shareImages
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,13 +35,15 @@ enum class SyncState {
 
 data class MediaGridState(
     val media: List<MediaAsset> = listOf(),
-    val isLoading: Boolean = true, // TODO: remove?
+    val isLoading: Boolean = true,
     val selected: Map<String, MediaAsset> = mapOf(),
     val isSelecting: Boolean = false,
     val selectingType: SelectingType = SelectingType.None,
     val people: List<Person> = listOf(),
     val syncState: SyncState = SyncState.Synced,
-    val syncProgress: Pair<Int, Int>? = null
+    val syncProgress: Pair<Int, Int> = Pair(0,0),
+    val isUploading: Boolean = false,
+    val uploadProgress: Pair<Int, Int> = Pair(0,0)
 )
 
 data class FullscreenImageState(
@@ -123,13 +128,13 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             val localMediaCalculated: MutableList<LocalMedia> = mutableListOf()
 
             var i = 0
-            setProgress(i, localMedia.size)
+            setSyncProgress(i, localMedia.size)
             for (media in localMedia) {
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {
                     media.checksum = checksum
                     localMediaCalculated += media
-                    setProgress(++i, localMedia.size)
+                    setSyncProgress(++i, localMedia.size)
                 } else {
                     localMediaNotCalculated += media
                 }
@@ -145,7 +150,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                 val checksum = mediaGridRepository.getOrComputeChecksum(media.id, media.path)
                 media.checksum = checksum
                 localMediaCalculated += media
-                setProgress(++i, localMedia.size)
+                setSyncProgress(++i, localMedia.size)
             }
             localAssets += localMediaCalculated
 
@@ -374,6 +379,18 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+    fun deselectAll() {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(
+                    isSelecting = false,
+                    selected = mapOf(),
+                    selectingType = SelectingType.None
+                )
+            }
+        }
+    }
+
 
     private fun setSyncState(syncState: SyncState) {
         viewModelScope.launch {
@@ -384,12 +401,46 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-    private fun setProgress(progress: Int, max: Int) {
+    private fun setSyncProgress(progress: Int, max: Int) {
         viewModelScope.launch {
             _mediaGridState.update { currState ->
                 currState.copy(syncProgress = Pair(progress, max))
             }
         }
+    }
+
+    fun shareLocalImages(context: Context, media: List<MediaAsset>) {
+        if (_mediaGridState.value.selectingType == SelectingType.Local) {
+            shareImages(context, media.map { it as LocalMedia })
+            deselectAll()
+        }
+    }
+
+    private fun setUploadProgress(progress: Int, max: Int) {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(uploadProgress = Pair(progress, max))
+            }
+        }
+    }
+
+    private fun setIsUploading(isUploading: Boolean) {
+        _mediaGridState.update {
+            it.copy(isUploading = isUploading)
+        }
+    }
+
+    fun uploadMultipleMedia(mediaList: List<MediaAsset>) {
+        viewModelScope.launch {
+            setIsUploading(true)
+            var i = 0
+            mediaList.forEach {
+                uploadMedia(it as LocalMedia)
+                setUploadProgress(++i,mediaList.size)
+            }
+            setIsUploading(false)
+        }
+        deselectAll()
     }
 
 }
