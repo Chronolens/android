@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chronolens.repositories.UserRepository
-import com.example.chronolens.utils.EventBus
 import com.example.chronolens.utils.Prefs
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +23,7 @@ enum class UserLoginState {
 data class UserState(
     val username: String = "",
     val server: String = "",
-    val userLoginState: UserLoginState = UserLoginState.LoggedOut
+    val userLoginState: UserLoginState = UserLoginState.Loading
 )
 
 class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
