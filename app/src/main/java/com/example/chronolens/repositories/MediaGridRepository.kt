@@ -7,13 +7,13 @@ import com.example.chronolens.database.Checksum
 import com.example.chronolens.database.ChecksumDao
 import com.example.chronolens.database.RemoteAssetDao
 import com.example.chronolens.database.RemoteAssetDb
+import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.utils.ChecksumUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
 
 class MediaGridRepository(
     private val checksumDao: ChecksumDao,
@@ -40,7 +40,7 @@ class MediaGridRepository(
         }
     }
 
-    suspend fun apiGetFullImage(id: String): String {
+    suspend fun apiGetFullImage(id: String): FullMedia? {
         return withContext(Dispatchers.IO) {
             APIUtils.getFullImage(sharedPreferences, id)
         }
@@ -101,26 +101,11 @@ class MediaGridRepository(
         return checksum
     }
 
-    suspend fun apiGetClusterPreviewsPage(
-        clusterId: Int,
-        page: Int,
-        pageSize: Int,
-        requestType: String
-    ): List<Map<String, String>>? {
-        return APIUtils.getClusterPreviewsPage(
-            sharedPreferences,
-            clusterId,
-            page,
-            pageSize,
-            requestType
-        )
+    suspend fun apiGetClusterPreviewsPage(clusterId: Int, page: Int, pageSize: Int, requestType: String): List<Pair<String, String>>? {
+        return APIUtils.getClusterPreviewsPage(sharedPreferences, clusterId, page, pageSize, requestType)
     }
 
-    suspend fun apiGetNextClipSearchPage(
-        search: String,
-        page: Int,
-        pageSize: Int
-    ): List<Map<String, String>>? {
+    suspend fun apiGetNextClipSearchPage(search: String, page: Int, pageSize: Int): List<Pair<String, String>>? {
         return APIUtils.loadNextClipSearchPage(sharedPreferences, search, page, pageSize)
     }
 }

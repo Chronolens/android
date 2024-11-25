@@ -36,17 +36,12 @@ import com.example.chronolens.ui.components.MenuButton
 import com.example.chronolens.ui.components.MetadataDisplay
 import com.example.chronolens.ui.components.ShareButton
 import com.example.chronolens.ui.components.UploadOrRemoveButton
-import com.example.chronolens.utils.loadExifData
 import com.example.chronolens.viewModels.FullscreenImageState
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
 
 // TODO: Restrict photo vertical position while zooming in with double tap
-
-// TODO: METADATA SLIDING BOX SWIPE IS TAKING OVER ZOOMING GESTURES
-
 // TODO: Move the photo slightly up when the metadata box is visible
-
 
 @Composable
 fun FullscreenMediaView(
@@ -62,16 +57,14 @@ fun FullscreenMediaView(
 
     val boxHeight = 300.dp
 
-    val mediaAsset = fullscreenMediaState.value.currentMedia
+    val mediaAsset = fullscreenMediaState.value.currentMediaAsset
+    val fullMedia = fullscreenMediaState.value.currentFullMedia!!
+
     var isBoxVisible by remember { mutableStateOf(false) }
-    var metadata by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
 
     val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val boxOffsetY by animateDpAsState(targetValue = if (isBoxVisible) 0.dp else boxHeight + systemNavBarHeight)
 
-    if (mediaAsset is LocalMedia) {
-        metadata = loadExifData(mediaAsset.path)
-    }
 
     Box(
         modifier = modifier
@@ -144,7 +137,7 @@ fun FullscreenMediaView(
                 .offset(y = boxOffsetY)
                 .background(brush)
         ) {
-            MetadataDisplay(metadata, mediaAsset.timestamp)
+            MetadataDisplay(fullMedia)
         }
     }
 }
@@ -162,8 +155,8 @@ fun LoadFullImage(
     if (mediaAsset is RemoteMedia) {
         var imageUrl by remember { mutableStateOf<String?>(null) }
         LaunchedEffect(mediaAsset) {
-            val url = viewModel.getRemoteAssetFullImageUrl(mediaAsset.id)
-            imageUrl = url
+            val fullMedia = viewModel.getRemoteAssetFullImage(mediaAsset.id)
+            imageUrl = fullMedia?.mediaUrl
         }
         if (imageUrl != null) {
             ImageDisplay(

@@ -2,6 +2,7 @@ package com.example.chronolens.utils
 
 import android.content.SharedPreferences
 import android.util.Log
+import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.Person
@@ -15,12 +16,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.io.path.Path
 
+// TODO: error checking ALL OVER THIS CLASS
 class APIUtils {
     companion object {
 
@@ -372,7 +375,7 @@ class APIUtils {
         suspend fun getFullImage(
             sharedPreferences: SharedPreferences,
             uuid: String
-        ): String = withContext(Dispatchers.IO) {
+        ): FullMedia? = withContext(Dispatchers.IO) {
 
             val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
             val server = sharedPreferences.getString(Prefs.SERVER, null)
@@ -393,7 +396,7 @@ class APIUtils {
                     HttpURLConnection.HTTP_OK -> {
                         val responseText = connection.inputStream.bufferedReader().readText()
                         val jsonResponse = JSONObject(responseText)
-                        jsonResponse.getString(Json.MEDIA_URL)
+                        FullMedia.fromJson(jsonResponse)
                     }
 
                     HttpURLConnection.HTTP_UNAUTHORIZED -> {
@@ -402,22 +405,23 @@ class APIUtils {
                             return@withContext getFullImage(sharedPreferences, uuid)
                         } else {
                             EventBus.logoutEvent.emit(Unit)
-                            ""
+                            null
                         }
                     }
 
                     else -> {
-                        ""
+                        null
                     }
                 }
 
             } catch (e: Exception) {
                 e.printStackTrace()
-                ""
+                null
             } finally {
                 connection?.disconnect()
             }
         }
+
 
         suspend fun getPeople(sharedPreferences: SharedPreferences): List<Person> =
             withContext(Dispatchers.IO) {
@@ -469,7 +473,7 @@ class APIUtils {
 
                                 println(peopleList)
                                 // FIXME: ??
-                                return@use peopleList
+                                return@withContext peopleList
                             }
                         }
 
@@ -503,7 +507,7 @@ class APIUtils {
             page: Int = 1,
             pageSize: Int = 10,
             requestType: String
-        ): List<Map<String, String>>? = withContext(Dispatchers.IO) {
+        ): List<Pair<String, String>>? = withContext(Dispatchers.IO) {
             val server = sharedPreferences.getString(Prefs.SERVER, null)
             val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
@@ -525,14 +529,11 @@ class APIUtils {
                     HttpURLConnection.HTTP_OK -> {
                         connection.inputStream.use { inputStream ->
                             val responseJson = JSONArray(inputStream.bufferedReader().readText())
-                            val previews = mutableListOf<Map<String, String>>()
+                            val previews = mutableListOf<Pair<String, String>>()
 
                             for (i in 0 until responseJson.length()) {
                                 val item = responseJson.getJSONObject(i)
-                                val preview = mapOf(
-                                    Json.ID to item.getString(Json.ID),
-                                    Json.PREVIEW_URL to item.getString(Json.PREVIEW_URL)
-                                )
+                                val preview = Pair(item.getString("id"), item.getString("preview_url"))
                                 previews.add(preview)
                             }
                             return@withContext previews
@@ -571,10 +572,10 @@ class APIUtils {
 
         suspend fun loadNextClipSearchPage(
             sharedPreferences: SharedPreferences,
-            search: String,
+            query: String,
             page: Int = 1,
-            pageSize: Int = 10
-        ): List<Map<String, String>>? = withContext(Dispatchers.IO) {
+            pageSize: Int = 20
+        ): List<Pair<String, String>>? = withContext(Dispatchers.IO) {
             val server = sharedPreferences.getString(Prefs.SERVER, null)
             val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
@@ -585,7 +586,7 @@ class APIUtils {
             var connection: HttpURLConnection? = null
 
             try {
-                val url = URL("$server/search/$search?page=$page&page_size=$pageSize")
+                val url = URL("$server/search?query=$query&page=$page&page_size=$pageSize")
                 connection = (url.openConnection() as HttpURLConnection).apply {
                     setRequestProperty("Authorization", "Bearer $accessToken")
                     setRequestProperty("Accept", "application/json")
@@ -596,14 +597,11 @@ class APIUtils {
                     HttpURLConnection.HTTP_OK -> {
                         connection.inputStream.use { inputStream ->
                             val responseJson = JSONArray(inputStream.bufferedReader().readText())
-                            val previews = mutableListOf<Map<String, String>>()
+                            val previews = mutableListOf<Pair<String, String>>()
 
                             for (i in 0 until responseJson.length()) {
                                 val item = responseJson.getJSONObject(i)
-                                val preview = mapOf(
-                                    Json.ID to item.getString(Json.ID),
-                                    Json.PREVIEW_URL to item.getString(Json.PREVIEW_URL)
-                                )
+                                val preview = Pair(item.getString("id"), item.getString("preview_url"))
                                 previews.add(preview)
                             }
 
@@ -616,7 +614,7 @@ class APIUtils {
                         if (authed) {
                             return@withContext loadNextClipSearchPage(
                                 sharedPreferences = sharedPreferences,
-                                search = search,
+                                query = query,
                                 page = page,
                                 pageSize = pageSize
                             )
@@ -637,7 +635,5 @@ class APIUtils {
                 connection?.disconnect()
             }
         }
-
     }
-
 }

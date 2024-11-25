@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -39,9 +40,20 @@ fun SearchScreen(
 ) {
     val clipSearchStateValue by clipSearchState.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var debouncedQuery by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
-        viewModel.clearSearchResults()
+
+    LaunchedEffect(searchQuery) {
+        kotlinx.coroutines.delay(1000)
+        debouncedQuery = searchQuery
+    }
+
+
+    LaunchedEffect(debouncedQuery) {
+        if (debouncedQuery.isNotEmpty()) {
+            viewModel.clearSearchResults()
+            viewModel.clipSearchNextPage(debouncedQuery)
+        }
     }
 
     Column(
@@ -51,11 +63,6 @@ fun SearchScreen(
             value = searchQuery,
             onValueChange = { newQuery ->
                 searchQuery = newQuery
-
-                if (newQuery.isNotEmpty()) {
-                    viewModel.clearSearchResults()
-                    viewModel.clipSearchNextPage(newQuery)
-                }
             },
             placeholder = { Text(text = "Search...") },
             modifier = Modifier
@@ -68,7 +75,20 @@ fun SearchScreen(
                     contentDescription = "Search Icon",
                     modifier = Modifier.padding(8.dp)
                 )
+            },
+            trailingIcon = {
 
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = {
+                        viewModel.clearSearchResults()
+                        searchQuery = ""
+                    }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.x),
+                            contentDescription = "Clear Search Query"
+                        )
+                    }
+                }
             }
         )
 
@@ -104,3 +124,4 @@ fun SearchScreen(
         }
     }
 }
+
