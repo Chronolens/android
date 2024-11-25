@@ -333,7 +333,7 @@ fun ChronolensTopAppBar(
             colors = TopAppBarDefaults.mediumTopAppBarColors(
                 containerColor = Color.Transparent
             ),
-            modifier = modifier.border(2.dp, Color.White),
+//            modifier = modifier.border(2.dp, Color.White),
             navigationIcon = {
                 if (canNavigateBack) {
                     IconButton(onClick = navigateUp) {

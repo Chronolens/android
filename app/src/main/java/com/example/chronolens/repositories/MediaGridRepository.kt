@@ -108,4 +108,8 @@ class MediaGridRepository(
     suspend fun apiGetNextClipSearchPage(search: String, page: Int, pageSize: Int): List<Pair<String, String>>? {
         return APIUtils.loadNextClipSearchPage(sharedPreferences, search, page, pageSize)
     }
+
+    suspend fun apiCreateFace(clusterIds: List<Int>, personName: String): Boolean {
+        return APIUtils.createFace(sharedPreferences, clusterIds, personName)
+    }
 }

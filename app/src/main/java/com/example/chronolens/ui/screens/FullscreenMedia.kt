@@ -58,7 +58,7 @@ fun FullscreenMediaView(
     val boxHeight = 300.dp
 
     val mediaAsset = fullscreenMediaState.value.currentMediaAsset
-    val fullMedia = fullscreenMediaState.value.currentFullMedia!!
+    val fullMedia = fullscreenMediaState.value.currentFullMedia
 
     var isBoxVisible by remember { mutableStateOf(false) }
 
@@ -137,7 +137,10 @@ fun FullscreenMediaView(
                 .offset(y = boxOffsetY)
                 .background(brush)
         ) {
-            MetadataDisplay(fullMedia)
+            if (fullMedia != null)
+                MetadataDisplay(fullMedia)
+            else
+                CircularProgressIndicator()
         }
     }
 }
