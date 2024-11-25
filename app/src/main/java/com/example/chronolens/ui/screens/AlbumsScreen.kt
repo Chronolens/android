@@ -1,7 +1,10 @@
 package com.example.chronolens.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,23 +19,34 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.Person
+import com.example.chronolens.models.UnknownPerson
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
@@ -46,119 +60,123 @@ fun AlbumsScreen(
     state: State<MediaGridState>,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Favorites and Bin buttons
-        item {
+    val selectedPeople = state.value.selectedPeople
+    val showNameDialog by viewModel.showNameDialog.collectAsState()
+
+    Column(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            item {
+                Text(
+                    text = "People",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(state.value.people) { person ->
+                        PersonItem(viewModel, person) {
+                            viewModel.updateCurrentPersonPhotoGrid(it)
+                            navController.navigate(ChronolensNav.PersonPhotoGrid.name)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
+        if (selectedPeople.isNotEmpty()) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FavoritesButton()
-                BinButton()
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // PEOPLE section
-        item {
-            Text(
-                text = "People",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(state.value.people) { person ->
-                    PersonItem(viewModel, person) {
-                        viewModel.updateCurrentPersonPhotoGrid(it)
-                        navController.navigate(ChronolensNav.PersonPhotoGrid.name)
+                Text("Selected: ${selectedPeople.size} unknown persons")
+                Button(
+                    onClick = {
+                        viewModel.confirmPersonClustering()
                     }
+                ) {
+                    Text("Cluster")
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
-//        // System folders / albums section
-//        item {
-//            Text(
-//                text = "System Folders",
-//                style = MaterialTheme.typography.titleSmall,
-//                modifier = Modifier.padding(horizontal = 8.dp)
-//            )
-//            LazyRow(
-//                horizontalArrangement = Arrangement.spacedBy(8.dp),
-//                contentPadding = PaddingValues(horizontal = 8.dp)
-//            ) {
-//                repeat(10) {
-//                    item {
-//                        Box(
-//                            modifier = Modifier.size(88.dp),
-//                            contentAlignment = Alignment.Center
-//                        ) {
-//                            Text("aa")
-//                        }
-//                    }
-//                }
-//            }
-//
-//            Spacer(modifier = Modifier.height(16.dp))
-//        }
-//
-//        // Albums section - POSSIBLY REMOVE DUE TO LACK OF TIME
-//        item {
-//            Text(
-//                text = "Albums",
-//                style = MaterialTheme.typography.titleSmall,
-//                modifier = Modifier.padding(horizontal = 8.dp)
-//            )
-//            LazyRow(
-//                horizontalArrangement = Arrangement.spacedBy(8.dp),
-//                contentPadding = PaddingValues(horizontal = 8.dp)
-//            ) {
-//                repeat(10) {
-//                    item {
-//                        Box(
-//                            modifier = Modifier.size(88.dp),
-//                            contentAlignment = Alignment.Center
-//                        ) {
-//                            Text("aa")
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        if (showNameDialog) {
+            NameInputDialog(
+                onDismiss = { viewModel.dismissNameDialog() },
+                onConfirm = { personName ->
+                    viewModel.onNameConfirmed(personName)
+                }
+            )
+        }
     }
 }
 
 
-
-// TODO: Fix for HEIF photos, as they are not being displayed probably due to the conversion to bitmap
 @Composable
-fun PersonItem (
+fun PersonItem(
     viewModel: MediaGridScreenViewModel,
     person: Person,
     onClick: (Person) -> Unit
 ) {
+    val state by viewModel.mediaGridState.collectAsState()
+
+
+    val isSelectable = person is UnknownPerson
+    val isSelected = state.selectedPeople.containsKey(person.personId as Any)
+
+    var isLongPressed by remember { mutableStateOf(false) }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(horizontal = 4.dp).clickable { onClick(person) }
+        modifier = Modifier
+            .padding(horizontal = 4.dp)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {
+                        if (isLongPressed) {
+                            isLongPressed = false
+                        } else {
+                            if (state.selectedPeople.isNotEmpty()) {
 
+                                if (isSelectable) {
+
+                                    viewModel.togglePersonSelection(person)
+                                }
+                            } else {
+
+                                onClick(person)
+                            }
+                        }
+                    },
+                    onLongPress = {
+
+                        if (isSelectable) {
+                            isLongPressed = true
+                            viewModel.togglePersonSelection(person)
+                        }
+                    }
+                )
+            }
     ) {
-
         Box(
             modifier = Modifier
                 .size(88.dp)
-                .clip(RectangleShape),
+                .clip(RectangleShape)
+                .border(
+                    width = 4.dp,
+                    color = if (isSelected) MaterialTheme.colorScheme.secondary else Color.Transparent,
+                    shape = RectangleShape
+                ),
             contentAlignment = Alignment.Center
         ) {
             person.photoBitmap?.let { bitmap ->
@@ -183,6 +201,45 @@ fun PersonItem (
     }
 }
 
+
+// TODO: Fix for HEIF photos, as they are not being displayed probably due to the conversion to bitmap
+
+@Composable
+fun NameInputDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var personName by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Name Unknown Persons") },
+        text = {
+            TextField(
+                value = personName,
+                onValueChange = { personName = it },
+                label = { Text("Person Name") }
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (personName.isNotBlank()) {
+                        onConfirm(personName)
+                        onDismiss()
+                    }
+                }
+            ) {
+                Text("Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
 
 
 @Composable
