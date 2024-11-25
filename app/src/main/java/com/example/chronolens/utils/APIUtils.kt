@@ -2,6 +2,7 @@ package com.example.chronolens.utils
 
 import android.content.SharedPreferences
 import android.util.Log
+import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.Person
@@ -303,32 +304,35 @@ class APIUtils {
         suspend fun getFullImage(
             sharedPreferences: SharedPreferences,
             uuid: String
-        ): String = withContext(Dispatchers.IO) {
-            val jwtToken =
-                sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext ""
+        ): FullMedia? = withContext(Dispatchers.IO) {
+            val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, "") ?: return@withContext null
             val server = sharedPreferences.getString(Prefs.SERVER, "")
             val url = URL("$server/media/$uuid")
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 setRequestProperty("Authorization", "Bearer $jwtToken")
                 requestMethod = "GET"
             }
+            Log.i("APIUtils", url.toString())
 
             try {
                 val responseCode = connection.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
+                    Log.i("APIUtils", "Response Code: $responseCode")
                     val responseText = connection.inputStream.bufferedReader().readText()
+                    Log.i("APIUtils", "Response: $responseText")
                     val jsonResponse = JSONObject(responseText)
-                    jsonResponse.getString("media_url")
+                    FullMedia.fromJson(jsonResponse)
                 } else {
-                    ""
+                    null
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                ""
+                null
             } finally {
                 connection.disconnect()
             }
         }
+
 
         suspend fun getPeople(sharedPreferences: SharedPreferences): List<Person> =
             withContext(Dispatchers.IO) {

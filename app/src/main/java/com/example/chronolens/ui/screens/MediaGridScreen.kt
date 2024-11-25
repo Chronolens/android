@@ -6,9 +6,11 @@ import android.net.Uri
 import android.os.CancellationSignal
 import android.provider.MediaStore
 import android.util.Size
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +38,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -52,6 +56,7 @@ import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
+import com.example.chronolens.viewModels.SelectingType
 import com.example.chronolens.viewModels.WorkManagerViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -86,13 +91,21 @@ fun MediaGridScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             items(items = state.value.media) { asset ->
-                ImageItem(viewModel, asset) {
-                    viewModel.updateCurrentAsset(asset)
-                    navController.navigate(ChronolensNav.FullScreenMedia.name) {
-                        popUpTo(ChronolensNav.FullScreenMedia.name) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
+                ImageItem(
+                    viewModel = viewModel,
+                    mediaAsset = asset,
+                    goToImage = {
+                        viewModel.updateCurrentAsset(asset)
+                        navController.navigate(ChronolensNav.FullScreenMedia.name) {
+                            popUpTo(ChronolensNav.FullScreenMedia.name) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    selectOrDeselect = {
+                        viewModel.selectOrDeselect(asset.checksum!!, asset)
+                    },
+                    state = state
+                )
             }
         }
 
@@ -103,7 +116,6 @@ fun MediaGridScreen(
         )
     }
 }
-
 
 
 fun loadThumbnail(context: Context, uri: Uri, width: Int, height: Int): Bitmap? {
@@ -119,11 +131,14 @@ fun loadThumbnail(context: Context, uri: Uri, width: Int, height: Int): Bitmap? 
 }
 
 // TODO : Investigate the possibility of having a composable builder in the class itself to reduce conditional logic
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ImageItem(
     viewModel: MediaGridScreenViewModel,
     mediaAsset: MediaAsset,
-    onClick: (MediaAsset) -> Unit
+    goToImage: () -> Unit,
+    selectOrDeselect: () -> Unit,
+    state: State<MediaGridState>
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -159,7 +174,19 @@ fun ImageItem(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clickable { onClick(mediaAsset) }
+                        .combinedClickable(
+                            enabled = state.value.selectingType != SelectingType.Remote,
+                            onClick = {
+                                if (state.value.isSelecting) {
+                                    selectOrDeselect()
+                                } else {
+                                    goToImage()
+                                }
+                            },
+                            onLongClick = selectOrDeselect
+                        ),
+                    colorFilter = if (state.value.selectingType == SelectingType.Remote) ColorFilter.colorMatrix(
+                        ColorMatrix().apply { setToSaturation(0f) }) else null
                 )
             } else {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -177,6 +204,19 @@ fun ImageItem(
                         .padding(horizontal = 4.dp, vertical = 4.dp)
                 )
             }
+
+            if (state.value.selected.containsKey(mediaAsset.checksum!!)) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(id = R.drawable.checkcircle),
+                    contentDescription = null,
+                    tint = colorScheme.tertiary,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .align(Alignment.TopStart)
+                        .padding(horizontal = 4.dp, vertical = 4.dp)
+                )
+            }
         } else if (mediaAsset is RemoteMedia) {
             var imageUrl by remember { mutableStateOf<String?>(null) }
 
@@ -191,7 +231,19 @@ fun ImageItem(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clickable { onClick(mediaAsset) },
+                        .combinedClickable(
+                            enabled = state.value.selectingType != SelectingType.Local,
+                            onClick = {
+                                if (state.value.isSelecting) {
+                                    selectOrDeselect()
+                                } else {
+                                    goToImage()
+                                }
+                            },
+                            onLongClick = selectOrDeselect
+                        ),
+                    colorFilter = if (state.value.selectingType == SelectingType.Local) ColorFilter.colorMatrix(
+                        ColorMatrix().apply { setToSaturation(0f) }) else null
                 )
                 Icon(
                     imageVector = ImageVector.vectorResource(id = R.drawable.cloud),
@@ -205,6 +257,19 @@ fun ImageItem(
                 )
             } else {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+
+            if (state.value.selected.containsKey(mediaAsset.checksum!!)) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(id = R.drawable.checkcircle),
+                    contentDescription = null,
+                    tint = colorScheme.tertiary,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .align(Alignment.TopStart)
+                        .padding(horizontal = 4.dp, vertical = 4.dp)
+                )
             }
 
         }

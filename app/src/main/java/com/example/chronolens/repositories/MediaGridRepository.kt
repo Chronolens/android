@@ -7,6 +7,7 @@ import com.example.chronolens.database.Checksum
 import com.example.chronolens.database.ChecksumDao
 import com.example.chronolens.database.RemoteAssetDao
 import com.example.chronolens.database.RemoteAssetDb
+import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
@@ -39,7 +40,7 @@ class MediaGridRepository(
         }
     }
 
-    suspend fun apiGetFullImage(id: String): String {
+    suspend fun apiGetFullImage(id: String): FullMedia? {
         return withContext(Dispatchers.IO) {
             APIUtils.getFullImage(sharedPreferences, id)
         }

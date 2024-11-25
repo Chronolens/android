@@ -4,12 +4,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
+import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.repositories.MediaGridRepository
 import com.example.chronolens.utils.SyncManager
+import com.example.chronolens.utils.loadExifData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,16 +19,34 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+enum class SelectingType {
+    Remote,
+    Local,
+    None
+}
+
+enum class SyncState {
+    Synced,
+    FetchingRemote,
+    FetchingLocal,
+    Merging
+}
+
 data class MediaGridState(
     val media: List<MediaAsset> = listOf(),
-    val isLoading: Boolean = true,
-
-    val people: List<Person> = listOf()
+    val isLoading: Boolean = true, // TODO: remove?
+    val selected: Map<String, MediaAsset> = mapOf(),
+    val isSelecting: Boolean = false,
+    val selectingType: SelectingType = SelectingType.None,
+    val people: List<Person> = listOf(),
+    val syncState: SyncState = SyncState.Synced,
+    val syncProgress: Pair<Int,Int>? = null
 )
 
 data class FullscreenImageState(
     val image: BitmapImage? = null,
-    val currentMedia: MediaAsset? = null
+    val currentMediaAsset: MediaAsset? = null,
+    val currentFullMedia: FullMedia? = null
 )
 
 // We have to null all these values after the user leaves the screen, there's a weird bug
@@ -46,7 +66,6 @@ data class ClipSearchState(
     var isLoading: Boolean = false,
     var hasMore: Boolean = true
 )
-
 
 
 class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
@@ -70,22 +89,27 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     fun init() {
         viewModelScope.launch {
             loadMediaGrid()
-            setIsLoaded()
+            setIsLoading(false)
             loadPeople()
+
         }
     }
 
     private suspend fun loadMediaGrid() {
+        setSyncState(SyncState.FetchingRemote)
+//        delay(2000L)
         remoteAssets = syncManager.getRemoteAssets()
+        setSyncState(SyncState.Merging)
         mergeMediaAssets()
+        setSyncState(SyncState.FetchingLocal)
         loadLocalAssets()
     }
 
     fun refreshMediaGrid() {
         viewModelScope.launch {
-            setIsLoading()
+            setIsLoading(true)
             loadMediaGrid()
-            setIsLoaded()
+            setIsLoading(false)
         }
     }
 
@@ -99,34 +123,43 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
             val localMediaNotCalculated: MutableList<LocalMedia> = mutableListOf()
             val localMediaCalculated: MutableList<LocalMedia> = mutableListOf()
-
+            setProgress(0,localMedia.size)
+            var i = 0
             for (media in localMedia) {
                 val checksum = checkSumsMap[media.id]
                 if (checksum != null) {
                     media.checksum = checksum
                     localMediaCalculated += media
+                    setProgress(++i,localMedia.size)
                 } else {
                     localMediaNotCalculated += media
                 }
+//                delay(500L)
             }
 
             localAssets = localMediaCalculated.toList()
+
             mergeMediaAssets()
+            setSyncState(SyncState.FetchingLocal)
             localMediaCalculated.clear()
 
             for (media in localMediaNotCalculated) {
                 val checksum = mediaGridRepository.getOrComputeChecksum(media.id, media.path)
                 media.checksum = checksum
                 localMediaCalculated += media
+                setProgress(++i,localMedia.size)
+//                delay(500L)
             }
             localAssets += localMediaCalculated
 
             mergeMediaAssets()
+            setSyncState(SyncState.Synced)
         }
     }
 
     // Merge local and remote assets
     private fun mergeMediaAssets() {
+        setSyncState(SyncState.Merging)
         _mediaGridState.update { currState ->
             currState.copy(
                 media = syncManager.mergeAssets(localAssets, remoteAssets)
@@ -159,10 +192,24 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
     fun updateCurrentAsset(mediaAsset: MediaAsset) {
-        _fullscreenImageState.update { currState ->
-            currState.copy(
-                currentMedia = mediaAsset
-            )
+        viewModelScope.launch {
+            if (mediaAsset is RemoteMedia) {
+                val fullMedia = mediaGridRepository.apiGetFullImage(mediaAsset.id)
+                _fullscreenImageState.update { currState ->
+                    currState.copy(
+                        currentMediaAsset = mediaAsset,
+                        currentFullMedia = fullMedia
+                    )
+                }
+            } else if (mediaAsset is LocalMedia) {
+                val fullMedia = loadExifData(mediaAsset.path, mediaAsset.id, mediaAsset.timestamp)
+                _fullscreenImageState.update { currState ->
+                    currState.copy(
+                        currentMediaAsset = mediaAsset,
+                        currentFullMedia = fullMedia
+                    )
+                }
+            }
         }
     }
 
@@ -221,7 +268,12 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             try {
                 val nextPage = state.currentPage
                 val pageSize = 10
-                val newPhotos = mediaGridRepository.apiGetClusterPreviewsPage(clusterId, nextPage, pageSize, requestType)
+                val newPhotos = mediaGridRepository.apiGetClusterPreviewsPage(
+                    clusterId,
+                    nextPage,
+                    pageSize,
+                    requestType
+                )
 
                 _personPhotoGridState.update {
                     it.copy(
@@ -250,7 +302,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             val remoteId: String? = mediaGridRepository.apiUploadFileStream(localMedia)
             _fullscreenImageState.update { currState ->
                 currState.copy(
-                    currentMedia = localMedia.copy(remoteId = remoteId)
+                    currentMediaAsset = localMedia.copy(remoteId = remoteId)
                 )
             }
             if (remoteId != null) {
@@ -260,14 +312,11 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-
-
-
     suspend fun getRemoteAssetPreviewUrl(id: String): String {
         return mediaGridRepository.apiGetPreview(id)
     }
 
-    suspend fun getRemoteAssetFullImageUrl(id: String): String {
+    suspend fun getRemoteAssetFullImage(id: String): FullMedia? {
         return mediaGridRepository.apiGetFullImage(id)
     }
 
@@ -288,33 +337,65 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-
-    private fun setIsLoading() {
+    private fun setIsLoading(isLoading:Boolean) {
         viewModelScope.launch {
             _mediaGridState.update { currState ->
-                currState.copy(isLoading = true)
+                currState.copy(isLoading = isLoading)
             }
         }
     }
-
-    private fun setIsLoaded() {
-        viewModelScope.launch {
-            _mediaGridState.update { currState ->
-                currState.copy(isLoading = false)
-            }
-        }
-    }
-
 
     private fun loadPeople() {
         viewModelScope.launch {
-
             val peopleThumbnails = mediaGridRepository.apiGetPeople()
             _mediaGridState.update { currState ->
+                currState.copy(people = peopleThumbnails)
+            }
+        }
+    }
+
+    fun selectOrDeselect(id: String, media: MediaAsset) {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                val oldSelected = currState.selected.toMutableMap()
+                var selectingType: SelectingType = currState.selectingType
+                if (oldSelected.containsKey(id)) {
+                    oldSelected.remove(id)
+                    if (oldSelected.isEmpty()) {
+                        selectingType = SelectingType.None
+                    }
+                } else {
+                    if (media is LocalMedia && selectingType != SelectingType.Remote) {
+                        oldSelected[id] = media
+                        selectingType = SelectingType.Local
+                    } else if (media is RemoteMedia && selectingType != SelectingType.Local) {
+                        oldSelected[id] = media
+                        selectingType = SelectingType.Remote
+                    }
+                }
                 currState.copy(
-                    people = peopleThumbnails
+                    selected = oldSelected,
+                    isSelecting = oldSelected.isNotEmpty(),
+                    selectingType = selectingType
                 )
             }
         }
     }
+
+    private fun setSyncState(syncState: SyncState) {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(syncState = syncState)
+            }
+        }
+    }
+
+    private fun setProgress(progress: Int,max:Int){
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(syncProgress = Pair(progress,max))
+            }
+        }
+    }
+
 }
