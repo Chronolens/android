@@ -23,8 +23,8 @@ object Json {
         const val USERNAME = "username"
         const val PASSWORD = "password"
 
-        const val KNOWN_PEOPLE = "knownPeople"
-        const val UNKNOWN_PEOPLE = "unknownPeople"
+        const val KNOWN_PEOPLE = "faces"
+        const val UNKNOWN_PEOPLE = "clusters"
 
         const val MEDIA_URL = "media_url"
         const val PREVIEW_URL = "preview_url"

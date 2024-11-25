@@ -114,6 +114,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         viewModelScope.launch {
             setIsLoading(true)
             loadMediaGrid()
+            loadPeople()
             setIsLoading(false)
         }
     }
@@ -360,9 +361,9 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     private fun loadPeople() {
         viewModelScope.launch {
-            val peopleThumbnails = mediaGridRepository.apiGetPeople()
+            val peopleList = mediaGridRepository.apiGetPeople()
             _mediaGridState.update { currState ->
-                currState.copy(people = peopleThumbnails)
+                currState.copy(people = peopleList)
             }
         }
     }
