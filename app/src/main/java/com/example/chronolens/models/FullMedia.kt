@@ -4,7 +4,6 @@ import org.json.JSONObject
 
 
 data class FullMedia(
-    val id: String,
     val mediaUrl: String?,
     val createdAt: Long?,
     val fileSize: Long?,
@@ -23,7 +22,6 @@ data class FullMedia(
     companion object {
         fun fromJson(json: JSONObject): FullMedia {
             return FullMedia(
-                id = json.getString("id"),
                 mediaUrl = getStringOrNull(json, "media_url"),
                 createdAt = json.optLong("created_at"),
                 fileSize = json.optLong("file_size"),
