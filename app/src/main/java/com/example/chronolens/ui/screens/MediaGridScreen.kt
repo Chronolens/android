@@ -9,7 +9,6 @@ import android.util.Size
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -158,7 +157,7 @@ fun ImageItem(
                     withContext(Dispatchers.IO) {
                         val uri = Uri.withAppendedPath(
                             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                            mediaAsset.id
+                            mediaAsset.id.toString()
                         )
                         val bitmap = loadThumbnail(context, uri, 120, 120)
                         mediaAsset.thumbnail = bitmap

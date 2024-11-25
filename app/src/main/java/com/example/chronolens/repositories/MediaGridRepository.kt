@@ -22,7 +22,7 @@ class MediaGridRepository(
     val contentResolver: ContentResolver
 ) {
 
-    suspend fun apiUploadFileStream(localMedia: LocalMedia) :String? {
+    suspend fun uploadMedia(localMedia: LocalMedia): String? {
         return APIUtils.uploadMedia(sharedPreferences, localMedia)
     }
 
@@ -50,16 +50,8 @@ class MediaGridRepository(
         return APIUtils.getPeople(sharedPreferences)
     }
 
-    suspend fun dbStoreChecksumInDatabase(localId: String, checksum: String) {
-        val newChecksum = Checksum(localId, checksum)
-        checksumDao.insertChecksum(newChecksum)
-    }
 
-    suspend fun dbCheckChecksumInDatabase(localId: String): String? {
-        return checksumDao.getChecksum(localId)?.checksum
-    }
-
-    suspend fun dbGetChecksumsFromList(ids: List<String>): List<Checksum> {
+    suspend fun dbGetChecksumsFromList(ids: List<Long>): List<Checksum> {
         val batchSize = 500
         val results = mutableListOf<Checksum>()
         ids.chunked(batchSize).forEach { chunk ->
@@ -91,7 +83,7 @@ class MediaGridRepository(
         }
     }
 
-    suspend fun getOrComputeChecksum(id: String, path: String): String {
+    suspend fun getOrComputeChecksum(id: Long, path: String): String {
         var checksum = checksumDao.getChecksum(id)?.checksum
 
         if (checksum == null) {
@@ -102,7 +94,7 @@ class MediaGridRepository(
         return checksum
     }
 
-    suspend fun computeAndStoreChecksum(id: String, path: String): String {
+    suspend fun computeAndStoreChecksum(id: Long, path: String): String {
         val checksum = ChecksumUtils().computeChecksum(path)
         val checksumDb = Checksum(id, checksum)
         checksumDao.insertChecksum(checksumDb)
@@ -115,7 +107,5 @@ class MediaGridRepository(
 
     suspend fun apiGetNextClipSearchPage(search: String, page: Int, pageSize: Int): List<Pair<String, String>>? {
         return APIUtils.loadNextClipSearchPage(sharedPreferences, search, page, pageSize)
-
-
     }
 }

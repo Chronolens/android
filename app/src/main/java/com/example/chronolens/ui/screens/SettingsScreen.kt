@@ -84,6 +84,7 @@ fun Profile(state: State<UserState>, viewModel: UserViewModel, navController: Na
             navController.navigate(ChronolensNav.Login.name) {
                 popUpTo(0) { inclusive = true }
             }
+
         }) {
             Text(stringResource(R.string.logout))
         }

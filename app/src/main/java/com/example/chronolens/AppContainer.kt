@@ -27,7 +27,7 @@ class ChronoLensAppContainer(private val context: Context) : AppContainer {
         )
     }
     override val userRepository: UserRepository by lazy {
-        UserRepository(sharedPreferences)
+        UserRepository(sharedPreferences,database,context)
     }
 
     override val workManagerRepository: WorkManagerRepository by lazy {

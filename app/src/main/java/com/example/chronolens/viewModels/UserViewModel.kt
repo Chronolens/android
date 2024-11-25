@@ -23,8 +23,7 @@ enum class UserLoginState {
 data class UserState(
     val username: String = "",
     val server: String = "",
-    val userLoginState: UserLoginState = UserLoginState.LoggedOut
-    // TODO: the rest of the user's stuff
+    val userLoginState: UserLoginState = UserLoginState.Loading
 )
 
 class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
@@ -32,16 +31,25 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
     private val _userState = MutableStateFlow(UserState())
     val userState: StateFlow<UserState> = _userState.asStateFlow()
 
-
     init {
         viewModelScope.launch {
             val loggedIn = userRepository.checkLogin()
-            val state = if (loggedIn) UserLoginState.LoggedIn else UserLoginState.LoggedOut
-            _userState.update { currState ->
-                currState.copy(userLoginState = state)
+            val state: UserLoginState
+            if (loggedIn) {
+                state = UserLoginState.LoggedIn
+                _userState.update { currState ->
+                    currState.copy(
+                        userLoginState = state,
+                        server = getServer(),
+                        username = getUsername()
+                    )
+                }
+            } else {
+                logout()
             }
         }
     }
+
 
     fun getServer(): String {
         return userRepository.sharedPreferences.getString(Prefs.SERVER, "")!!
@@ -67,11 +75,13 @@ class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
                         server = server
                     )
                 }
+
                 HttpURLConnection.HTTP_UNAUTHORIZED -> _userState.update { currState ->
                     currState.copy(
                         userLoginState = UserLoginState.CredentialsWrong,
                     )
                 }
+
                 else -> _userState.update { currState ->
                     currState.copy(
                         userLoginState = UserLoginState.Error,

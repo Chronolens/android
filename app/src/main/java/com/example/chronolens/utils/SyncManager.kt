@@ -1,6 +1,5 @@
 package com.example.chronolens.utils
 
-import android.media.ExifInterface
 import android.provider.MediaStore
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
@@ -12,7 +11,7 @@ class SyncManager(
     val mediaGridRepository: MediaGridRepository
 ) {
     suspend fun getRemoteAssets(): List<RemoteMedia> {
-        val lastSync = mediaGridRepository.sharedPreferences.getLong("last_sync", 0L)
+        val lastSync = mediaGridRepository.sharedPreferences.getLong(Prefs.LAST_SYNC, 0L)
 
         var remoteAssets: List<RemoteMedia> = if (lastSync == 0L) {
             // Full Sync
@@ -24,7 +23,6 @@ class SyncManager(
             val (uploaded, deleted) = mediaGridRepository.apiSyncPartialRemote(lastSync)
             mediaGridRepository.dbUpsertRemoteAssets(uploaded)
             mediaGridRepository.dbDeleteRemoteAssets(deleted)
-            // FIXME: ??
             mediaGridRepository.dbGetRemoteAssets()
         }
 
@@ -56,7 +54,7 @@ class SyncManager(
             val mimeTypeColumn = it.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE)
 
             while (cursor.moveToNext()) {
-                val id = cursor.getString(idColumn)
+                val id = cursor.getLong(idColumn)
                 val path = cursor.getString(pathColumn)
                 val dateTaken =
                     if (dateTakenColumn != -1) it.getLong(dateTakenColumn) else null // Get the DATE_TAKEN value, can be null

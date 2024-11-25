@@ -30,7 +30,7 @@ class WorkManagerViewModel(private val workManagerRepository: WorkManagerReposit
                 // Assuming only one job, otherwise this breaks
                 val workInfo = workInfoList.firstOrNull()
                 _workManagerState.update { currState ->
-                    Log.i("WORK",currState.periodicWorkInfoState.toString())
+                    Log.i("WORK", currState.periodicWorkInfoState.toString())
                     currState.copy(
                         periodicWorkInfoState = workInfo?.state,
                         nextJob = if (workInfo?.state == WorkInfo.State.ENQUEUED) workInfo.nextScheduleTimeMillis else null,

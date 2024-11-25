@@ -1,6 +1,8 @@
 package com.example.chronolens.ui.components
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,8 +15,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,9 +35,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -44,6 +47,7 @@ import com.example.chronolens.R
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.utils.noBottomBar
 import com.example.chronolens.utils.noTopBar
+import com.example.chronolens.viewModels.MediaGridScreenViewModel
 import com.example.chronolens.viewModels.MediaGridState
 import com.example.chronolens.viewModels.SelectingType
 import com.example.chronolens.viewModels.SyncState
@@ -53,7 +57,9 @@ import com.example.chronolens.viewModels.UserLoginState
 fun ChronolensBottomBar(
     currentScreen: ChronolensNav,
     nav: NavHostController,
-    navigationBarPadding: Dp
+    navigationBarPadding: Dp,
+    mediaGridState: State<MediaGridState>,
+    mediaGridViewModel: MediaGridScreenViewModel
 ) {
     if (!noBottomBar.contains(currentScreen)) {
         BottomAppBar(
@@ -65,94 +71,179 @@ fun ChronolensBottomBar(
             BoxWithConstraints(
                 modifier = Modifier.fillMaxSize()
             ) {
+
                 val buttonWidth = maxWidth / 4
-                val tertiaryColor = MaterialTheme.colorScheme.tertiary
-                val defaultIconColor = MaterialTheme.colorScheme.onSecondary
-
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Spacer(modifier = Modifier.weight(0.5f))
-
-                    IconButton(
-                        onClick = {
-                            nav.navigate(ChronolensNav.MediaGrid.name) {
-                                popUpTo(0) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        },
-                        modifier = Modifier.width(buttonWidth)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.housesimple),
-                            contentDescription = "Home",
-                            modifier = Modifier.size(32.dp),
-                            tint = if (currentScreen == ChronolensNav.MediaGrid) tertiaryColor else defaultIconColor
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    IconButton(
-                        onClick = {
-                            nav.navigate(ChronolensNav.Albums.name) {
-                                popUpTo(0) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        },
-                        modifier = Modifier.width(buttonWidth)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.foldersimple),
-                            contentDescription = "Albums",
-                            modifier = Modifier.size(32.dp),
-                            tint = if (currentScreen == ChronolensNav.Albums) tertiaryColor else defaultIconColor
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    IconButton(
-                        onClick = {
-                            nav.navigate(ChronolensNav.Search.name) {
-                                popUpTo(0) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        },
-                        modifier = Modifier.width(buttonWidth)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.magnifyingglass),
-                            contentDescription = "Search",
-                            modifier = Modifier.size(32.dp),
-                            tint = if (currentScreen == ChronolensNav.Search) tertiaryColor else defaultIconColor
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    IconButton(
-                        onClick = {
-                            nav.navigate(ChronolensNav.Settings.name) {
-                                popUpTo(0) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        },
-                        modifier = Modifier.width(buttonWidth)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.gear),
-                            contentDescription = "Settings",
-                            modifier = Modifier.size(32.dp),
-                            tint = if (currentScreen == ChronolensNav.Settings) tertiaryColor else defaultIconColor
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.weight(0.5f))
+                if (mediaGridState.value.isSelecting) {
+                    SelectingBottomBar(
+                        state = mediaGridState,
+                        viewModel = mediaGridViewModel,
+                        buttonWidth = buttonWidth
+                    )
+                } else {
+                    NavigationBottomBar(
+                        currentScreen = currentScreen,
+                        nav = nav,
+                        buttonWidth = buttonWidth
+                    )
                 }
+
+
             }
         }
+    }
+}
+
+// TODO: pretty print here
+@Composable
+private fun SelectingBottomBar(
+    state: State<MediaGridState>,
+    viewModel: MediaGridScreenViewModel,
+    buttonWidth: Dp
+) {
+
+    val context = LocalContext.current
+
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        if (state.value.selectingType == SelectingType.Local) {
+            IconButton(
+                onClick = {
+                    viewModel.shareLocalImages(context, state.value.selected.values.toList())
+                },
+                modifier = Modifier.width(buttonWidth)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.share),
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+
+//            Spacer(modifier = Modifier.weight(1f))
+
+            IconButton(
+                onClick = {
+                    viewModel.uploadMultipleMedia(state.value.selected.values.toList())
+                },
+                modifier = Modifier.width(buttonWidth)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.uploadsimple),
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+        } else if (state.value.selectingType == SelectingType.Remote) {
+            IconButton(
+                onClick = {
+                },
+                modifier = Modifier.width(buttonWidth)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.downloadsimple),
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+        }
+    }
+
+}
+
+@Composable
+private fun NavigationBottomBar(
+    currentScreen: ChronolensNav,
+    nav: NavHostController,
+    buttonWidth: Dp
+) {
+
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+    val defaultIconColor = MaterialTheme.colorScheme.onSecondary
+
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(modifier = Modifier.weight(0.5f))
+
+        IconButton(
+            onClick = {
+                nav.navigate(ChronolensNav.MediaGrid.name) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+            modifier = Modifier.width(buttonWidth)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.housesimple),
+                contentDescription = "Home",
+                modifier = Modifier.size(32.dp),
+                tint = if (currentScreen == ChronolensNav.MediaGrid) tertiaryColor else defaultIconColor
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        IconButton(
+            onClick = {
+                nav.navigate(ChronolensNav.Albums.name) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+            modifier = Modifier.width(buttonWidth)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.foldersimple),
+                contentDescription = "Albums",
+                modifier = Modifier.size(32.dp),
+                tint = if (currentScreen == ChronolensNav.Albums) tertiaryColor else defaultIconColor
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        IconButton(
+            onClick = {
+                nav.navigate(ChronolensNav.Search.name) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+            modifier = Modifier.width(buttonWidth)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.magnifyingglass),
+                contentDescription = "Search",
+                modifier = Modifier.size(32.dp),
+                tint = if (currentScreen == ChronolensNav.Search) tertiaryColor else defaultIconColor
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        IconButton(
+            onClick = {
+                nav.navigate(ChronolensNav.Settings.name) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+            modifier = Modifier.width(buttonWidth)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.gear),
+                contentDescription = "Settings",
+                modifier = Modifier.size(32.dp),
+                tint = if (currentScreen == ChronolensNav.Settings) tertiaryColor else defaultIconColor
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(0.5f))
     }
 }
 
@@ -165,10 +256,12 @@ fun ChronolensTopAppBar(
     navigateUp: () -> Unit,
     modifier: Modifier = Modifier,
     userLoginState: UserLoginState,
-    mediaGridState: State<MediaGridState>
+    mediaGridState: State<MediaGridState>,
+    mediaGridViewModel: MediaGridScreenViewModel
 ) {
 
     var isPopupVisible by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     if (userLoginState != UserLoginState.Loading && !noTopBar.contains(currentScreen)) {
         TopAppBar(
@@ -176,9 +269,27 @@ fun ChronolensTopAppBar(
                 Row(modifier = Modifier.fillMaxWidth()) {
                     if (mediaGridState.value.isSelecting) {
                         if (mediaGridState.value.selectingType == SelectingType.Remote) {
-                            Text(stringResource(R.string.selecting_remotes))
+                            Row {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = null,
+                                    modifier = Modifier.clickable {
+                                        mediaGridViewModel.deselectAll()
+                                    })
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.selecting_remotes))
+                            }
                         } else {
-                            Text(stringResource(R.string.selecting_locals))
+                            Row {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = null,
+                                    modifier = Modifier.clickable {
+                                        mediaGridViewModel.deselectAll()
+                                    })
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.selecting_locals))
+                            }
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         Text(text = mediaGridState.value.selected.size.toString())
@@ -211,6 +322,10 @@ fun ChronolensTopAppBar(
                         Text(mediaGridState.value.syncState.name)
                         if (mediaGridState.value.syncState == SyncState.FetchingLocal) {
                             Text(mediaGridState.value.syncProgress.toString())
+                        }
+                        if (mediaGridState.value.isUploading){
+                            val (progress,max) = mediaGridState.value.uploadProgress
+                            Text(stringResource(R.string.select_upload,progress,max))
                         }
                     }
                 }

@@ -7,9 +7,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.chronolens.R
 
-// TODO: ask for notification permission
 // TODO: design do icon
-
 enum class Notification{
     SYNC_CHANNEL_ID,
     UPLOAD_CHANNEL_ID,
