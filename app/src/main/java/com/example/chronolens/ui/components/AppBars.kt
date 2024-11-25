@@ -122,11 +122,12 @@ private fun SelectingBottomBar(
                 )
             }
 
-//            Spacer(modifier = Modifier.weight(1f))
+//          Spacer(modifier = Modifier.weight(1f))
 
             IconButton(
                 onClick = {
                     viewModel.uploadMultipleMedia(state.value.selected.values.toList())
+
                 },
                 modifier = Modifier.width(buttonWidth)
             ) {
@@ -139,6 +140,7 @@ private fun SelectingBottomBar(
         } else if (state.value.selectingType == SelectingType.Remote) {
             IconButton(
                 onClick = {
+                    viewModel.downloadMultipleMedia(state.value.selected.values.toList(), context)
                 },
                 modifier = Modifier.width(buttonWidth)
             ) {
@@ -261,7 +263,6 @@ fun ChronolensTopAppBar(
 ) {
 
     var isPopupVisible by remember { mutableStateOf(false) }
-    val context = LocalContext.current
 
     if (userLoginState != UserLoginState.Loading && !noTopBar.contains(currentScreen)) {
         TopAppBar(
@@ -323,9 +324,9 @@ fun ChronolensTopAppBar(
                         if (mediaGridState.value.syncState == SyncState.FetchingLocal) {
                             Text(mediaGridState.value.syncProgress.toString())
                         }
-                        if (mediaGridState.value.isUploading){
-                            val (progress,max) = mediaGridState.value.uploadProgress
-                            Text(stringResource(R.string.select_upload,progress,max))
+                        if (mediaGridState.value.isUploading) {
+                            val (progress, max) = mediaGridState.value.uploadProgress
+                            Text(stringResource(R.string.select_upload, progress, max))
                         }
                     }
                 }
@@ -333,7 +334,7 @@ fun ChronolensTopAppBar(
             colors = TopAppBarDefaults.mediumTopAppBarColors(
                 containerColor = Color.Transparent
             ),
-            modifier = modifier.border(2.dp, Color.White),
+            modifier = modifier,
             navigationIcon = {
                 if (canNavigateBack) {
                     IconButton(onClick = navigateUp) {

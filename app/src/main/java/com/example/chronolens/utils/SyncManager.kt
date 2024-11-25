@@ -1,10 +1,14 @@
 package com.example.chronolens.utils
 
 import android.provider.MediaStore
+import android.util.Log
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.repositories.MediaGridRepository
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // TODO: we can get thumbnail bytes from exif or mediaStore directly
 class SyncManager(
@@ -32,10 +36,10 @@ class SyncManager(
 
     fun getLocalAssets(): List<LocalMedia> {
         val projection = arrayOf(
-            MediaStore.Images.Media._ID,           // MediaStore ID
-            MediaStore.Images.Media.DATA,          // File path
-            MediaStore.Images.Media.DATE_TAKEN,    // Timestamp (date taken)
-            MediaStore.Images.Media.DATE_MODIFIED,  // Last modified timestamp
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.Media.DATA,
+            MediaStore.Images.Media.DATE_TAKEN,
+            MediaStore.Images.Media.DATE_MODIFIED,
             MediaStore.Images.Media.MIME_TYPE
         )
         val cursor = mediaGridRepository.contentResolver.query(
@@ -56,8 +60,7 @@ class SyncManager(
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
                 val path = cursor.getString(pathColumn)
-                val dateTaken =
-                    if (dateTakenColumn != -1) it.getLong(dateTakenColumn) else null // Get the DATE_TAKEN value, can be null
+                val dateTaken = if (dateTakenColumn != -1) it.getLong(dateTakenColumn) else null
                 val mimeType = cursor.getString(mimeTypeColumn)
 
                 val finalTimestamp: Long = if (dateTaken == null || dateTaken == 0L) {
@@ -115,7 +118,6 @@ class SyncManager(
         mediaAssets.sortByDescending { it.timestamp }
         return mediaAssets
     }
-
 
 
 }

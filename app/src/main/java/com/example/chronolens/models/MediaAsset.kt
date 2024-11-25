@@ -39,6 +39,7 @@ data class RemoteMedia(
         return (other is RemoteMedia) && (other.id == id)
     }
 
+
     companion object {
         fun fromJson(obj: JSONObject): RemoteMedia {
             val id = obj.getString(Json.ID)

@@ -79,7 +79,7 @@ class BackgroundUploadWorker(ctx: Context, params: WorkerParameters) :
             // Upload Phase Logic
             var uploaded = 0
             mediaToUpload.forEach {
-                mediaGridRepository.uploadMedia(it)
+                mediaGridRepository.uploadMedia(listOf(it))
                 uploaded++
                 updateUploadNotificationProgress(applicationContext, uploaded, mediaToUpload.size)
             }

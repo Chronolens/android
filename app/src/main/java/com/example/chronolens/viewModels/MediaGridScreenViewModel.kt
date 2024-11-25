@@ -11,10 +11,12 @@ import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.repositories.MediaGridRepository
+import com.example.chronolens.utils.APIUtils
 import com.example.chronolens.utils.SyncManager
 import com.example.chronolens.utils.shareImages
 import com.example.chronolens.utils.loadExifData
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,14 +44,17 @@ data class MediaGridState(
     val selectingType: SelectingType = SelectingType.None,
     val people: List<Person> = listOf(),
     val syncState: SyncState = SyncState.Synced,
-    val syncProgress: Pair<Int, Int> = Pair(0,0),
+    val syncProgress: Pair<Int, Int> = Pair(0, 0),
     val isUploading: Boolean = false,
-    val uploadProgress: Pair<Int, Int> = Pair(0,0)
+    val uploadProgress: Pair<Int, Int> = Pair(0, 0),
+    val isDownloading: Boolean = false,
+    val downloadProgress: Pair<Int, Int> = Pair(0, 0)
 )
 
 data class FullscreenImageState(
     val image: BitmapImage? = null,
     val uploading: Boolean = false,
+    val downloading: Boolean = false,
     val currentMediaAsset: MediaAsset? = null,
     val currentFullMedia: FullMedia? = null
 )
@@ -58,15 +63,15 @@ data class FullscreenImageState(
 // that randomly displays one of the images from the previous screen
 data class PersonPhotoGridState(
     val person: Person? = null,
-    val photos: List<Pair<String,String>> = listOf(),
+    val photos: List<Pair<String, String>> = listOf(),
     var currentPage: Int = 1,
     var isLoading: Boolean = false,
     var hasMore: Boolean = true
 )
 
 data class ClipSearchState(
-    val currentSearch : String = "",
-    val photos: List<Pair<String,String>> = listOf(),
+    val currentSearch: String = "",
+    val photos: List<Pair<String, String>> = listOf(),
     var currentPage: Int = 1,
     var isLoading: Boolean = false,
     var hasMore: Boolean = true
@@ -184,8 +189,8 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-
-    fun updateCurrentAssetHelper(preview: Pair<String,String>) {
+    // FIXME
+    fun updateCurrentAssetHelper(preview: Pair<String, String>) {
         viewModelScope.launch {
             val remoteId = preview.first
             val checksum = ""
@@ -228,7 +233,8 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             try {
                 val nextPage = state.currentPage
                 val pageSize = 20
-                val newPhotos = mediaGridRepository.apiGetNextClipSearchPage(searchInput, nextPage, pageSize)
+                val newPhotos =
+                    mediaGridRepository.apiGetNextClipSearchPage(searchInput, nextPage, pageSize)
 
                 _clipSearchState.update {
                     it.copy(
@@ -296,26 +302,23 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     fun uploadMedia(localMedia: LocalMedia) {
         viewModelScope.launch(Dispatchers.IO) {
-            _fullscreenImageState.update { currState ->
-                currState.copy(
-                    uploading = true
-                )
-            }
+            Log.i("UPLOAD","uploading ${localMedia.path}")
+            setIsUploadingFullScreen(true)
             if (localMedia.checksum == null) {
                 val checksum =
                     mediaGridRepository.getOrComputeChecksum(localMedia.id, localMedia.path)
                 localMedia.checksum = checksum
             }
 
-            val remoteId: String? = mediaGridRepository.uploadMedia(localMedia)
+            val result = mediaGridRepository.uploadMedia(listOf(localMedia)).firstOrNull()
             _fullscreenImageState.update { currState ->
                 currState.copy(
                     uploading = false,
-                    currentMediaAsset = localMedia.copy(remoteId = remoteId)
+                    currentMediaAsset = localMedia.copy(remoteId = result?.first)
                 )
             }
-            if (remoteId != null) {
-                updateMediaList(remoteId, localMedia.checksum!!)
+            if (result?.first != null) {
+                updateMediaList(listOf(Pair(result.first, localMedia.checksum!!)))
             }
         }
     }
@@ -331,15 +334,20 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-    private fun updateMediaList(remoteId: String, checksum: String) {
+    private fun updateMediaList(updates: List<Pair<String?,String>>) {
         viewModelScope.launch {
 
             val mediaList = _mediaGridState.value.media.toMutableList()
-            val index = mediaList.indexOfFirst { it.checksum == checksum && it is LocalMedia }
+            for ((remoteId,checksum) in updates) {
+                if (remoteId == null){
+                    continue
+                }
+                val index = mediaList.indexOfFirst { it.checksum == checksum && it is LocalMedia }
 
-            if (index != -1) {
-                val media = mediaList[index] as LocalMedia
-                mediaList[index] = media.copy(remoteId = remoteId)
+                if (index != -1) {
+                    val media = mediaList[index] as LocalMedia
+                    mediaList[index] = media.copy(remoteId = remoteId)
+                }
             }
 
             _mediaGridState.update { currState ->
@@ -446,17 +454,80 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+    private fun setIsUploadingFullScreen(isUploading: Boolean){
+        _fullscreenImageState.update {
+            it.copy(
+                uploading = isUploading
+            )
+        }
+    }
+
     fun uploadMultipleMedia(mediaList: List<MediaAsset>) {
         viewModelScope.launch {
             setIsUploading(true)
-            var i = 0
-            mediaList.forEach {
-                uploadMedia(it as LocalMedia)
-                setUploadProgress(++i,mediaList.size)
-            }
+            val remoteIds = mediaGridRepository.uploadMedia(
+                localMedia = mediaList.map { it as LocalMedia },
+                setProgress = { setUploadProgress(it, mediaList.size) }
+            )
+
+            updateMediaList(remoteIds)
             setIsUploading(false)
         }
         deselectAll()
     }
+
+    private fun setDownloadProgress(progress: Int, max: Int) {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(downloadProgress = Pair(progress, max))
+            }
+        }
+    }
+
+    private fun setIsDownloading(isDownloading: Boolean) {
+        _mediaGridState.update {
+            it.copy(isDownloading = isDownloading)
+        }
+    }
+
+    private fun setIsDownloadingFullScreen(isDownloading: Boolean){
+        _fullscreenImageState.update {
+            it.copy(
+                uploading = isDownloading
+            )
+        }
+    }
+
+    fun downLoadMedia(media: RemoteMedia, context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            setIsDownloadingFullScreen(true)
+            val downloaded = APIUtils.downloadImage(
+                context = context,
+                media = media,
+                sharedPreferences = mediaGridRepository.sharedPreferences
+            )
+//            if (downloaded){
+//                _fullscreenImageState.update {
+//                    it.copy(currentMediaAsset = media.toLocal())
+//                }
+//            }
+
+            setIsDownloadingFullScreen(false)
+        }
+    }
+
+    fun downloadMultipleMedia(mediaList: List<MediaAsset>, context: Context) {
+        viewModelScope.launch {
+            setIsDownloading(true)
+            var i = 0
+            mediaList.forEach {
+                downLoadMedia(it as RemoteMedia, context)
+                setDownloadProgress(++i, mediaList.size)
+            }
+            setIsDownloading(false)
+        }
+        deselectAll()
+    }
+
 
 }

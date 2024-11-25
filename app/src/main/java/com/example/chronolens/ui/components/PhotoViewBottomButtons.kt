@@ -26,17 +26,28 @@ import com.example.chronolens.viewModels.MediaGridScreenViewModel
 
 
 @Composable
-fun DeleteOrTransferButton(asset: MediaAsset) {
+fun DeleteOrTransferButton(
+    asset: MediaAsset,
+    viewModel: MediaGridScreenViewModel,
+    state: State<FullscreenImageState>
+) {
+
+    val context = LocalContext.current
     if (asset is RemoteMedia) {
         IconButton(onClick = {
-            Log.i("DeleteOrTransferIcon", "Downloading not implemented yet")
+            viewModel.downLoadMedia(asset, context)
+
         }) {
-            Icon(
-                painter = painterResource(id = R.drawable.downloadsimple),
-                contentDescription = "Download",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
+            if (state.value.downloading) {
+                CircularProgressIndicator()
+            } else {
+                Icon(
+                    painter = painterResource(id = R.drawable.downloadsimple),
+                    contentDescription = "Download",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     } else if (asset is LocalMedia) {
         IconButton(onClick = {

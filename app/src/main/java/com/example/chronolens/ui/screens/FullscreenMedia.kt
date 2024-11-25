@@ -58,6 +58,7 @@ fun FullscreenMediaView(
     val boxHeight = 300.dp
 
     val mediaAsset = fullscreenMediaState.value.currentMediaAsset
+    // FIXME: throws ANR
     val fullMedia = fullscreenMediaState.value.currentFullMedia!!
 
     var isBoxVisible by remember { mutableStateOf(false) }
@@ -103,16 +104,24 @@ fun FullscreenMediaView(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            DeleteOrTransferButton(mediaAsset)
-//            Spacer(modifier = Modifier.width(16.dp))
+            DeleteOrTransferButton(
+                asset = mediaAsset,
+                viewModel = viewModel,
+                state = fullscreenMediaState
+            )
+//          Spacer(modifier = Modifier.width(16.dp))
 
             if (mediaAsset is LocalMedia) {
                 ShareButton(mediaAsset)
 //              Spacer(modifier = Modifier.width(16.dp))
             }
 
-            UploadOrRemoveButton(mediaAsset, viewModel, fullscreenMediaState)
-//            Spacer(modifier = Modifier.width(16.dp))
+            UploadOrRemoveButton(
+                asset = mediaAsset,
+                viewModel = viewModel,
+                state = fullscreenMediaState
+            )
+//          Spacer(modifier = Modifier.width(16.dp))
 
             MenuButton({ isBoxVisible = true })
         }
