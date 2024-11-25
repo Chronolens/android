@@ -42,7 +42,7 @@ data class FullMedia(
         }
 
         private fun getStringOrNull(json: JSONObject, key: String): String? {
-            val value = json.optString(key, null)
+            val value = json.optString(key, "")
             return if (value == "null") null else value
         }
     }

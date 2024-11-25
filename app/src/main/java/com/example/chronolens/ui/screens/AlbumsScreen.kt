@@ -39,8 +39,6 @@ import com.example.chronolens.viewModels.MediaGridState
 
 
 // TODO: The current method is to get the people albums from the server at the start of mediagridstate
-
-
 @Composable
 fun AlbumsScreen(
     viewModel: MediaGridScreenViewModel,
@@ -90,55 +88,55 @@ fun AlbumsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // System folders / albums section
-        item {
-            Text(
-                text = "System Folders",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 8.dp)
-            ) {
-                repeat(10) {
-                    item {
-                        Box(
-                            modifier = Modifier.size(88.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("aa")
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Albums section - POSSIBLY REMOVE DUE TO LACK OF TIME
-        item {
-            Text(
-                text = "Albums",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 8.dp)
-            ) {
-                repeat(10) {
-                    item {
-                        Box(
-                            modifier = Modifier.size(88.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("aa")
-                        }
-                    }
-                }
-            }
-        }
+//        // System folders / albums section
+//        item {
+//            Text(
+//                text = "System Folders",
+//                style = MaterialTheme.typography.titleSmall,
+//                modifier = Modifier.padding(horizontal = 8.dp)
+//            )
+//            LazyRow(
+//                horizontalArrangement = Arrangement.spacedBy(8.dp),
+//                contentPadding = PaddingValues(horizontal = 8.dp)
+//            ) {
+//                repeat(10) {
+//                    item {
+//                        Box(
+//                            modifier = Modifier.size(88.dp),
+//                            contentAlignment = Alignment.Center
+//                        ) {
+//                            Text("aa")
+//                        }
+//                    }
+//                }
+//            }
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//        }
+//
+//        // Albums section - POSSIBLY REMOVE DUE TO LACK OF TIME
+//        item {
+//            Text(
+//                text = "Albums",
+//                style = MaterialTheme.typography.titleSmall,
+//                modifier = Modifier.padding(horizontal = 8.dp)
+//            )
+//            LazyRow(
+//                horizontalArrangement = Arrangement.spacedBy(8.dp),
+//                contentPadding = PaddingValues(horizontal = 8.dp)
+//            ) {
+//                repeat(10) {
+//                    item {
+//                        Box(
+//                            modifier = Modifier.size(88.dp),
+//                            contentAlignment = Alignment.Center
+//                        ) {
+//                            Text("aa")
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
 }
 
