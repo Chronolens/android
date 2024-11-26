@@ -295,14 +295,14 @@ fun ChronolensTopAppBar(
                         Text(text = mediaGridState.value.selected.size.toString())
                         Spacer(modifier = Modifier.padding(end = 16.dp))
                     } else {
-                        Text(text = currentScreen.name)
+                        Text(text = getScreenTitle(currentScreen))
                     }
                 }
             },
             actions = {
                 IconButton(onClick = { isPopupVisible = !isPopupVisible }) {
                     Icon(
-                        painter = painterResource(id = R.drawable.gear),
+                        painter = painterResource(id = R.drawable.aperture),
                         contentDescription = null
                     )
                 }
@@ -347,3 +347,21 @@ fun ChronolensTopAppBar(
         )
     }
 }
+
+@Composable
+fun getScreenTitle(nav: ChronolensNav): String {
+    return when (nav) {
+        ChronolensNav.Login -> stringResource(R.string.login_screen)
+        ChronolensNav.MediaGrid -> stringResource(R.string.media_gallery)
+        ChronolensNav.FullScreenMedia -> stringResource(R.string.media_viewer)
+        ChronolensNav.Albums -> stringResource(R.string.albums)
+        ChronolensNav.PersonPhotoGrid -> stringResource(R.string.person_photos)
+        ChronolensNav.Search -> stringResource(R.string.search)
+        ChronolensNav.Settings -> stringResource(R.string.settings)
+        ChronolensNav.BackgroundUpload -> stringResource(R.string.background_uploads)
+        ChronolensNav.ActivityHistory -> stringResource(R.string.activity_history)
+        ChronolensNav.MachineLearning -> stringResource(R.string.machine_learning)
+        ChronolensNav.Error -> stringResource(R.string.error)
+    }
+}
+
