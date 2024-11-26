@@ -71,4 +71,7 @@
     <string name="machine_learning">Machine Learning</string>
     <string name="error">Error</string>
 
+    <string name="selecting_persons">Selecting People</string>
+    <string name="rename">Rename</string>
+    <string name="group_people">Group People</string>
 </resources>

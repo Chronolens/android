@@ -42,9 +42,9 @@ data class MediaGridState(
     val isSelecting: Boolean = false,
     val selectingType: SelectingType = SelectingType.None,
     val syncState: SyncState = SyncState.Synced,
-    val syncProgress: Pair<Int, Int> = Pair(0,0),
+    val syncProgress: Pair<Int, Int> = Pair(0, 0),
     val isUploading: Boolean = false,
-    val uploadProgress: Pair<Int, Int> = Pair(0,0),
+    val uploadProgress: Pair<Int, Int> = Pair(0, 0),
     val isSelectingPerson: Boolean = false,
     val people: List<Person> = listOf(),
     val selectedPeople: Map<Int, Person> = mapOf()
@@ -62,15 +62,15 @@ data class FullscreenImageState(
 // that randomly displays one of the images from the previous screen
 data class PersonPhotoGridState(
     val person: Person? = null,
-    val photos: List<Pair<String,String>> = listOf(),
+    val photos: List<Pair<String, String>> = listOf(),
     var currentPage: Int = 1,
     var isLoading: Boolean = false,
     var hasMore: Boolean = true
 )
 
 data class ClipSearchState(
-    val currentSearch : String = "",
-    val photos: List<Pair<String,String>> = listOf(),
+    val currentSearch: String = "",
+    val photos: List<Pair<String, String>> = listOf(),
     var currentPage: Int = 1,
     var isLoading: Boolean = false,
     var hasMore: Boolean = true
@@ -169,7 +169,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-    // Merge local and remote assets
     private fun mergeMediaAssets() {
         setSyncState(SyncState.Merging)
         _mediaGridState.update { currState ->
@@ -178,7 +177,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             )
         }
     }
-
 
     fun updateCurrentPersonPhotoGrid(person: Person) {
         _personPhotoGridState.update {
@@ -192,7 +190,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-    fun updateCurrentAssetHelper(preview: Pair<String,String>) {
+    fun updateCurrentAssetHelper(preview: Pair<String, String>) {
         viewModelScope.launch {
             val remoteId = preview.first
             val checksum = ""
@@ -235,7 +233,8 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             try {
                 val nextPage = state.currentPage
                 val pageSize = 20
-                val newPhotos = mediaGridRepository.apiGetNextClipSearchPage(searchInput, nextPage, pageSize)
+                val newPhotos =
+                    mediaGridRepository.apiGetNextClipSearchPage(searchInput, nextPage, pageSize)
 
                 _clipSearchState.update {
                     it.copy(
@@ -261,53 +260,71 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-    fun togglePersonSelection(person: Person) {
-        _mediaGridState.update { currentState ->
-            val updatedSelectedPeople = currentState.selectedPeople.toMutableMap()
-            var isSelectingPerson = currentState.isSelectingPerson
-
-            if (updatedSelectedPeople.containsKey(person.personId)) {
-                // Deselect the person
-                updatedSelectedPeople.remove(person.personId)
-                if (updatedSelectedPeople.isEmpty()) {
-                    // No more selections, stop selecting
+    fun deselectPeople() {
+        viewModelScope.launch {
+            _mediaGridState.update {
+                it.copy(
+                    selectedPeople = emptyMap(),
                     isSelectingPerson = false
-                }
-            } else {
-                // Select the person
-                updatedSelectedPeople[person.personId] = person
-                isSelectingPerson = true // Ensure we are in selecting mode
+                )
             }
-
-            currentState.copy(
-                selectedPeople = updatedSelectedPeople,
-                isSelectingPerson = isSelectingPerson
-            )
         }
     }
 
+    fun togglePersonSelection(person: Person) {
+        viewModelScope.launch {
+            _mediaGridState.update { currentState ->
+                val updatedSelectedPeople = currentState.selectedPeople.toMutableMap()
+                var isSelectingPerson = currentState.isSelectingPerson
+
+                if (updatedSelectedPeople.containsKey(person.personId)) {
+
+                    updatedSelectedPeople.remove(person.personId)
+                    if (updatedSelectedPeople.isEmpty()) {
+
+                        isSelectingPerson = false
+                    }
+                } else {
+
+                    updatedSelectedPeople[person.personId] = person
+                    isSelectingPerson = true
+                }
+
+                currentState.copy(
+                    selectedPeople = updatedSelectedPeople,
+                    isSelectingPerson = isSelectingPerson
+                )
+            }
+        }
+    }
 
     fun confirmPersonClustering() {
         _showNameDialog.value = true
     }
 
     fun onNameConfirmed(personName: String) {
-        val selectedPeople = mediaGridState.value.selectedPeople
-        if (selectedPeople.isNotEmpty()) {
-            val clusterIds = selectedPeople
-                .values
-                .filterIsInstance<UnknownPerson>()
-                .map { it.personId }
+        viewModelScope.launch {
+            val selectedPeople = mediaGridState.value.selectedPeople
+            if (selectedPeople.isNotEmpty()) {
+                val clusterIds = selectedPeople
+                    .values
+                    .filterIsInstance<UnknownPerson>()
+                    .map { it.personId }
 
-            if (clusterIds.isNotEmpty()) {
-                groupClusters(clusterIds, personName)
+                if (clusterIds.isNotEmpty()) {
+                    groupClusters(clusterIds, personName)
 
-                _mediaGridState.update {
-                    it.copy(selectedPeople = emptyMap())
+                    _mediaGridState.update {
+                        it.copy(
+                            selectedPeople = emptyMap(),
+                            isSelectingPerson = false
+                        )
+                    }
                 }
             }
+            _showNameDialog.value = false
+
         }
-        _showNameDialog.value = false
     }
 
     fun dismissNameDialog() {
@@ -520,7 +537,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             var i = 0
             mediaList.forEach {
                 uploadMedia(it as LocalMedia)
-                setUploadProgress(++i,mediaList.size)
+                setUploadProgress(++i, mediaList.size)
             }
             setIsUploading(false)
         }

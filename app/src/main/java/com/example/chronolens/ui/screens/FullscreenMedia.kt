@@ -108,15 +108,14 @@ fun FullscreenMediaView(
             verticalAlignment = Alignment.CenterVertically
         ) {
             DeleteOrTransferButton(mediaAsset)
-//            Spacer(modifier = Modifier.width(16.dp))
+
 
             if (mediaAsset is LocalMedia) {
                 ShareButton(mediaAsset)
-//              Spacer(modifier = Modifier.width(16.dp))
             }
 
             UploadOrRemoveButton(mediaAsset, viewModel, fullscreenMediaState)
-//            Spacer(modifier = Modifier.width(16.dp))
+
 
             MenuButton({ isBoxVisible = true })
         }

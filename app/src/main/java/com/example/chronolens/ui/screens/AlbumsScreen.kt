@@ -112,25 +112,6 @@ fun AlbumsScreen(
             }
         }
 
-        if (isSelectingPerson) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Selected: ${selectedPeople.size} unknown persons")
-                Button(
-                    onClick = {
-                        viewModel.confirmPersonClustering()
-                    }
-                ) {
-                    Text("Cluster")
-                }
-            }
-        }
-
         if (showNameDialog) {
             NameInputDialog(
                 onDismiss = { viewModel.dismissNameDialog() },

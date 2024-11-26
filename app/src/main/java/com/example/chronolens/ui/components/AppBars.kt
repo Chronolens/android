@@ -13,11 +13,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -44,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.navigation.NavHostController
 import com.example.chronolens.R
+import com.example.chronolens.ui.theme.defaultButtonColors
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.utils.noBottomBar
 import com.example.chronolens.utils.noTopBar
@@ -73,27 +77,72 @@ fun ChronolensBottomBar(
             ) {
 
                 val buttonWidth = maxWidth / 4
-                if (mediaGridState.value.isSelecting) {
-                    SelectingBottomBar(
-                        state = mediaGridState,
-                        viewModel = mediaGridViewModel,
-                        buttonWidth = buttonWidth
-                    )
-                } else {
-                    NavigationBottomBar(
-                        currentScreen = currentScreen,
-                        nav = nav,
-                        buttonWidth = buttonWidth
-                    )
+                when {
+                    mediaGridState.value.isSelectingPerson -> {
+                        SelectingPersonsBottomBar(
+                            state = mediaGridState,
+                            viewModel = mediaGridViewModel
+                        )
+                    }
+
+                    mediaGridState.value.isSelecting -> {
+                        SelectingBottomBar(
+                            state = mediaGridState,
+                            viewModel = mediaGridViewModel,
+                            buttonWidth = buttonWidth
+                        )
+                    }
+
+                    else -> {
+                        NavigationBottomBar(
+                            currentScreen = currentScreen,
+                            nav = nav,
+                            buttonWidth = buttonWidth
+                        )
+                    }
                 }
-
-
             }
         }
     }
 }
 
-// TODO: pretty print here
+@Composable
+private fun SelectingPersonsBottomBar(
+    state: State<MediaGridState>,
+    viewModel: MediaGridScreenViewModel
+) {
+    val buttonText = if (state.value.selectedPeople.size == 1) {
+        stringResource(id = R.string.rename)
+    } else {
+        stringResource(id = R.string.group_people)
+    }
+
+    val onClickAction = {
+        viewModel.confirmPersonClustering()
+    }
+
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Button(
+            onClick = onClickAction,
+            shape = RoundedCornerShape(4.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 48.dp),
+            colors = defaultButtonColors()
+        ) {
+            Text(
+                text = buttonText,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
+    }
+}
+
+
 @Composable
 private fun SelectingBottomBar(
     state: State<MediaGridState>,
@@ -122,7 +171,6 @@ private fun SelectingBottomBar(
                 )
             }
 
-//            Spacer(modifier = Modifier.weight(1f))
 
             IconButton(
                 onClick = {
@@ -266,35 +314,20 @@ fun ChronolensTopAppBar(
     if (userLoginState != UserLoginState.Loading && !noTopBar.contains(currentScreen)) {
         TopAppBar(
             title = {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    if (mediaGridState.value.isSelecting) {
-                        if (mediaGridState.value.selectingType == SelectingType.Remote) {
-                            Row {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = null,
-                                    modifier = Modifier.clickable {
-                                        mediaGridViewModel.deselectAll()
-                                    })
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.selecting_remotes))
-                            }
-                        } else {
-                            Row {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = null,
-                                    modifier = Modifier.clickable {
-                                        mediaGridViewModel.deselectAll()
-                                    })
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.selecting_locals))
-                            }
-                        }
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(text = mediaGridState.value.selected.size.toString())
-                        Spacer(modifier = Modifier.padding(end = 16.dp))
-                    } else {
+                when {
+                    mediaGridState.value.isSelectingPerson -> {
+                        SelectingPersonTopAppBarTitle(
+                            state = mediaGridState,
+                            mediaGridViewModel = mediaGridViewModel
+                        )
+                    }
+                    mediaGridState.value.isSelecting -> {
+                        SelectingMediaTopAppBarTitle(
+                            state = mediaGridState,
+                            mediaGridViewModel = mediaGridViewModel
+                        )
+                    }
+                    else -> {
                         Text(text = getScreenTitle(currentScreen))
                     }
                 }
@@ -318,14 +351,13 @@ fun ChronolensTopAppBar(
                     offset = DpOffset(x = 0.dp, y = 0.dp)
                 ) {
                     Column(modifier = Modifier.padding(8.dp)) {
-                        // TODO: make these resource strings
                         Text(mediaGridState.value.syncState.name)
                         if (mediaGridState.value.syncState == SyncState.FetchingLocal) {
                             Text(mediaGridState.value.syncProgress.toString())
                         }
-                        if (mediaGridState.value.isUploading){
-                            val (progress,max) = mediaGridState.value.uploadProgress
-                            Text(stringResource(R.string.select_upload,progress,max))
+                        if (mediaGridState.value.isUploading) {
+                            val (progress, max) = mediaGridState.value.uploadProgress
+                            Text(stringResource(R.string.select_upload, progress, max))
                         }
                     }
                 }
@@ -333,7 +365,6 @@ fun ChronolensTopAppBar(
             colors = TopAppBarDefaults.mediumTopAppBarColors(
                 containerColor = Color.Transparent
             ),
-//            modifier = modifier.border(2.dp, Color.White),
             navigationIcon = {
                 if (canNavigateBack) {
                     IconButton(onClick = navigateUp) {
@@ -347,6 +378,61 @@ fun ChronolensTopAppBar(
         )
     }
 }
+
+@Composable
+private fun SelectingMediaTopAppBarTitle(
+    state: State<MediaGridState>,
+    mediaGridViewModel: MediaGridScreenViewModel
+) {
+    val selectingType = state.value.selectingType
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Icon(
+            imageVector = Icons.Default.Clear,
+            contentDescription = null,
+            modifier = Modifier.clickable {
+                mediaGridViewModel.deselectAll()
+            }
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+
+        when (selectingType) {
+            SelectingType.Remote -> {
+                Text(stringResource(R.string.selecting_remotes))
+            }
+            else -> {
+                Text(stringResource(R.string.selecting_locals))
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+        Text(text = state.value.selected.size.toString())
+        Spacer(modifier = Modifier.padding(end = 16.dp))
+    }
+}
+
+@Composable
+private fun SelectingPersonTopAppBarTitle(
+    state: State<MediaGridState>,
+    mediaGridViewModel: MediaGridScreenViewModel
+) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Icon(
+            imageVector = Icons.Default.Clear,
+            contentDescription = null,
+            modifier = Modifier.clickable {
+                mediaGridViewModel.deselectPeople()
+            }
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(stringResource(R.string.selecting_persons))
+
+        Spacer(modifier = Modifier.weight(1f))
+        Text(text = state.value.selectedPeople.size.toString())
+        Spacer(modifier = Modifier.padding(end = 16.dp))
+    }
+}
+
 
 @Composable
 fun getScreenTitle(nav: ChronolensNav): String {
