@@ -71,8 +71,12 @@ fun FullscreenMediaView(
             .fillMaxSize()
             .background(Color.Black)
     ) {
+        if (mediaAsset == null || fullMedia == null) {
+            CircularProgressIndicator()
+            return@Box
+        }
         LoadFullImage(
-            mediaAsset = mediaAsset!!,
+            mediaAsset = mediaAsset,
             viewModel = viewModel,
             hideBox = { isBoxVisible = false },
             showBox = { isBoxVisible = true },
@@ -137,10 +141,7 @@ fun FullscreenMediaView(
                 .offset(y = boxOffsetY)
                 .background(brush)
         ) {
-            if (fullMedia != null)
-                MetadataDisplay(fullMedia)
-            else
-                CircularProgressIndicator()
+            MetadataDisplay(fullMedia)
         }
     }
 }
