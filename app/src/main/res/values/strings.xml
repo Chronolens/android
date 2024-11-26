@@ -59,4 +59,16 @@
 
     <string name="select_upload">Uploading assets (%d/%d)</string>
 
+    <string name="login_screen">Login Screen</string>
+    <string name="media_gallery">Media Gallery</string>
+    <string name="media_viewer">Media Viewer</string>
+    <string name="albums">Albums</string>
+    <string name="person_photos">Person Photos</string>
+    <string name="search">Search</string>
+    <string name="settings">Settings</string>
+    <string name="background_uploads">Background Uploads</string>
+    <string name="activity_history">Activity History</string>
+    <string name="machine_learning">Machine Learning</string>
+    <string name="error">Error</string>
+
 </resources>
