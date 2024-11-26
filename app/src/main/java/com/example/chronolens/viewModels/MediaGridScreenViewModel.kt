@@ -41,12 +41,13 @@ data class MediaGridState(
     val selected: Map<String, MediaAsset> = mapOf(),
     val isSelecting: Boolean = false,
     val selectingType: SelectingType = SelectingType.None,
-    val people: List<Person> = listOf(),
     val syncState: SyncState = SyncState.Synced,
     val syncProgress: Pair<Int, Int> = Pair(0,0),
     val isUploading: Boolean = false,
     val uploadProgress: Pair<Int, Int> = Pair(0,0),
-    val selectedPeople: Map<String, Person> = mapOf()
+    val isSelectingPerson: Boolean = false,
+    val people: List<Person> = listOf(),
+    val selectedPeople: Map<Int, Person> = mapOf()
 
 )
 
@@ -191,7 +192,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-
     fun updateCurrentAssetHelper(preview: Pair<String,String>) {
         viewModelScope.launch {
             val remoteId = preview.first
@@ -252,7 +252,6 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-
     fun groupClusters(clusterIds: List<Int>, personName: String) {
         viewModelScope.launch {
             val success = mediaGridRepository.apiCreateFace(clusterIds, personName)
@@ -262,18 +261,31 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-
     fun togglePersonSelection(person: Person) {
         _mediaGridState.update { currentState ->
             val updatedSelectedPeople = currentState.selectedPeople.toMutableMap()
-            if (updatedSelectedPeople.containsKey(person.personId.toString())) {
-                updatedSelectedPeople.remove(person.personId.toString())
+            var isSelectingPerson = currentState.isSelectingPerson
+
+            if (updatedSelectedPeople.containsKey(person.personId)) {
+                // Deselect the person
+                updatedSelectedPeople.remove(person.personId)
+                if (updatedSelectedPeople.isEmpty()) {
+                    // No more selections, stop selecting
+                    isSelectingPerson = false
+                }
             } else {
-                updatedSelectedPeople[person.personId.toString()] = person
+                // Select the person
+                updatedSelectedPeople[person.personId] = person
+                isSelectingPerson = true // Ensure we are in selecting mode
             }
-            currentState.copy(selectedPeople = updatedSelectedPeople)
+
+            currentState.copy(
+                selectedPeople = updatedSelectedPeople,
+                isSelectingPerson = isSelectingPerson
+            )
         }
     }
+
 
     fun confirmPersonClustering() {
         _showNameDialog.value = true

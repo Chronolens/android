@@ -1,11 +1,10 @@
 package com.example.chronolens.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,8 +29,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -49,7 +45,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -74,6 +69,8 @@ fun AlbumsScreen(
     val selectedPeople = state.value.selectedPeople
     val showNameDialog by viewModel.showNameDialog.collectAsState()
 
+    val isSelectingPerson = state.value.isSelectingPerson
+
     Column(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -91,10 +88,23 @@ fun AlbumsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     items(state.value.people) { person ->
-                        PersonItem(viewModel, person) {
-                            viewModel.updateCurrentPersonPhotoGrid(it)
-                            navController.navigate(ChronolensNav.PersonPhotoGrid.name)
-                        }
+                        PersonItem(
+                            viewModel = viewModel,
+                            person = person,
+                            goToPerson = {
+                                if (isSelectingPerson) {
+                                    viewModel.togglePersonSelection(person)
+                                } else {
+
+                                    viewModel.updateCurrentPersonPhotoGrid(person)
+                                    navController.navigate(ChronolensNav.PersonPhotoGrid.name)
+                                }
+                            },
+                            selectOrDeselectPerson = {
+                                viewModel.togglePersonSelection(person)
+                            },
+                            state = state
+                        )
                     }
                 }
 
@@ -102,7 +112,7 @@ fun AlbumsScreen(
             }
         }
 
-        if (selectedPeople.isNotEmpty()) {
+        if (isSelectingPerson) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -125,7 +135,7 @@ fun AlbumsScreen(
             NameInputDialog(
                 onDismiss = { viewModel.dismissNameDialog() },
                 onConfirm = { personName -> viewModel.onNameConfirmed(personName) },
-                selectedPeopleCount = selectedPeople.size, 
+                selectedPeopleCount = selectedPeople.size,
                 primaryColor = MaterialTheme.colorScheme.primary,
                 secondaryColor = MaterialTheme.colorScheme.secondary
             )
@@ -134,61 +144,42 @@ fun AlbumsScreen(
 }
 
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PersonItem(
     viewModel: MediaGridScreenViewModel,
     person: Person,
-    onClick: (Person) -> Unit
+    selectOrDeselectPerson: () -> Unit,
+    goToPerson: () -> Unit,
+    state: State<MediaGridState>
 ) {
-    val state by viewModel.mediaGridState.collectAsState()
-
-
     val isSelectable = person is UnknownPerson
-    val isSelected = state.selectedPeople.containsKey(person.personId as Any)
-
-    var isLongPressed by remember { mutableStateOf(false) }
+    val isSelected = state.value.selectedPeople.containsKey(person.personId as Any)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(horizontal = 4.dp)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = {
-                        if (isLongPressed) {
-                            isLongPressed = false
-                        } else {
-                            if (state.selectedPeople.isNotEmpty()) {
-
-                                if (isSelectable) {
-
-                                    viewModel.togglePersonSelection(person)
-                                }
-                            } else {
-
-                                onClick(person)
-                            }
-                        }
-                    },
-                    onLongPress = {
-
-                        if (isSelectable) {
-                            isLongPressed = true
-                            viewModel.togglePersonSelection(person)
-                        }
+            .combinedClickable(
+                onClick = {
+                    if (isSelectable && state.value.isSelectingPerson) {
+                        selectOrDeselectPerson()
+                    } else {
+                        goToPerson()
                     }
-                )
-            }
+                },
+                onLongClick = {
+                    if (isSelectable) {
+
+                        selectOrDeselectPerson()
+                    }
+                }
+            ),
     ) {
         Box(
             modifier = Modifier
                 .size(88.dp)
-                .clip(RectangleShape)
-                .border(
-                    width = 4.dp,
-                    color = if (isSelected) MaterialTheme.colorScheme.secondary else Color.Transparent,
-                    shape = RectangleShape
-                ),
+                .clip(RectangleShape),
             contentAlignment = Alignment.Center
         ) {
             person.photoBitmap?.let { bitmap ->
@@ -199,6 +190,19 @@ fun PersonItem(
                     contentScale = ContentScale.Crop
                 )
             } ?: Text("No Image")
+
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(Color.Transparent)
+                        .border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            shape = RectangleShape
+                        )
+                )
+            }
         }
 
         if (person is KnownPerson) {
@@ -212,6 +216,7 @@ fun PersonItem(
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
