@@ -27,7 +27,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.io.path.Path
 
-// TODO: error checking ALL OVER THIS CLASS
+
 class APIUtils {
     companion object {
 
@@ -154,12 +154,11 @@ class APIUtils {
             val client = OkHttpClient()
             val results = mutableListOf<Pair<String?, String>>()
             var i = 0
-
+            setProgress(i)
             for (asset in assets) {
                 val file = try {
                     File(Path(asset.path).toUri())
                 } catch (_: Exception) {
-                    //results.add(null)
                     continue
                 }
                 val mimeType = asset.mimeType
@@ -185,7 +184,7 @@ class APIUtils {
 
                     client.newCall(request).execute().use { response ->
                         Log.i("UPLOAD", response.code.toString())
-                        setProgress(++i)
+
                         when (response.code) {
                             HttpURLConnection.HTTP_OK -> {
                                 results.add(Pair(response.body?.string(), checksum))
@@ -220,6 +219,7 @@ class APIUtils {
                 } catch (e: Exception) {
                     results.add(Pair(null, checksum))
                 }
+                setProgress(++i)
             }
             return@withContext results
         }
@@ -664,51 +664,75 @@ class APIUtils {
             }
         }
 
-        suspend fun downloadImage(
+        suspend fun downloadMedia(
             context: Context,
-            media: RemoteMedia,
-            sharedPreferences: SharedPreferences
-        ): Boolean {
+            mediaList: List<RemoteMedia>,
+            sharedPreferences: SharedPreferences,
+            setProgress: (Int) -> Unit = {}
+        ): List<Boolean> {
             return withContext(Dispatchers.IO) {
-
                 val albumName = context.resources.getString(R.string.app_name)
-                val fullMedia =
-                    getFullImage(sharedPreferences, media.id) ?: return@withContext false
+                val client = OkHttpClient()
+                val results = mutableListOf<Boolean>()
+                var i = 0
+                setProgress(i)
+                for (media in mediaList) {
 
-                try {
-                    val client = OkHttpClient()
-                    val request = Request.Builder().url(fullMedia.mediaUrl!!).build()
-                    val response = client.newCall(request).execute()
-                    if (!response.isSuccessful) return@withContext false
-
-
-                    val mimeType = response.headers["Content-Type"]
-                    val inputStream = response.body?.byteStream() ?: return@withContext false
-
-                    val contentValues = ContentValues().apply {
-                        put(MediaStore.Images.Media.DISPLAY_NAME, fullMedia.fileName)
-                        put(MediaStore.Images.Media.MIME_TYPE, mimeType)
-                        put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/${albumName}")
-                        put(MediaStore.Images.Media.DATE_TAKEN, media.timestamp)
+                    val fullMedia = getFullImage(sharedPreferences, media.id)
+                    if (fullMedia == null) {
+                        results.add(false)
+                        continue
                     }
+                    try {
+                        val request = Request.Builder().url(fullMedia.mediaUrl!!).build()
+                        val response = client.newCall(request).execute()
+                        if (!response.isSuccessful) {
+                            results.add(false)
+                            continue
+                        }
 
-                    val uri = context.contentResolver.insert(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        contentValues
-                    )
-                        ?: return@withContext false
+                        val mimeType = response.headers["Content-Type"]
+                        val inputStream = response.body?.byteStream()
+                        if (inputStream == null) {
+                            results.add(false)
+                            response.close()
+                            continue
+                        }
 
-                    val outputStream: OutputStream? = context.contentResolver.openOutputStream(uri)
-                    outputStream?.use { out ->
-                        inputStream.copyTo(out)
+                        val contentValues = ContentValues().apply {
+                            put(MediaStore.Images.Media.DISPLAY_NAME, fullMedia.fileName)
+                            put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+                            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/$albumName")
+                            put(MediaStore.Images.Media.DATE_TAKEN, media.timestamp)
+                        }
+
+                        val uri = context.contentResolver.insert(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            contentValues
+                        )
+                        if (uri == null) {
+                            inputStream.close()
+                            response.close()
+                            results.add(false)
+                            continue
+                        }
+
+                        val outputStream: OutputStream? =
+                            context.contentResolver.openOutputStream(uri)
+                        outputStream?.use { out ->
+                            inputStream.copyTo(out)
+                        }
+                        inputStream.close()
+                        response.close()
+
+                        results.add(true)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        results.add(false)
                     }
-                    inputStream.close()
-                    response.close()
-                    true
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    false
+                    setProgress(++i)
                 }
+                results
             }
         }
 

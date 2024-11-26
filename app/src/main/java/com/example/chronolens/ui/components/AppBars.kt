@@ -127,7 +127,6 @@ private fun SelectingBottomBar(
             IconButton(
                 onClick = {
                     viewModel.uploadMultipleMedia(state.value.selected.values.toList())
-
                 },
                 modifier = Modifier.width(buttonWidth)
             ) {
@@ -327,6 +326,10 @@ fun ChronolensTopAppBar(
                         if (mediaGridState.value.isUploading) {
                             val (progress, max) = mediaGridState.value.uploadProgress
                             Text(stringResource(R.string.select_upload, progress, max))
+                        }
+                        if (mediaGridState.value.isDownloading) {
+                            val (progress, max) = mediaGridState.value.downloadProgress
+                            Text(stringResource(R.string.select_download, progress, max))
                         }
                     }
                 }

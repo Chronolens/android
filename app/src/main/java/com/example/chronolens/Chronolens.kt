@@ -119,6 +119,7 @@ fun ChronoLens() {
                 }
 
                 composable(ChronolensNav.FullScreenMedia.name) {
+                    mediaGridScreenViewModel.resetDownloadState() // TODO: find a better way?
                     FullscreenMediaView(
                         viewModel = mediaGridScreenViewModel,
                         mediaGridState = mediaGridState,

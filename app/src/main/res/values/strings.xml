@@ -58,5 +58,6 @@
     <string name="selecting_locals">Selecting Locals</string>
 
     <string name="select_upload">Uploading assets (%d/%d)</string>
+    <string name="select_download">Downloading assets (%d/%d)</string>
 
 </resources>

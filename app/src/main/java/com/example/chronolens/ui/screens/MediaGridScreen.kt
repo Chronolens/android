@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.CancellationSignal
 import android.provider.MediaStore
+import android.util.Log
 import android.util.Size
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
