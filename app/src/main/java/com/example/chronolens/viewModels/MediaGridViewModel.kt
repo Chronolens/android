@@ -212,7 +212,6 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
         }
     }
 
-    // FIXME
     fun updateCurrentAssetHelper(preview: Pair<String, String>) {
         viewModelScope.launch {
             val remoteId = preview.first

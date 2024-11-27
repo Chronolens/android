@@ -314,10 +314,22 @@ fun ChronolensTopAppBar(
                     offset = DpOffset(x = 0.dp, y = 0.dp)
                 ) {
                     Column(modifier = Modifier.padding(8.dp)) {
-                        // TODO: make these resource strings
-                        Text(mediaGridState.value.syncState.name)
-                        if (mediaGridState.value.syncState == SyncState.FetchingLocal) {
-                            Text(mediaGridState.value.syncProgress.toString())
+                        // TODO: pretty print here
+                        when (mediaGridState.value.syncState) {
+                            SyncState.Synced -> Text(stringResource(R.string.sync_state_synced))
+                            SyncState.FetchingRemote -> Text(stringResource(R.string.sync_state_fetching_remote))
+                            SyncState.FetchingLocal -> {
+                                val prog = mediaGridState.value.syncProgress
+                                Text(stringResource(R.string.sync_state_fetching_local))
+                                Text(
+                                    stringResource(
+                                        R.string.sync_state_fetching_local_progress,
+                                        prog.first,
+                                        prog.second
+                                    )
+                                )
+                            }
+                            SyncState.Merging -> Text(stringResource(R.string.sync_state_merging))
                         }
                         if (mediaGridState.value.isUploading) {
                             val (progress, max) = mediaGridState.value.uploadProgress

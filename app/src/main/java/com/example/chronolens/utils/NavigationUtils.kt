@@ -7,10 +7,8 @@ enum class ChronolensNav {
     Albums,
     PersonPhotoGrid,
     Search,
-    Error, // TODO: remove?
     Settings,
 
-    // TODO: make this a navGraph?
     //Settings stuff
     BackgroundUpload,
     AlbumsPicker,

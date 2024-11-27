@@ -18,7 +18,6 @@ data class WorkManagerState(
     val periodicWorkInfoState: WorkInfo.State? = null
 )
 
-// TODO: clear notification here?
 class WorkManagerViewModel(private val workManagerRepository: WorkManagerRepository) : ViewModel() {
 
     private val _workManagerState = MutableStateFlow(WorkManagerState())

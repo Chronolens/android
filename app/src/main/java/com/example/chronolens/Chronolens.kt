@@ -23,7 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.chronolens.ui.components.ChronolensBottomBar
 import com.example.chronolens.ui.components.ChronolensTopAppBar
-import com.example.chronolens.ui.screens.AlbumPickerScreen
+import com.example.chronolens.ui.screens.settings.AlbumPickerScreen
 import com.example.chronolens.ui.screens.AlbumsScreen
 import com.example.chronolens.ui.screens.settings.BackgroundUploadScreen
 import com.example.chronolens.ui.screens.FullscreenMediaView
@@ -185,16 +185,6 @@ fun ChronoLens() {
                         viewModel = userViewModel,
                         navController = navController
                     )
-                }
-
-                composable(ChronolensNav.Error.name) {
-                    Box(
-                        modifier = Modifier
-                            .padding(innerPadding)
-                            .fillMaxWidth()
-                    ) {
-                        Text("Coming soon", color = Color.White)
-                    }
                 }
 
                 composable(ChronolensNav.BackgroundUpload.name) {
