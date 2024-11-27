@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
@@ -21,22 +22,48 @@ import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.utils.shareImages
+import com.example.chronolens.viewModels.DownloadingState
 import com.example.chronolens.viewModels.FullscreenImageState
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 
 
 @Composable
-fun DeleteOrTransferButton(asset: MediaAsset) {
+fun DeleteOrDownloadButton(
+    asset: MediaAsset,
+    viewModel: MediaGridViewModel,
+    state: State<FullscreenImageState>
+) {
+
+    val context = LocalContext.current
     if (asset is RemoteMedia) {
-        IconButton(onClick = {
-            Log.i("DeleteOrTransferIcon", "Downloading not implemented yet")
-        }) {
-            Icon(
-                painter = painterResource(id = R.drawable.downloadsimple),
-                contentDescription = "Download",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
+        IconButton(
+            onClick = {
+                viewModel.downloadSingle(asset, context)
+            },
+            enabled = state.value.downloadState == null
+        ) {
+            when (state.value.downloadState) {
+                DownloadingState.Downloading -> {
+                    CircularProgressIndicator()
+                }
+                DownloadingState.Downloaded -> {
+                    Icon(
+                        imageVector = Icons.Default.Done, // TODO: change icon?
+                        contentDescription = "Download",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                null -> {
+                    Icon(
+                        painter = painterResource(id = R.drawable.downloadsimple),
+                        contentDescription = "Download",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
         }
     } else if (asset is LocalMedia) {
         IconButton(onClick = {
@@ -72,7 +99,7 @@ fun ShareButton(mediaAsset: LocalMedia) {
 @Composable
 fun UploadOrRemoveButton(
     asset: MediaAsset,
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     state: State<FullscreenImageState>
 ) {
     if (asset is LocalMedia) {
@@ -95,7 +122,7 @@ fun UploadOrRemoveButton(
                 enabled = !state.value.uploading,
                 onClick = {
                     Log.i("UploadOrRemove", "Uploading local asset: ${asset.path}")
-                    viewModel.uploadMedia(asset)
+                    viewModel.uploadSingle(asset)
                 }
             ) {
                 if (state.value.uploading) {

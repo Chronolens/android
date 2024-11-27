@@ -1,7 +1,11 @@
 package com.example.chronolens.utils
 
+import android.content.ContentValues
+import android.content.Context
 import android.content.SharedPreferences
+import android.provider.MediaStore
 import android.util.Log
+import com.example.chronolens.R
 import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.LocalMedia
@@ -16,14 +20,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
+import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.io.path.Path
 
-// TODO: error checking ALL OVER THIS CLASS
+
 class APIUtils {
     companion object {
 
@@ -136,68 +140,90 @@ class APIUtils {
 
         suspend fun uploadMedia(
             sharedPreferences: SharedPreferences,
-            asset: LocalMedia
-        ): String? = withContext(Dispatchers.IO) {
+            assets: List<LocalMedia>,
+            setProgress: (Int) -> Unit = {}
+        ): List<Pair<String?, String>> = withContext(Dispatchers.IO) {
             val server = sharedPreferences.getString(Prefs.SERVER, null)
             val jwtToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
 
             if (server == null || jwtToken == null) {
                 EventBus.logoutEvent.emit(Unit)
+                return@withContext emptyList()
             }
 
-            val file = try {
-                File(Path(asset.path).toUri())
-            } catch (_: Exception) {
-                return@withContext null
-            }
-            val mimeType = asset.mimeType
-            val checksum = asset.checksum!!
+            val client = OkHttpClient()
+            val results = mutableListOf<Pair<String?, String>>()
+            var i = 0
+            setProgress(i)
+            for (asset in assets) {
+                val file = try {
+                    File(Path(asset.path).toUri())
+                } catch (_: Exception) {
+                    continue
+                }
+                val mimeType = asset.mimeType
+                val checksum = asset.checksum!!
 
-            try {
-                val client = OkHttpClient()
-                val requestBody = MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart(
-                        checksum,
-                        file.name,
-                        file.asRequestBody(mimeType.toMediaTypeOrNull())
-                    )
-                    .build()
+                try {
+                    val requestBody = MultipartBody.Builder()
+                        .setType(MultipartBody.FORM)
+                        .addFormDataPart(
+                            checksum,
+                            file.name,
+                            file.asRequestBody(mimeType.toMediaTypeOrNull())
+                        )
+                        .build()
 
-                val url = "$server/image/upload"
-                val request = Request.Builder()
-                    .url(url)
-                    .header("Authorization", "Bearer $jwtToken")
-                    .header("Timestamp", asset.timestamp.toString())
-                    .post(requestBody)
-                    .build()
+                    val url = "$server/image/upload"
+                    val request = Request.Builder()
+                        .url(url)
+                        .header("Authorization", "Bearer $jwtToken")
+                        .header("Timestamp", asset.timestamp.toString())
+                        .post(requestBody)
+                        .build()
 
-                client.newCall(request).execute().use { response ->
-                    Log.i("UPLOAD", response.code.toString())
-                    when (response.code) {
-                        HttpURLConnection.HTTP_OK -> {
-                            return@withContext response.body?.string()
-                        }
+                    client.newCall(request).execute().use { response ->
+                        Log.i("UPLOAD", response.code.toString())
 
-                        HttpURLConnection.HTTP_UNAUTHORIZED -> {
-                            val authed = refreshToken(sharedPreferences)
-                            if (authed) {
-                                return@withContext uploadMedia(sharedPreferences, asset)
-                            } else {
-                                EventBus.logoutEvent.emit(Unit)
-                                null
+                        when (response.code) {
+                            HttpURLConnection.HTTP_OK -> {
+                                results.add(Pair(response.body?.string(), checksum))
+                            }
+
+                            HttpURLConnection.HTTP_UNAUTHORIZED -> {
+                                val authed = refreshToken(sharedPreferences)
+                                if (authed) {
+                                    val retryResult =
+                                        uploadMedia(sharedPreferences, listOf(asset)).firstOrNull()
+                                    if (retryResult != null) {
+                                        results.add(retryResult)
+                                    } else {
+
+                                    }
+                                } else {
+                                    EventBus.logoutEvent.emit(Unit)
+                                    results.add(Pair(null, checksum))
+                                }
+                            }
+
+                            HttpURLConnection.HTTP_PRECON_FAILED -> {
+                                results.add(Pair(null, checksum))
+                            }
+
+                            else -> {
+                                results.add(Pair(null, checksum))
                             }
                         }
 
-                        else -> {
-                            return@withContext null
-                        }
                     }
+                } catch (e: Exception) {
+                    results.add(Pair(null, checksum))
                 }
-            } catch (e: Exception) {
-                return@withContext null
+                setProgress(++i)
             }
+            return@withContext results
         }
+
 
         suspend fun syncFullRemote(
             sharedPreferences: SharedPreferences
@@ -533,7 +559,8 @@ class APIUtils {
 
                             for (i in 0 until responseJson.length()) {
                                 val item = responseJson.getJSONObject(i)
-                                val preview = Pair(item.getString("id"), item.getString("preview_url"))
+                                val preview =
+                                    Pair(item.getString("id"), item.getString("preview_url"))
                                 previews.add(preview)
                             }
                             return@withContext previews
@@ -601,7 +628,8 @@ class APIUtils {
 
                             for (i in 0 until responseJson.length()) {
                                 val item = responseJson.getJSONObject(i)
-                                val preview = Pair(item.getString("id"), item.getString("preview_url"))
+                                val preview =
+                                    Pair(item.getString("id"), item.getString("preview_url"))
                                 previews.add(preview)
                             }
 
@@ -631,6 +659,122 @@ class APIUtils {
             } catch (e: Exception) {
                 e.printStackTrace()
                 return@withContext null
+            } finally {
+                connection?.disconnect()
+            }
+        }
+
+        suspend fun downloadMedia(
+            context: Context,
+            mediaList: List<RemoteMedia>,
+            sharedPreferences: SharedPreferences,
+            setProgress: (Int) -> Unit = {}
+        ): List<Boolean> {
+            return withContext(Dispatchers.IO) {
+                val albumName = context.resources.getString(R.string.app_name)
+                val client = OkHttpClient()
+                val results = mutableListOf<Boolean>()
+                var i = 0
+                setProgress(i)
+                for (media in mediaList) {
+
+                    val fullMedia = getFullImage(sharedPreferences, media.id)
+                    if (fullMedia == null) {
+                        results.add(false)
+                        continue
+                    }
+                    try {
+                        val request = Request.Builder().url(fullMedia.mediaUrl!!).build()
+                        val response = client.newCall(request).execute()
+                        if (!response.isSuccessful) {
+                            results.add(false)
+                            continue
+                        }
+
+                        val mimeType = response.headers["Content-Type"]
+                        val inputStream = response.body?.byteStream()
+                        if (inputStream == null) {
+                            results.add(false)
+                            response.close()
+                            continue
+                        }
+
+                        val contentValues = ContentValues().apply {
+                            put(MediaStore.Images.Media.DISPLAY_NAME, fullMedia.fileName)
+                            put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+                            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/$albumName")
+                            put(MediaStore.Images.Media.DATE_TAKEN, media.timestamp)
+                        }
+
+                        val uri = context.contentResolver.insert(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            contentValues
+                        )
+                        if (uri == null) {
+                            inputStream.close()
+                            response.close()
+                            results.add(false)
+                            continue
+                        }
+
+                        val outputStream: OutputStream? =
+                            context.contentResolver.openOutputStream(uri)
+                        outputStream?.use { out ->
+                            inputStream.copyTo(out)
+                        }
+                        inputStream.close()
+                        response.close()
+
+                        results.add(true)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        results.add(false)
+                    }
+                    setProgress(++i)
+                }
+                results
+            }
+        }
+
+
+
+        suspend fun createFace(
+            sharedPreferences: SharedPreferences,
+            ids: List<Int>,
+            name: String
+        ): Boolean = withContext(Dispatchers.IO) {
+            val server = sharedPreferences.getString(Prefs.SERVER, null)
+            val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
+
+            if (server == null || accessToken == null) {
+                EventBus.logoutEvent.emit(Unit)
+                return@withContext false
+            }
+            var connection: HttpURLConnection? = null
+            try {
+                val url = URL("$server/create_face")
+                Log.i("APIUtils", url.toString())
+                val payload = JSONObject().apply {
+                    put("ids", JSONArray(ids))
+                    put("name", name)
+                }
+                val body = payload.toString()
+                Log.i("APIUtils", body)
+                connection = (url.openConnection() as HttpURLConnection).apply {
+                    setRequestProperty("Authorization", "Bearer $accessToken")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    requestMethod = "POST"
+                    doOutput = true
+                    outputStream.write(body.toByteArray())
+                }
+
+                val responseCode = connection.responseCode
+                responseCode == HttpURLConnection.HTTP_OK
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
             } finally {
                 connection?.disconnect()
             }

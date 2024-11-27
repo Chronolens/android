@@ -13,6 +13,7 @@ enum class ChronolensNav {
     // TODO: make this a navGraph?
     //Settings stuff
     BackgroundUpload,
+    AlbumsPicker,
     ActivityHistory,
     MachineLearning
 

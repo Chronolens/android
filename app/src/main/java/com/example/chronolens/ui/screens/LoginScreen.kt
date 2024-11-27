@@ -2,7 +2,6 @@ package com.example.chronolens.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.TextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material3.Button
@@ -38,6 +36,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -47,14 +46,17 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.chronolens.R
+import com.example.chronolens.ui.components.AlbumsPickerDialog
 import com.example.chronolens.ui.theme.defaultButtonColors
+import com.example.chronolens.viewModels.MediaGridViewModel
 import com.example.chronolens.viewModels.UserLoginState
 import com.example.chronolens.viewModels.UserState
 import com.example.chronolens.viewModels.UserViewModel
 
 @Composable
 fun LoginScreen(
-    viewModel: UserViewModel,
+    userViewModel: UserViewModel,
+    mediaGridViewModel: MediaGridViewModel,
     userState: State<UserState>,
     grantAccess: () -> Unit,
     modifier: Modifier
@@ -64,6 +66,7 @@ fun LoginScreen(
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
+    val context = LocalContext.current
 
     val brush = with(LocalDensity.current) {
         Brush.linearGradient(
@@ -73,10 +76,23 @@ fun LoginScreen(
         )
     }
 
-    val server = remember { mutableStateOf(viewModel.getServer()) }
-    val username = remember { mutableStateOf(viewModel.getUsername()) }
+    val server = remember { mutableStateOf(userViewModel.getServer()) }
+    val username = remember { mutableStateOf(userViewModel.getUsername()) }
     val password = remember { mutableStateOf("") }
     val passwordVisible = remember { mutableStateOf(false) }
+    val dialogVisible = remember { mutableStateOf(false) }
+
+    if (dialogVisible.value) {
+        AlbumsPickerDialog(
+            visible = dialogVisible,
+            confirmOption = {
+                mediaGridViewModel.setAlbums(it)
+                grantAccess()
+            },
+            title = stringResource(R.string.select_albums),
+            albums = mediaGridViewModel.getAvailableAlbums(context)
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -86,10 +102,17 @@ fun LoginScreen(
     ) {
         when (userState.value.userLoginState) {
             UserLoginState.Loading -> DisplayLoading()
-            UserLoginState.LoggedIn -> grantAccess()
+            UserLoginState.LoggedIn -> {
+                if (mediaGridViewModel.getUserAlbums() == null) {
+                    dialogVisible.value = true
+                } else {
+                    grantAccess()
+                }
+            }
+
             else -> {
                 LoginPrompt(
-                    viewModel = viewModel,
+                    viewModel = userViewModel,
                     userState = userState,
                     server = server,
                     username = username,
@@ -218,46 +241,46 @@ fun CustomTextField(
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
         )
 
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                singleLine = true,
-                visualTransformation = if (isPassword && !passwordVisible!!.value) PasswordVisualTransformation() else VisualTransformation.None,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = keyboardType,
-                    imeAction = imeAction
-                ),
-                textStyle = typography.bodyLarge.copy(color = colorScheme.onBackground),
-                cursorBrush = SolidColor(colorScheme.onPrimary),
-                decorationBox = { innerTextField ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            visualTransformation = if (isPassword && !passwordVisible!!.value) PasswordVisualTransformation() else VisualTransformation.None,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = keyboardType,
+                imeAction = imeAction
+            ),
+            textStyle = typography.bodyLarge.copy(color = colorScheme.onBackground),
+            cursorBrush = SolidColor(colorScheme.onPrimary),
+            decorationBox = { innerTextField ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
 
-                        if (value.isEmpty()) {
-                            Text(
-                                text = label,
-                                color = labelColor,
-                                style = typography.bodyMedium
-                            )
-                        }
-                        if (isPassword) {
-                            Icon(
-                                imageVector = Icons.Default.AccountBox,
-                                "",
-                                modifier = Modifier
-                                    .align(Alignment.CenterEnd)
-                                    .clickable {
-                                        passwordVisible!!.value = !passwordVisible.value
-                                    }
-                            )
-                        }
-                        innerTextField()
+                    if (value.isEmpty()) {
+                        Text(
+                            text = label,
+                            color = labelColor,
+                            style = typography.bodyMedium
+                        )
                     }
-                },
-            )
+                    if (isPassword) {
+                        Icon(
+                            imageVector = Icons.Default.AccountBox,
+                            "",
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .clickable {
+                                    passwordVisible!!.value = !passwordVisible.value
+                                }
+                        )
+                    }
+                    innerTextField()
+                }
+            },
+        )
 
         HorizontalDivider(
             modifier = Modifier

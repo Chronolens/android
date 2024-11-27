@@ -5,12 +5,16 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
+import com.example.chronolens.R
 import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
+import com.example.chronolens.models.UnknownPerson
 import com.example.chronolens.repositories.MediaGridRepository
+import com.example.chronolens.utils.APIUtils
+import com.example.chronolens.utils.Prefs
 import com.example.chronolens.utils.SyncManager
 import com.example.chronolens.utils.shareImages
 import com.example.chronolens.utils.loadExifData
@@ -34,22 +38,33 @@ enum class SyncState {
     Merging
 }
 
+enum class DownloadingState {
+    Downloading,
+    Downloaded
+}
+
 data class MediaGridState(
     val media: List<MediaAsset> = listOf(),
     val isLoading: Boolean = true,
     val selected: Map<String, MediaAsset> = mapOf(),
     val isSelecting: Boolean = false,
     val selectingType: SelectingType = SelectingType.None,
-    val people: List<Person> = listOf(),
     val syncState: SyncState = SyncState.Synced,
-    val syncProgress: Pair<Int, Int> = Pair(0,0),
+    val syncProgress: Pair<Int, Int> = Pair(0, 0),
     val isUploading: Boolean = false,
-    val uploadProgress: Pair<Int, Int> = Pair(0,0)
+    val isSelectingPerson: Boolean = false,
+    val people: List<Person> = listOf(),
+    val selectedPeople: Map<Int, Person> = mapOf(),
+
+    val uploadProgress: Pair<Int, Int> = Pair(0, 0),
+    val isDownloading: Boolean = false,
+    val downloadProgress: Pair<Int, Int> = Pair(0, 0)
 )
 
 data class FullscreenImageState(
     val image: BitmapImage? = null,
     val uploading: Boolean = false,
+    val downloadState: DownloadingState? = null,
     val currentMediaAsset: MediaAsset? = null,
     val currentFullMedia: FullMedia? = null
 )
@@ -58,22 +73,22 @@ data class FullscreenImageState(
 // that randomly displays one of the images from the previous screen
 data class PersonPhotoGridState(
     val person: Person? = null,
-    val photos: List<Pair<String,String>> = listOf(),
+    val photos: List<Pair<String, String>> = listOf(),
     var currentPage: Int = 1,
     var isLoading: Boolean = false,
     var hasMore: Boolean = true
 )
 
 data class ClipSearchState(
-    val currentSearch : String = "",
-    val photos: List<Pair<String,String>> = listOf(),
+    val currentSearch: String = "",
+    val photos: List<Pair<String, String>> = listOf(),
     var currentPage: Int = 1,
     var isLoading: Boolean = false,
     var hasMore: Boolean = true
 )
 
 
-class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
+class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
 
     private val _mediaGridState = MutableStateFlow(MediaGridState())
     val mediaGridState: StateFlow<MediaGridState> = _mediaGridState.asStateFlow()
@@ -87,40 +102,63 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     private val _clipSearchState = MutableStateFlow(ClipSearchState())
     val clipSearchState: StateFlow<ClipSearchState> = _clipSearchState.asStateFlow()
 
+    private val _showNameDialog = MutableStateFlow(false)
+    val showNameDialog: StateFlow<Boolean> = _showNameDialog.asStateFlow()
+
     private val syncManager = SyncManager(mediaGridRepository)
     private var remoteAssets: List<RemoteMedia> = mutableListOf()
     private var localAssets: List<LocalMedia> = mutableListOf()
 
 
-    fun init() {
+    fun init(context: Context) {
         viewModelScope.launch {
-            loadMediaGrid()
+            loadMediaGrid(context)
             setIsLoading(false)
             loadPeople()
 
         }
     }
 
-    private suspend fun loadMediaGrid() {
+    fun getAvailableAlbums(context: Context): List<String> {
+        return syncManager.getAvailableAlbums(context)
+    }
+
+    fun getUserAlbums(): List<String>? {
+        val albums = mediaGridRepository.sharedPreferences.getStringSet(Prefs.ALBUMS, null)
+        return albums?.toList()
+    }
+
+    fun setAlbums(albums: List<String>) {
+        viewModelScope.launch {
+            mediaGridRepository.sharedPreferences.edit()
+                .putStringSet(Prefs.ALBUMS, albums.toSet())
+                .apply()
+            Log.i("ALBUMS",getUserAlbums().toString())
+        }
+    }
+
+    private suspend fun loadMediaGrid(context: Context) {
         setSyncState(SyncState.FetchingRemote)
         remoteAssets = syncManager.getRemoteAssets()
         setSyncState(SyncState.Merging)
         mergeMediaAssets()
         setSyncState(SyncState.FetchingLocal)
-        loadLocalAssets()
+        loadLocalAssets(context)
     }
 
-    fun refreshMediaGrid() {
+    fun refreshMediaGrid(context: Context) {
         viewModelScope.launch {
             setIsLoading(true)
-            loadMediaGrid()
+            loadMediaGrid(context)
+            loadPeople()
             setIsLoading(false)
         }
     }
 
-    private fun loadLocalAssets() {
+    private fun loadLocalAssets(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
-            val localMedia = syncManager.getLocalAssets()
+            val albums = getUserAlbums() ?: listOf()
+            val localMedia = syncManager.getLocalAssets(albums, context)
             val localMediaIds = localMedia.map { it.id }
             val checksums = mediaGridRepository.dbGetChecksumsFromList(localMediaIds)
             Log.i("LOG", "Already calculated checksums length: ${checksums.size}")
@@ -184,8 +222,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
-
-    fun updateCurrentAssetHelper(preview: Pair<String,String>) {
+    fun updateCurrentAssetHelper(preview: Pair<String, String>) {
         viewModelScope.launch {
             val remoteId = preview.first
             val checksum = ""
@@ -228,7 +265,8 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             try {
                 val nextPage = state.currentPage
                 val pageSize = 20
-                val newPhotos = mediaGridRepository.apiGetNextClipSearchPage(searchInput, nextPage, pageSize)
+                val newPhotos =
+                    mediaGridRepository.apiGetNextClipSearchPage(searchInput, nextPage, pageSize)
 
                 _clipSearchState.update {
                     it.copy(
@@ -245,6 +283,85 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+    fun groupClusters(clusterIds: List<Int>, personName: String) {
+        viewModelScope.launch {
+            val success = mediaGridRepository.apiCreateFace(clusterIds, personName)
+            if (success) {
+                loadPeople()
+            }
+        }
+    }
+
+    fun deselectPeople() {
+        viewModelScope.launch {
+            _mediaGridState.update {
+                it.copy(
+                    selectedPeople = emptyMap(),
+                    isSelectingPerson = false
+                )
+            }
+        }
+    }
+
+    fun togglePersonSelection(person: Person) {
+        viewModelScope.launch {
+            _mediaGridState.update { currentState ->
+                val updatedSelectedPeople = currentState.selectedPeople.toMutableMap()
+                var isSelectingPerson = currentState.isSelectingPerson
+
+                if (updatedSelectedPeople.containsKey(person.personId)) {
+
+                    updatedSelectedPeople.remove(person.personId)
+                    if (updatedSelectedPeople.isEmpty()) {
+
+                        isSelectingPerson = false
+                    }
+                } else {
+
+                    updatedSelectedPeople[person.personId] = person
+                    isSelectingPerson = true
+                }
+
+                currentState.copy(
+                    selectedPeople = updatedSelectedPeople,
+                    isSelectingPerson = isSelectingPerson
+                )
+            }
+        }
+    }
+
+    fun confirmPersonClustering() {
+        _showNameDialog.value = true
+    }
+
+    fun onNameConfirmed(personName: String) {
+        viewModelScope.launch {
+            val selectedPeople = mediaGridState.value.selectedPeople
+            if (selectedPeople.isNotEmpty()) {
+                val clusterIds = selectedPeople
+                    .values
+                    .filterIsInstance<UnknownPerson>()
+                    .map { it.personId }
+
+                if (clusterIds.isNotEmpty()) {
+                    groupClusters(clusterIds, personName)
+
+                    _mediaGridState.update {
+                        it.copy(
+                            selectedPeople = emptyMap(),
+                            isSelectingPerson = false
+                        )
+                    }
+                }
+            }
+            _showNameDialog.value = false
+
+        }
+    }
+
+    fun dismissNameDialog() {
+        _showNameDialog.value = false
+    }
 
     fun clearSearchResults() {
         viewModelScope.launch {
@@ -294,28 +411,25 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-    fun uploadMedia(localMedia: LocalMedia) {
+    fun uploadSingle(localMedia: LocalMedia) {
         viewModelScope.launch(Dispatchers.IO) {
-            _fullscreenImageState.update { currState ->
-                currState.copy(
-                    uploading = true
-                )
-            }
+            Log.i("UPLOAD", "uploading ${localMedia.path}")
+            _fullscreenImageState.update { it.copy(uploading = false) }
             if (localMedia.checksum == null) {
                 val checksum =
                     mediaGridRepository.getOrComputeChecksum(localMedia.id, localMedia.path)
                 localMedia.checksum = checksum
             }
 
-            val remoteId: String? = mediaGridRepository.uploadMedia(localMedia)
+            val result = mediaGridRepository.uploadMedia(listOf(localMedia)).firstOrNull()
             _fullscreenImageState.update { currState ->
                 currState.copy(
                     uploading = false,
-                    currentMediaAsset = localMedia.copy(remoteId = remoteId)
+                    currentMediaAsset = localMedia.copy(remoteId = result?.first)
                 )
             }
-            if (remoteId != null) {
-                updateMediaList(remoteId, localMedia.checksum!!)
+            if (result?.first != null) {
+                updateMediaUploads(listOf(Pair(result.first, localMedia.checksum!!)))
             }
         }
     }
@@ -331,15 +445,20 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-    private fun updateMediaList(remoteId: String, checksum: String) {
+    private fun updateMediaUploads(updates: List<Pair<String?, String>>) {
         viewModelScope.launch {
 
             val mediaList = _mediaGridState.value.media.toMutableList()
-            val index = mediaList.indexOfFirst { it.checksum == checksum && it is LocalMedia }
+            for ((remoteId, checksum) in updates) {
+                if (remoteId == null) {
+                    continue
+                }
+                val index = mediaList.indexOfFirst { it.checksum == checksum && it is LocalMedia }
 
-            if (index != -1) {
-                val media = mediaList[index] as LocalMedia
-                mediaList[index] = media.copy(remoteId = remoteId)
+                if (index != -1) {
+                    val media = mediaList[index] as LocalMedia
+                    mediaList[index] = media.copy(remoteId = remoteId)
+                }
             }
 
             _mediaGridState.update { currState ->
@@ -360,9 +479,9 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
 
     private fun loadPeople() {
         viewModelScope.launch {
-            val peopleThumbnails = mediaGridRepository.apiGetPeople()
+            val peopleList = mediaGridRepository.apiGetPeople()
             _mediaGridState.update { currState ->
-                currState.copy(people = peopleThumbnails)
+                currState.copy(people = peopleList)
             }
         }
     }
@@ -446,17 +565,78 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+
     fun uploadMultipleMedia(mediaList: List<MediaAsset>) {
         viewModelScope.launch {
             setIsUploading(true)
-            var i = 0
-            mediaList.forEach {
-                uploadMedia(it as LocalMedia)
-                setUploadProgress(++i,mediaList.size)
-            }
+            val remoteIds = mediaGridRepository.uploadMedia(
+                localMedia = mediaList.map { it as LocalMedia },
+                setProgress = { setUploadProgress(it, mediaList.size) }
+            )
+            updateMediaUploads(remoteIds)
             setIsUploading(false)
         }
         deselectAll()
+    }
+
+    private fun setDownloadProgress(progress: Int, max: Int) {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(downloadProgress = Pair(progress, max))
+            }
+        }
+    }
+
+    private fun setIsDownloading(isDownloading: Boolean) {
+        _mediaGridState.update {
+            it.copy(isDownloading = isDownloading)
+        }
+    }
+
+
+    fun downloadSingle(media: RemoteMedia, context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _fullscreenImageState.update {
+                it.copy(downloadState = DownloadingState.Downloading)
+            }
+            val result = APIUtils.downloadMedia(
+                context = context,
+                mediaList = listOf(media),
+                sharedPreferences = mediaGridRepository.sharedPreferences
+            )
+            val success = if (result.isEmpty()) {
+                false
+            } else {
+                result.first()
+            }
+            _fullscreenImageState.update {
+                it.copy(downloadState = if (success) DownloadingState.Downloaded else null)
+            }
+            if (success) {
+                refreshMediaGrid(context)
+            }
+        }
+    }
+
+    fun downloadMultipleMedia(mediaList: List<MediaAsset>, context: Context) {
+        viewModelScope.launch {
+            setIsDownloading(true)
+            APIUtils.downloadMedia(
+                context = context,
+                mediaList = mediaList.map { it as RemoteMedia },
+                sharedPreferences = mediaGridRepository.sharedPreferences,
+                setProgress = { setDownloadProgress(it, mediaList.size) }
+            )
+            setIsDownloading(false)
+            refreshMediaGrid(context)
+        }
+        deselectAll()
+    }
+
+    fun resetDownloadState() {
+        viewModelScope.launch {
+            _fullscreenImageState.update { it.copy(downloadState = null) }
+        }
     }
 
 }
