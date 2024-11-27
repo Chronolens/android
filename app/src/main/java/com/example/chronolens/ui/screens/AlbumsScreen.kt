@@ -34,14 +34,14 @@ import androidx.navigation.NavController
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.Person
 import com.example.chronolens.utils.ChronolensNav
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 import com.example.chronolens.viewModels.MediaGridState
 
 
 // TODO: The current method is to get the people albums from the server at the start of mediagridstate
 @Composable
 fun AlbumsScreen(
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     navController: NavController,
     state: State<MediaGridState>,
     modifier: Modifier = Modifier,
@@ -145,7 +145,7 @@ fun AlbumsScreen(
 // TODO: Fix for HEIF photos, as they are not being displayed probably due to the conversion to bitmap
 @Composable
 fun PersonItem (
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     person: Person,
     onClick: (Person) -> Unit
 ) {

@@ -24,13 +24,13 @@ import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.utils.shareImages
 import com.example.chronolens.viewModels.DownloadingState
 import com.example.chronolens.viewModels.FullscreenImageState
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 
 
 @Composable
 fun DeleteOrDownloadButton(
     asset: MediaAsset,
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     state: State<FullscreenImageState>
 ) {
 
@@ -99,7 +99,7 @@ fun ShareButton(mediaAsset: LocalMedia) {
 @Composable
 fun UploadOrRemoveButton(
     asset: MediaAsset,
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     state: State<FullscreenImageState>
 ) {
     if (asset is LocalMedia) {

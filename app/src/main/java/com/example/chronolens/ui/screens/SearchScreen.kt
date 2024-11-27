@@ -25,7 +25,7 @@ import com.example.chronolens.R
 import com.example.chronolens.ui.components.RemoteMediaItem
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.viewModels.ClipSearchState
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
@@ -33,7 +33,7 @@ import androidx.compose.ui.res.painterResource
 
 @Composable
 fun SearchScreen(
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     clipSearchState: StateFlow<ClipSearchState>,
     navController: NavHostController,
     modifier: Modifier = Modifier

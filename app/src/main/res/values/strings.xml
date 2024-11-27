@@ -60,4 +60,6 @@
     <string name="select_upload">Uploading assets (%d/%d)</string>
     <string name="select_download">Downloading assets (%d/%d)</string>
 
+    <string name="select_albums">Select Albums</string>
+    <string name="select_all">Select All</string>
 </resources>

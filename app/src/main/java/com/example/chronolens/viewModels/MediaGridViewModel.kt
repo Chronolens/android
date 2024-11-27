@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
+import com.example.chronolens.R
 import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
@@ -12,11 +13,11 @@ import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.repositories.MediaGridRepository
 import com.example.chronolens.utils.APIUtils
+import com.example.chronolens.utils.Prefs
 import com.example.chronolens.utils.SyncManager
 import com.example.chronolens.utils.shareImages
 import com.example.chronolens.utils.loadExifData
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -83,7 +84,7 @@ data class ClipSearchState(
 )
 
 
-class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
+class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
 
     private val _mediaGridState = MutableStateFlow(MediaGridState())
     val mediaGridState: StateFlow<MediaGridState> = _mediaGridState.asStateFlow()
@@ -102,35 +103,56 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     private var localAssets: List<LocalMedia> = mutableListOf()
 
 
-    fun init() {
+    fun init(context: Context) {
         viewModelScope.launch {
-            loadMediaGrid()
+            loadMediaGrid(context)
             setIsLoading(false)
             loadPeople()
 
         }
     }
 
-    private suspend fun loadMediaGrid() {
+    fun getAvailableAlbums(context: Context): List<String> {
+        return syncManager.getAvailableAlbums(context)
+    }
+
+    fun getUserAlbums(): List<String>? {
+        val albums = mediaGridRepository.sharedPreferences.getStringSet(Prefs.ALBUMS, null)
+        return albums?.toList()
+    }
+
+    fun setAlbums(albums: List<String>) {
+        viewModelScope.launch {
+            mediaGridRepository.sharedPreferences.edit().apply {
+                putStringSet(Prefs.ALBUMS, albums.toSet())
+                putBoolean(Prefs.ALBUMS_ASK, true)
+            }
+
+                .apply()
+        }
+    }
+
+    private suspend fun loadMediaGrid(context: Context) {
         setSyncState(SyncState.FetchingRemote)
         remoteAssets = syncManager.getRemoteAssets()
         setSyncState(SyncState.Merging)
         mergeMediaAssets()
         setSyncState(SyncState.FetchingLocal)
-        loadLocalAssets()
+        loadLocalAssets(context)
     }
 
-    fun refreshMediaGrid() {
+    fun refreshMediaGrid(context: Context) {
         viewModelScope.launch {
             setIsLoading(true)
-            loadMediaGrid()
+            loadMediaGrid(context)
             setIsLoading(false)
         }
     }
 
-    private fun loadLocalAssets() {
+    private fun loadLocalAssets(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
-            val localMedia = syncManager.getLocalAssets()
+            val albums = getUserAlbums() ?: listOf()
+            val localMedia = syncManager.getLocalAssets(albums,context)
             val localMediaIds = localMedia.map { it.id }
             val checksums = mediaGridRepository.dbGetChecksumsFromList(localMediaIds)
             Log.i("LOG", "Already calculated checksums length: ${checksums.size}")
@@ -507,7 +529,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                 it.copy(downloadState = if (success) DownloadingState.Downloaded else null)
             }
             if (success) {
-                refreshMediaGrid()
+                refreshMediaGrid(context)
             }
         }
     }
@@ -522,7 +544,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
                 setProgress = { setDownloadProgress(it, mediaList.size) }
             )
             setIsDownloading(false)
-            refreshMediaGrid()
+            refreshMediaGrid(context)
         }
         deselectAll()
     }

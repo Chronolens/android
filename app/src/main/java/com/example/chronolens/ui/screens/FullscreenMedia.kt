@@ -37,7 +37,7 @@ import com.example.chronolens.ui.components.MetadataDisplay
 import com.example.chronolens.ui.components.ShareButton
 import com.example.chronolens.ui.components.UploadOrRemoveButton
 import com.example.chronolens.viewModels.FullscreenImageState
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 import com.example.chronolens.viewModels.MediaGridState
 
 // TODO: Restrict photo vertical position while zooming in with double tap
@@ -45,7 +45,7 @@ import com.example.chronolens.viewModels.MediaGridState
 
 @Composable
 fun FullscreenMediaView(
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     mediaGridState: State<MediaGridState>,
     fullscreenMediaState: State<FullscreenImageState>,
     navController: NavHostController,
@@ -155,7 +155,7 @@ fun FullscreenMediaView(
 @Composable
 fun LoadFullImage(
     mediaAsset: MediaAsset,
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     hideBox: () -> Unit,
     showBox: () -> Unit,
     isBoxVisible: Boolean

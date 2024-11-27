@@ -1,6 +1,5 @@
 package com.example.chronolens.ui.components
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,7 +45,7 @@ import com.example.chronolens.R
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.utils.noBottomBar
 import com.example.chronolens.utils.noTopBar
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 import com.example.chronolens.viewModels.MediaGridState
 import com.example.chronolens.viewModels.SelectingType
 import com.example.chronolens.viewModels.SyncState
@@ -59,7 +57,7 @@ fun ChronolensBottomBar(
     nav: NavHostController,
     navigationBarPadding: Dp,
     mediaGridState: State<MediaGridState>,
-    mediaGridViewModel: MediaGridScreenViewModel
+    mediaGridViewModel: MediaGridViewModel
 ) {
     if (!noBottomBar.contains(currentScreen)) {
         BottomAppBar(
@@ -97,7 +95,7 @@ fun ChronolensBottomBar(
 @Composable
 private fun SelectingBottomBar(
     state: State<MediaGridState>,
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     buttonWidth: Dp
 ) {
 
@@ -258,7 +256,7 @@ fun ChronolensTopAppBar(
     modifier: Modifier = Modifier,
     userLoginState: UserLoginState,
     mediaGridState: State<MediaGridState>,
-    mediaGridViewModel: MediaGridScreenViewModel
+    mediaGridViewModel: MediaGridViewModel
 ) {
 
     var isPopupVisible by remember { mutableStateOf(false) }
