@@ -2,6 +2,7 @@ package com.example.chronolens.viewModels
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
@@ -100,6 +101,7 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
     private val syncManager = SyncManager(mediaGridRepository)
     private var remoteAssets: List<RemoteMedia> = mutableListOf()
     private var localAssets: List<LocalMedia> = mutableListOf()
+    val lazyGridState = LazyGridState()
 
 
     fun init(context: Context) {
