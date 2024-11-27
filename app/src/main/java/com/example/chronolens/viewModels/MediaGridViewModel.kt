@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
-import com.example.chronolens.R
 import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
@@ -126,7 +125,6 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
             mediaGridRepository.sharedPreferences.edit()
                 .putStringSet(Prefs.ALBUMS, albums.toSet())
                 .apply()
-            Log.i("ALBUMS",getUserAlbums().toString())
         }
     }
 
@@ -484,7 +482,7 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
         viewModelScope.launch {
             setIsUploading(true)
             val remoteIds = mediaGridRepository.uploadMedia(
-                localMedia = mediaList.map { it as LocalMedia },
+                localMedia = mediaList.map { it as LocalMedia }.filter { it.remoteId == null },
                 setProgress = { setUploadProgress(it, mediaList.size) }
             )
             updateMediaUploads(remoteIds)

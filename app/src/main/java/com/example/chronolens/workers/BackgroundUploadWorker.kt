@@ -34,10 +34,12 @@ class BackgroundUploadWorker(ctx: Context, params: WorkerParameters) :
                 EventBus.logoutEvent.emit(Unit)
                 return Result.failure()
             }
+
             // Sync Phase
             showSyncNotification(applicationContext)
-            val localMedia: List<LocalMedia> = syncManager.getLocalAssets(listOf(),applicationContext) // TODO !!!!
-            val localMediaIds: List<Long> = localMedia.map { it.id }
+            val localMedia: List<LocalMedia> =
+                syncManager.getLocalAssets(listOf(), applicationContext)
+            val localMediaIds: List<Long> = localMedia.filter { it.remoteId == null }.map { it.id }
             val remoteAssets: Set<String> =
                 syncManager.getRemoteAssets().map { it.checksum!! }.toSet()
             val checkSumsMap: Map<Long, String> =
