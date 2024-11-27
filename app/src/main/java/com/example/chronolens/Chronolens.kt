@@ -23,6 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.chronolens.ui.components.ChronolensBottomBar
 import com.example.chronolens.ui.components.ChronolensTopAppBar
+import com.example.chronolens.ui.screens.AlbumPickerScreen
 import com.example.chronolens.ui.screens.AlbumsScreen
 import com.example.chronolens.ui.screens.settings.BackgroundUploadScreen
 import com.example.chronolens.ui.screens.FullscreenMediaView
@@ -210,6 +211,13 @@ fun ChronoLens() {
 
                 composable(ChronolensNav.MachineLearning.name) {
                     MachineLearningScreen(modifier = Modifier.padding(innerPadding))
+                }
+                composable(ChronolensNav.AlbumsPicker.name) {
+                    AlbumPickerScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        albums = mediaGridViewModel.getAvailableAlbums(context),
+                        viewModel = mediaGridViewModel
+                    )
                 }
 
             }

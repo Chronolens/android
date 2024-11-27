@@ -123,12 +123,10 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
 
     fun setAlbums(albums: List<String>) {
         viewModelScope.launch {
-            mediaGridRepository.sharedPreferences.edit().apply {
-                putStringSet(Prefs.ALBUMS, albums.toSet())
-                putBoolean(Prefs.ALBUMS_ASK, true)
-            }
-
+            mediaGridRepository.sharedPreferences.edit()
+                .putStringSet(Prefs.ALBUMS, albums.toSet())
                 .apply()
+            Log.i("ALBUMS",getUserAlbums().toString())
         }
     }
 
@@ -152,7 +150,7 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
     private fun loadLocalAssets(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val albums = getUserAlbums() ?: listOf()
-            val localMedia = syncManager.getLocalAssets(albums,context)
+            val localMedia = syncManager.getLocalAssets(albums, context)
             val localMediaIds = localMedia.map { it.id }
             val checksums = mediaGridRepository.dbGetChecksumsFromList(localMediaIds)
             Log.i("LOG", "Already calculated checksums length: ${checksums.size}")

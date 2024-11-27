@@ -6,12 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Checkbox
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material.MaterialTheme
@@ -118,36 +114,11 @@ fun AlbumsPickerDialog(
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(20.dp))
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp)
-                ) {
-                    // TODO: keep or take out select all?
-                    item {
-                        AlbumItem(
-                            albumName = stringResource(R.string.select_all),
-                            isSelected = allSelected.value,
-                            onSelectionChange = { change ->
-                                allSelected.value = change
-                                val updatedSelection = selectedAlbums.toMutableMap().apply {
-                                    keys.forEach { this[it] = change }
-                                }
-                                selectedAlbums.clear()
-                                selectedAlbums.putAll(updatedSelection)
-                            }
-                        )
-                    }
-                    items(albums) { albumName ->
-                        AlbumItem(
-                            albumName = albumName,
-                            isSelected = selectedAlbums[albumName] ?: false,
-                            onSelectionChange = { isSelected ->
-                                selectedAlbums[albumName] = isSelected
-                            }
-                        )
-                    }
-                }
+                AlbumColum(
+                    selectedAlbums = selectedAlbums,
+                    allSelected = allSelected,
+                    albums = albums
+                )
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(
@@ -162,22 +133,6 @@ fun AlbumsPickerDialog(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun AlbumItem(
-    albumName: String,
-    isSelected: Boolean,
-    onSelectionChange: (Boolean) -> Unit
-) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(
-            checked = isSelected,
-            onCheckedChange = { onSelectionChange(it) }
-        )
-        Spacer(modifier = Modifier.padding(horizontal = 10.dp))
-        Text(albumName)
     }
 }
 

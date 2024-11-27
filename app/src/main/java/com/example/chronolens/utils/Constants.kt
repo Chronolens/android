@@ -7,9 +7,7 @@ object Prefs {
         const val EXPIRES_AT = "EXPIRES_AT"
         const val LAST_SYNC = "LAST_SYNC"
         const val USERNAME = "USERNAME"
-        const val ALBUMS = "ALBUMS"
-        const val ALBUMS_ASK = "ALBUMS_ASK"
-}
+        const val ALBUMS = "ALBUMS"}
 
 object Json {
         const val ACCESS_TOKEN = "access_token"
@@ -27,9 +25,6 @@ object Json {
 
         const val KNOWN_PEOPLE = "knownPeople"
         const val UNKNOWN_PEOPLE = "unknownPeople"
-
-        const val MEDIA_URL = "media_url"
-        const val PREVIEW_URL = "preview_url"
 
 }
 
