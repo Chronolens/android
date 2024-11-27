@@ -1,5 +1,6 @@
 package com.example.chronolens.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -127,7 +128,7 @@ fun AlbumsScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PersonItem(
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     person: Person,
     selectOrDeselectPerson: () -> Unit,
     goToPerson: () -> Unit,

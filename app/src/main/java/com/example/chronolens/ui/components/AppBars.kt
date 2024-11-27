@@ -107,7 +107,7 @@ fun ChronolensBottomBar(
 @Composable
 private fun SelectingPersonsBottomBar(
     state: State<MediaGridState>,
-    viewModel: MediaGridScreenViewModel
+    viewModel: MediaGridViewModel
 ) {
     val buttonText = if (state.value.selectedPeople.size == 1) {
         stringResource(id = R.string.rename)
@@ -386,7 +386,7 @@ fun ChronolensTopAppBar(
 @Composable
 private fun SelectingMediaTopAppBarTitle(
     state: State<MediaGridState>,
-    mediaGridViewModel: MediaGridScreenViewModel
+    mediaGridViewModel: MediaGridViewModel
 ) {
     val selectingType = state.value.selectingType
     Row(modifier = Modifier.fillMaxWidth()) {
@@ -417,7 +417,7 @@ private fun SelectingMediaTopAppBarTitle(
 @Composable
 private fun SelectingPersonTopAppBarTitle(
     state: State<MediaGridState>,
-    mediaGridViewModel: MediaGridScreenViewModel
+    mediaGridViewModel: MediaGridViewModel
 ) {
     Row(modifier = Modifier.fillMaxWidth()) {
         Icon(
@@ -452,6 +452,7 @@ fun getScreenTitle(nav: ChronolensNav): String {
         ChronolensNav.ActivityHistory -> stringResource(R.string.activity_history)
         ChronolensNav.MachineLearning -> stringResource(R.string.machine_learning)
         ChronolensNav.Error -> stringResource(R.string.error)
+        ChronolensNav.AlbumsPicker -> "Album Selection"
     }
 }
 
