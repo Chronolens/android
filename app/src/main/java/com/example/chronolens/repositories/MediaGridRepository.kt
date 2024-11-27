@@ -22,8 +22,11 @@ class MediaGridRepository(
     val contentResolver: ContentResolver
 ) {
 
-    suspend fun uploadMedia(localMedia: LocalMedia): String? {
-        return APIUtils.uploadMedia(sharedPreferences, localMedia)
+    suspend fun uploadMedia(
+        localMedia: List<LocalMedia>,
+        setProgress: (Int) -> Unit = {}
+    ): List<Pair<String?,String>> {
+        return APIUtils.uploadMedia(sharedPreferences, localMedia,setProgress)
     }
 
     suspend fun apiSyncFullRemote(): List<RemoteMedia> {
@@ -101,11 +104,26 @@ class MediaGridRepository(
         return checksum
     }
 
-    suspend fun apiGetClusterPreviewsPage(clusterId: Int, page: Int, pageSize: Int, requestType: String): List<Pair<String, String>>? {
-        return APIUtils.getClusterPreviewsPage(sharedPreferences, clusterId, page, pageSize, requestType)
+    suspend fun apiGetClusterPreviewsPage(
+        clusterId: Int,
+        page: Int,
+        pageSize: Int,
+        requestType: String
+    ): List<Pair<String, String>>? {
+        return APIUtils.getClusterPreviewsPage(
+            sharedPreferences,
+            clusterId,
+            page,
+            pageSize,
+            requestType
+        )
     }
 
-    suspend fun apiGetNextClipSearchPage(search: String, page: Int, pageSize: Int): List<Pair<String, String>>? {
+    suspend fun apiGetNextClipSearchPage(
+        search: String,
+        page: Int,
+        pageSize: Int
+    ): List<Pair<String, String>>? {
         return APIUtils.loadNextClipSearchPage(sharedPreferences, search, page, pageSize)
     }
 

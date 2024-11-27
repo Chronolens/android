@@ -36,7 +36,7 @@ class BackgroundUploadWorker(ctx: Context, params: WorkerParameters) :
             }
             // Sync Phase
             showSyncNotification(applicationContext)
-            val localMedia: List<LocalMedia> = syncManager.getLocalAssets()
+            val localMedia: List<LocalMedia> = syncManager.getLocalAssets(listOf(),applicationContext) // TODO !!!!
             val localMediaIds: List<Long> = localMedia.map { it.id }
             val remoteAssets: Set<String> =
                 syncManager.getRemoteAssets().map { it.checksum!! }.toSet()
@@ -79,7 +79,7 @@ class BackgroundUploadWorker(ctx: Context, params: WorkerParameters) :
             // Upload Phase Logic
             var uploaded = 0
             mediaToUpload.forEach {
-                mediaGridRepository.uploadMedia(it)
+                mediaGridRepository.uploadMedia(listOf(it)) // TODO: progress
                 uploaded++
                 updateUploadNotificationProgress(applicationContext, uploaded, mediaToUpload.size)
             }

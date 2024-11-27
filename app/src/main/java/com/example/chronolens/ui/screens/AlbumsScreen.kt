@@ -1,6 +1,5 @@
 package com.example.chronolens.ui.screens
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -54,14 +53,14 @@ import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.Person
 import com.example.chronolens.models.UnknownPerson
 import com.example.chronolens.utils.ChronolensNav
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 import com.example.chronolens.viewModels.MediaGridState
 
 
 // TODO: The current method is to get the people albums from the server at the start of mediagridstate
 @Composable
 fun AlbumsScreen(
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     navController: NavController,
     state: State<MediaGridState>,
     modifier: Modifier = Modifier,

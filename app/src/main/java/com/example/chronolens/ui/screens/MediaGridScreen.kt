@@ -53,27 +53,27 @@ import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.utils.ChronolensNav
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 import com.example.chronolens.viewModels.MediaGridState
 import com.example.chronolens.viewModels.SelectingType
 import com.example.chronolens.viewModels.WorkManagerViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-// TODO: maybe make every single sync a background job in case it is too long
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun MediaGridScreen(
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     state: State<MediaGridState>,
     navController: NavController,
-    work: WorkManagerViewModel,
     modifier: Modifier,
     refreshPaddingValues: Dp
 ) {
+
+    val context = LocalContext.current
     val pullRefreshState = rememberPullRefreshState(
         refreshing = state.value.isLoading,
-        onRefresh = viewModel::refreshMediaGrid,
+        onRefresh = { viewModel.refreshMediaGrid(context) },
         refreshingOffset = refreshPaddingValues,
         refreshThreshold = refreshPaddingValues
     )
@@ -133,7 +133,7 @@ fun loadThumbnail(context: Context, uri: Uri, width: Int, height: Int): Bitmap? 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ImageItem(
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     mediaAsset: MediaAsset,
     goToImage: () -> Unit,
     selectOrDeselect: () -> Unit,

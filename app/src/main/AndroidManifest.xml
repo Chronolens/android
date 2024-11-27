@@ -32,6 +32,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Chronolens"
         android:usesCleartextTraffic="true"
+        android:requestLegacyExternalStorage="false"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"

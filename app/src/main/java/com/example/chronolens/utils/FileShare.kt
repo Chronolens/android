@@ -8,7 +8,6 @@ import android.provider.MediaStore
 import android.util.Log
 import com.example.chronolens.models.LocalMedia
 
-
 fun shareImages(context: Context, mediaList: List<LocalMedia>) {
     try {
         val uris = ArrayList<Uri>()

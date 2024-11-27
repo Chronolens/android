@@ -1,6 +1,5 @@
 package com.example.chronolens.ui.components
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -51,7 +49,7 @@ import com.example.chronolens.ui.theme.defaultButtonColors
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.utils.noBottomBar
 import com.example.chronolens.utils.noTopBar
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 import com.example.chronolens.viewModels.MediaGridState
 import com.example.chronolens.viewModels.SelectingType
 import com.example.chronolens.viewModels.SyncState
@@ -63,7 +61,7 @@ fun ChronolensBottomBar(
     nav: NavHostController,
     navigationBarPadding: Dp,
     mediaGridState: State<MediaGridState>,
-    mediaGridViewModel: MediaGridScreenViewModel
+    mediaGridViewModel: MediaGridViewModel
 ) {
     if (!noBottomBar.contains(currentScreen)) {
         BottomAppBar(
@@ -146,7 +144,7 @@ private fun SelectingPersonsBottomBar(
 @Composable
 private fun SelectingBottomBar(
     state: State<MediaGridState>,
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     buttonWidth: Dp
 ) {
 
@@ -171,6 +169,7 @@ private fun SelectingBottomBar(
                 )
             }
 
+//          Spacer(modifier = Modifier.weight(1f))
 
             IconButton(
                 onClick = {
@@ -187,6 +186,7 @@ private fun SelectingBottomBar(
         } else if (state.value.selectingType == SelectingType.Remote) {
             IconButton(
                 onClick = {
+                    viewModel.downloadMultipleMedia(state.value.selected.values.toList(), context)
                 },
                 modifier = Modifier.width(buttonWidth)
             ) {
@@ -305,11 +305,10 @@ fun ChronolensTopAppBar(
     modifier: Modifier = Modifier,
     userLoginState: UserLoginState,
     mediaGridState: State<MediaGridState>,
-    mediaGridViewModel: MediaGridScreenViewModel
+    mediaGridViewModel: MediaGridViewModel
 ) {
 
     var isPopupVisible by remember { mutableStateOf(false) }
-    val context = LocalContext.current
 
     if (userLoginState != UserLoginState.Loading && !noTopBar.contains(currentScreen)) {
         TopAppBar(
@@ -359,12 +358,17 @@ fun ChronolensTopAppBar(
                             val (progress, max) = mediaGridState.value.uploadProgress
                             Text(stringResource(R.string.select_upload, progress, max))
                         }
+                        if (mediaGridState.value.isDownloading) {
+                            val (progress, max) = mediaGridState.value.downloadProgress
+                            Text(stringResource(R.string.select_download, progress, max))
+                        }
                     }
                 }
             },
             colors = TopAppBarDefaults.mediumTopAppBarColors(
                 containerColor = Color.Transparent
             ),
+            modifier = modifier,
             navigationIcon = {
                 if (canNavigateBack) {
                     IconButton(onClick = navigateUp) {

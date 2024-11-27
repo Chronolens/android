@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
+import com.example.chronolens.R
 import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
@@ -12,6 +13,8 @@ import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.models.UnknownPerson
 import com.example.chronolens.repositories.MediaGridRepository
+import com.example.chronolens.utils.APIUtils
+import com.example.chronolens.utils.Prefs
 import com.example.chronolens.utils.SyncManager
 import com.example.chronolens.utils.shareImages
 import com.example.chronolens.utils.loadExifData
@@ -35,6 +38,11 @@ enum class SyncState {
     Merging
 }
 
+enum class DownloadingState {
+    Downloading,
+    Downloaded
+}
+
 data class MediaGridState(
     val media: List<MediaAsset> = listOf(),
     val isLoading: Boolean = true,
@@ -44,16 +52,19 @@ data class MediaGridState(
     val syncState: SyncState = SyncState.Synced,
     val syncProgress: Pair<Int, Int> = Pair(0, 0),
     val isUploading: Boolean = false,
-    val uploadProgress: Pair<Int, Int> = Pair(0, 0),
     val isSelectingPerson: Boolean = false,
     val people: List<Person> = listOf(),
-    val selectedPeople: Map<Int, Person> = mapOf()
+    val selectedPeople: Map<Int, Person> = mapOf(),
 
+    val uploadProgress: Pair<Int, Int> = Pair(0, 0),
+    val isDownloading: Boolean = false,
+    val downloadProgress: Pair<Int, Int> = Pair(0, 0)
 )
 
 data class FullscreenImageState(
     val image: BitmapImage? = null,
     val uploading: Boolean = false,
+    val downloadState: DownloadingState? = null,
     val currentMediaAsset: MediaAsset? = null,
     val currentFullMedia: FullMedia? = null
 )
@@ -77,7 +88,7 @@ data class ClipSearchState(
 )
 
 
-class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
+class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) : ViewModel() {
 
     private val _mediaGridState = MutableStateFlow(MediaGridState())
     val mediaGridState: StateFlow<MediaGridState> = _mediaGridState.asStateFlow()
@@ -99,36 +110,55 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     private var localAssets: List<LocalMedia> = mutableListOf()
 
 
-    fun init() {
+    fun init(context: Context) {
         viewModelScope.launch {
-            loadMediaGrid()
+            loadMediaGrid(context)
             setIsLoading(false)
             loadPeople()
 
         }
     }
 
-    private suspend fun loadMediaGrid() {
+    fun getAvailableAlbums(context: Context): List<String> {
+        return syncManager.getAvailableAlbums(context)
+    }
+
+    fun getUserAlbums(): List<String>? {
+        val albums = mediaGridRepository.sharedPreferences.getStringSet(Prefs.ALBUMS, null)
+        return albums?.toList()
+    }
+
+    fun setAlbums(albums: List<String>) {
+        viewModelScope.launch {
+            mediaGridRepository.sharedPreferences.edit()
+                .putStringSet(Prefs.ALBUMS, albums.toSet())
+                .apply()
+            Log.i("ALBUMS",getUserAlbums().toString())
+        }
+    }
+
+    private suspend fun loadMediaGrid(context: Context) {
         setSyncState(SyncState.FetchingRemote)
         remoteAssets = syncManager.getRemoteAssets()
         setSyncState(SyncState.Merging)
         mergeMediaAssets()
         setSyncState(SyncState.FetchingLocal)
-        loadLocalAssets()
+        loadLocalAssets(context)
     }
 
-    fun refreshMediaGrid() {
+    fun refreshMediaGrid(context: Context) {
         viewModelScope.launch {
             setIsLoading(true)
-            loadMediaGrid()
+            loadMediaGrid(context)
             loadPeople()
             setIsLoading(false)
         }
     }
 
-    private fun loadLocalAssets() {
+    private fun loadLocalAssets(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
-            val localMedia = syncManager.getLocalAssets()
+            val albums = getUserAlbums() ?: listOf()
+            val localMedia = syncManager.getLocalAssets(albums, context)
             val localMediaIds = localMedia.map { it.id }
             val checksums = mediaGridRepository.dbGetChecksumsFromList(localMediaIds)
             Log.i("LOG", "Already calculated checksums length: ${checksums.size}")
@@ -169,6 +199,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+    // Merge local and remote assets
     private fun mergeMediaAssets() {
         setSyncState(SyncState.Merging)
         _mediaGridState.update { currState ->
@@ -177,6 +208,7 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
             )
         }
     }
+
 
     fun updateCurrentPersonPhotoGrid(person: Person) {
         _personPhotoGridState.update {
@@ -379,28 +411,25 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-    fun uploadMedia(localMedia: LocalMedia) {
+    fun uploadSingle(localMedia: LocalMedia) {
         viewModelScope.launch(Dispatchers.IO) {
-            _fullscreenImageState.update { currState ->
-                currState.copy(
-                    uploading = true
-                )
-            }
+            Log.i("UPLOAD", "uploading ${localMedia.path}")
+            _fullscreenImageState.update { it.copy(uploading = false) }
             if (localMedia.checksum == null) {
                 val checksum =
                     mediaGridRepository.getOrComputeChecksum(localMedia.id, localMedia.path)
                 localMedia.checksum = checksum
             }
 
-            val remoteId: String? = mediaGridRepository.uploadMedia(localMedia)
+            val result = mediaGridRepository.uploadMedia(listOf(localMedia)).firstOrNull()
             _fullscreenImageState.update { currState ->
                 currState.copy(
                     uploading = false,
-                    currentMediaAsset = localMedia.copy(remoteId = remoteId)
+                    currentMediaAsset = localMedia.copy(remoteId = result?.first)
                 )
             }
-            if (remoteId != null) {
-                updateMediaList(remoteId, localMedia.checksum!!)
+            if (result?.first != null) {
+                updateMediaUploads(listOf(Pair(result.first, localMedia.checksum!!)))
             }
         }
     }
@@ -416,15 +445,20 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
     }
 
 
-    private fun updateMediaList(remoteId: String, checksum: String) {
+    private fun updateMediaUploads(updates: List<Pair<String?, String>>) {
         viewModelScope.launch {
 
             val mediaList = _mediaGridState.value.media.toMutableList()
-            val index = mediaList.indexOfFirst { it.checksum == checksum && it is LocalMedia }
+            for ((remoteId, checksum) in updates) {
+                if (remoteId == null) {
+                    continue
+                }
+                val index = mediaList.indexOfFirst { it.checksum == checksum && it is LocalMedia }
 
-            if (index != -1) {
-                val media = mediaList[index] as LocalMedia
-                mediaList[index] = media.copy(remoteId = remoteId)
+                if (index != -1) {
+                    val media = mediaList[index] as LocalMedia
+                    mediaList[index] = media.copy(remoteId = remoteId)
+                }
             }
 
             _mediaGridState.update { currState ->
@@ -531,17 +565,78 @@ class MediaGridScreenViewModel(private val mediaGridRepository: MediaGridReposit
         }
     }
 
+
     fun uploadMultipleMedia(mediaList: List<MediaAsset>) {
         viewModelScope.launch {
             setIsUploading(true)
-            var i = 0
-            mediaList.forEach {
-                uploadMedia(it as LocalMedia)
-                setUploadProgress(++i, mediaList.size)
-            }
+            val remoteIds = mediaGridRepository.uploadMedia(
+                localMedia = mediaList.map { it as LocalMedia },
+                setProgress = { setUploadProgress(it, mediaList.size) }
+            )
+            updateMediaUploads(remoteIds)
             setIsUploading(false)
         }
         deselectAll()
+    }
+
+    private fun setDownloadProgress(progress: Int, max: Int) {
+        viewModelScope.launch {
+            _mediaGridState.update { currState ->
+                currState.copy(downloadProgress = Pair(progress, max))
+            }
+        }
+    }
+
+    private fun setIsDownloading(isDownloading: Boolean) {
+        _mediaGridState.update {
+            it.copy(isDownloading = isDownloading)
+        }
+    }
+
+
+    fun downloadSingle(media: RemoteMedia, context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _fullscreenImageState.update {
+                it.copy(downloadState = DownloadingState.Downloading)
+            }
+            val result = APIUtils.downloadMedia(
+                context = context,
+                mediaList = listOf(media),
+                sharedPreferences = mediaGridRepository.sharedPreferences
+            )
+            val success = if (result.isEmpty()) {
+                false
+            } else {
+                result.first()
+            }
+            _fullscreenImageState.update {
+                it.copy(downloadState = if (success) DownloadingState.Downloaded else null)
+            }
+            if (success) {
+                refreshMediaGrid(context)
+            }
+        }
+    }
+
+    fun downloadMultipleMedia(mediaList: List<MediaAsset>, context: Context) {
+        viewModelScope.launch {
+            setIsDownloading(true)
+            APIUtils.downloadMedia(
+                context = context,
+                mediaList = mediaList.map { it as RemoteMedia },
+                sharedPreferences = mediaGridRepository.sharedPreferences,
+                setProgress = { setDownloadProgress(it, mediaList.size) }
+            )
+            setIsDownloading(false)
+            refreshMediaGrid(context)
+        }
+        deselectAll()
+    }
+
+    fun resetDownloadState() {
+        viewModelScope.launch {
+            _fullscreenImageState.update { it.copy(downloadState = null) }
+        }
     }
 
 }

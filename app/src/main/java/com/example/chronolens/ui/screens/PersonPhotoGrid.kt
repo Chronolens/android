@@ -1,9 +1,7 @@
 package com.example.chronolens.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,20 +16,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import coil3.compose.AsyncImage
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.ui.components.RemoteMediaItem
 import com.example.chronolens.utils.ChronolensNav
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 import com.example.chronolens.viewModels.PersonPhotoGridState
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun PersonPhotoGrid(
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     personPhotoGridState: StateFlow<PersonPhotoGridState>,
     navController: NavHostController,
     modifier: Modifier = Modifier

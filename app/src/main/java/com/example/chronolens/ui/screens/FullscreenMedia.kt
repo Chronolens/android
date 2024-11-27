@@ -31,13 +31,13 @@ import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.ui.components.BackButton
 import com.example.chronolens.ui.components.BookmarkButton
-import com.example.chronolens.ui.components.DeleteOrTransferButton
+import com.example.chronolens.ui.components.DeleteOrDownloadButton
 import com.example.chronolens.ui.components.MenuButton
 import com.example.chronolens.ui.components.MetadataDisplay
 import com.example.chronolens.ui.components.ShareButton
 import com.example.chronolens.ui.components.UploadOrRemoveButton
 import com.example.chronolens.viewModels.FullscreenImageState
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 import com.example.chronolens.viewModels.MediaGridState
 
 // TODO: Restrict photo vertical position while zooming in with double tap
@@ -45,7 +45,7 @@ import com.example.chronolens.viewModels.MediaGridState
 
 @Composable
 fun FullscreenMediaView(
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     mediaGridState: State<MediaGridState>,
     fullscreenMediaState: State<FullscreenImageState>,
     navController: NavHostController,
@@ -107,15 +107,23 @@ fun FullscreenMediaView(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            DeleteOrTransferButton(mediaAsset)
-
+            DeleteOrDownloadButton(
+                asset = mediaAsset,
+                viewModel = viewModel,
+                state = fullscreenMediaState
+            )
+//          Spacer(modifier = Modifier.width(16.dp))
 
             if (mediaAsset is LocalMedia) {
                 ShareButton(mediaAsset)
             }
 
-            UploadOrRemoveButton(mediaAsset, viewModel, fullscreenMediaState)
-
+            UploadOrRemoveButton(
+                asset = mediaAsset,
+                viewModel = viewModel,
+                state = fullscreenMediaState
+            )
+//          Spacer(modifier = Modifier.width(16.dp))
 
             MenuButton({ isBoxVisible = true })
         }
@@ -149,7 +157,7 @@ fun FullscreenMediaView(
 @Composable
 fun LoadFullImage(
     mediaAsset: MediaAsset,
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     hideBox: () -> Unit,
     showBox: () -> Unit,
     isBoxVisible: Boolean
