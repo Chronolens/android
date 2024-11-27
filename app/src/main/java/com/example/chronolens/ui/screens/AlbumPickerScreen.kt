@@ -34,6 +34,7 @@ fun AlbumPickerScreen(modifier: Modifier, albums: List<String>, viewModel: Media
                 selectedAlbums[album] = userAlbums.contains(album)
             }
         }
+        allSelected.value = selectedAlbums.none { !it.value }
     }
 
     // TODO: pretty print

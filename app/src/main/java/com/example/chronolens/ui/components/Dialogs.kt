@@ -99,6 +99,7 @@ fun AlbumsPickerDialog(
                 selectedAlbums[album] = false
             }
         }
+        allSelected.value = selectedAlbums.none { !it.value }
     }
 
     Dialog(onDismissRequest = { }) {
