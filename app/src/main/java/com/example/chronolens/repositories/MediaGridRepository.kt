@@ -12,6 +12,7 @@ import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.utils.ChecksumUtils
+import com.example.chronolens.utils.Prefs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -25,8 +26,8 @@ class MediaGridRepository(
     suspend fun uploadMedia(
         localMedia: List<LocalMedia>,
         setProgress: (Int) -> Unit = {}
-    ): List<Pair<String?,String>> {
-        return APIUtils.uploadMedia(sharedPreferences, localMedia,setProgress)
+    ): List<Pair<String?, String>> {
+        return APIUtils.uploadMedia(sharedPreferences, localMedia, setProgress)
     }
 
     suspend fun apiSyncFullRemote(): List<RemoteMedia> {
@@ -125,5 +126,10 @@ class MediaGridRepository(
         pageSize: Int
     ): List<Pair<String, String>>? {
         return APIUtils.loadNextClipSearchPage(sharedPreferences, search, page, pageSize)
+    }
+
+    fun getUserAlbums(): List<String>? {
+        val albums = sharedPreferences.getStringSet(Prefs.ALBUMS, null)
+        return albums?.toList()
     }
 }

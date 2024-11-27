@@ -116,8 +116,8 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
     }
 
     fun getUserAlbums(): List<String>? {
-        val albums = mediaGridRepository.sharedPreferences.getStringSet(Prefs.ALBUMS, null)
-        return albums?.toList()
+        return mediaGridRepository.getUserAlbums()
+
     }
 
     fun setAlbums(albums: List<String>) {
