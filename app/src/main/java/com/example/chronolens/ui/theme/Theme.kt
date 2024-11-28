@@ -21,7 +21,9 @@ private val DarkColorScheme = darkColorScheme(
     primaryContainer = buttonPrimary,
     onPrimaryContainer = buttonOnPrimary,
     secondaryContainer = buttonSecondary,
-    onSecondaryContainer = buttonOnSecondary
+    onSecondaryContainer = buttonOnSecondary,
+    onTertiaryContainer = light_red
+
 )
 
 

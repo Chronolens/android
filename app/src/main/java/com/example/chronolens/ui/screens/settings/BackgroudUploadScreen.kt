@@ -12,13 +12,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.Button
-import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,9 +37,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.work.WorkInfo
 import com.example.chronolens.R
 import com.example.chronolens.ui.components.AlertConfirmDialog
+import com.example.chronolens.ui.theme.defaultButtonColors
 import com.example.chronolens.viewModels.WorkManagerState
 import com.example.chronolens.viewModels.WorkManagerViewModel
 import java.text.SimpleDateFormat
@@ -48,13 +50,12 @@ fun BackgroundUploadScreen(
     modifier: Modifier = Modifier,
     workManager: WorkManagerViewModel,
     workManagerState: State<WorkManagerState>
-
 ) {
     var requireWifi by remember { mutableStateOf(true) }
     var requireCharging by remember { mutableStateOf(false) }
     var requireBatteryNotLow by remember { mutableStateOf(true) }
     var includeVideos by remember { mutableStateOf(false) }
-    var period by remember { mutableLongStateOf(15) } // minimum is 15 minutes
+    var period by remember { mutableLongStateOf(15) }
     val periodOptions: List<Long> = listOf(15, 30, 45, 60, 90, 120, 240, 480, 1440)
 
     val uploadNowVisible = remember { mutableStateOf(false) }
@@ -108,6 +109,15 @@ fun BackgroundUploadScreen(
         }
 
         item {
+            HorizontalDivider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp, horizontal = 10.dp),
+                color = Color.White
+            )
+        }
+
+        item {
             Spacer(modifier = Modifier.height(24.dp))
             BackgroundUploadOption(
                 icon = Icons.Outlined.Check,
@@ -137,14 +147,8 @@ fun BackgroundUploadScreen(
                 checked = requireBatteryNotLow,
                 onCheckedChange = { requireBatteryNotLow = it }
             )
-            ToggleOptionRow(
-                label = stringResource(R.string.include_videos),
-                checked = includeVideos,
-                onCheckedChange = { includeVideos = it }
-            )
             Text(text = workManagerState.value.periodicWorkInfoState.toString())
             if (workManagerState.value.nextJob != null) {
-                // get locale for this
                 val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm:ss")
                 val dateString: String = formatter.format(Date(workManagerState.value.nextJob!!))
                 Text(text = dateString)
@@ -165,18 +169,24 @@ fun StartCancelOneTimeRow(
     state: State<WorkManagerState>,
     cancel: () -> Unit,
     visible: MutableState<Boolean>
-
 ) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
         if (state.value.isLoading) {
             CircularProgressIndicator()
             Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = cancel) {
+            Button(
+                onClick = cancel,
+                colors = defaultButtonColors(),
+                shape = RoundedCornerShape(4.dp)
+            ) {
                 Text(stringResource(R.string.cancel))
             }
         } else {
             Button(
-                onClick = { visible.value = true }
+                onClick = { visible.value = true },
+                colors = defaultButtonColors(),
+                shape = RoundedCornerShape(4.dp)
+
             ) {
                 Text(stringResource(R.string.start))
             }
@@ -189,24 +199,28 @@ fun StartCancelPeriodicRow(
     state: State<WorkManagerState>,
     cancel: () -> Unit,
     visible: MutableState<Boolean>
-
 ) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-
         if (state.value.isReady) {
-            // Start
             Button(
-                onClick = { visible.value = true }
+                onClick = { visible.value = true },
+                colors = defaultButtonColors(),
+                shape = RoundedCornerShape(4.dp)
             ) {
                 Text(stringResource(R.string.start))
             }
         } else {
-            Button(onClick = cancel) {
+            Button(
+                onClick = cancel,
+                colors = defaultButtonColors(),
+                shape = RoundedCornerShape(4.dp)
+            ) {
                 Text(stringResource(R.string.cancel))
             }
         }
     }
 }
+
 
 
 @Composable
