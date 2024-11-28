@@ -440,10 +440,6 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
     }
 
 
-    suspend fun getRemoteAssetFullImage(id: String): FullMedia? {
-        return mediaGridRepository.apiGetFullImage(id)
-    }
-
 
     private fun updateMediaUploads(updates: List<Pair<String?, String>>) {
         viewModelScope.launch {

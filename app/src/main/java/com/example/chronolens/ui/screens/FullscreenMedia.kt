@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
+import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
@@ -77,10 +78,10 @@ fun FullscreenMediaView(
         }
         LoadFullImage(
             mediaAsset = mediaAsset,
-            viewModel = viewModel,
             hideBox = { isBoxVisible = false },
             showBox = { isBoxVisible = true },
-            isBoxVisible = isBoxVisible
+            isBoxVisible = isBoxVisible,
+            fullMedia = fullMedia
         )
 
 
@@ -157,17 +158,16 @@ fun FullscreenMediaView(
 @Composable
 fun LoadFullImage(
     mediaAsset: MediaAsset,
-    viewModel: MediaGridViewModel,
     hideBox: () -> Unit,
     showBox: () -> Unit,
-    isBoxVisible: Boolean
+    isBoxVisible: Boolean,
+    fullMedia: FullMedia
 ) {
 
     if (mediaAsset is RemoteMedia) {
         var imageUrl by remember { mutableStateOf<String?>(null) }
         LaunchedEffect(mediaAsset) {
-            val fullMedia = viewModel.getRemoteAssetFullImage(mediaAsset.id)
-            imageUrl = fullMedia?.mediaUrl
+            imageUrl = fullMedia.mediaUrl
         }
         if (imageUrl != null) {
             ImageDisplay(
@@ -180,7 +180,7 @@ fun LoadFullImage(
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
-            ) { // TODO DOES NOTHING?
+            ) {
                 CircularProgressIndicator()
             }
         }
