@@ -51,10 +51,10 @@
     <string name="background_uploads_periodic_desc">Periodically upload media according to the user preferences</string>
 
     <string name="upload_now">Upload Now</string>
-    <string name="upload_now_desc">All your media will be backed up in the background</string>
+    <string name="upload_now_desc">Your media will be uploaded to the cloud in the background right away.</string>
 
-    <string name="upload_periodic">Periodic Upload</string>
-    <string name="upload_periodic_desc">Every %s your app will run a job in the background uploading every media that remains</string>
+    <string name="upload_periodic">Schedule Periodic Uploads</string>
+    <string name="upload_periodic_desc">Your media will be automatically uploaded every %s in the background, even when you\'re not using the app.</string>
 
     <string name="selecting_remotes">Selecting Remotes</string>
     <string name="selecting_locals">Selecting Locals</string>
@@ -87,4 +87,6 @@
     <string name="selecting_persons">Selecting People</string>
     <string name="rename">Rename</string>
     <string name="group_people">Group People</string>
+
+    <string name="no_queued_job">No queued job</string>
 </resources>
