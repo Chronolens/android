@@ -51,7 +51,7 @@ fun createNotificationChannels(context: Context) {
 
 fun showSyncNotification(context: Context) {
     val syncNotification = NotificationCompat.Builder(context, Notification.SYNC_CHANNEL_ID.name)
-        .setSmallIcon(R.drawable.el_gato)
+        .setSmallIcon(R.drawable.bright_app_icon)
         .setContentTitle(context.resources.getString(R.string.notification_sync_message))
         .setContentText(context.resources.getString(R.string.notification_sync_message_init))
         .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -64,7 +64,7 @@ fun showSyncNotification(context: Context) {
 
 fun showUploadNotification(context: Context, progress: Int, max: Int) {
     val uploadNotification = NotificationCompat.Builder(context, Notification.UPLOAD_CHANNEL_ID.name)
-        .setSmallIcon(R.drawable.el_gato)
+        .setSmallIcon(R.drawable.upload)
         .setContentTitle(context.resources.getString(R.string.notification_upload_message))
         .setContentText(context.resources.getString(R.string.notification_upload_message_init))
         .setProgress(max, progress, false)
@@ -79,7 +79,7 @@ fun showUploadNotification(context: Context, progress: Int, max: Int) {
 fun showFinishedNotification(context: Context, uploaded: Int) {
     val finishedNotification =
         NotificationCompat.Builder(context, Notification.FINISHED_CHANNEL_ID.name)
-            .setSmallIcon(R.drawable.el_gato)
+            .setSmallIcon(R.drawable.upload)
             .setContentTitle(context.resources.getString(R.string.notification_finished))
             .setContentText(
                 context.resources.getQuantityString(
@@ -100,7 +100,7 @@ fun updateSyncNotificationProgress(context: Context, progress: Int, max: Int) {
     val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     val syncNotification = NotificationCompat.Builder(context, Notification.SYNC_CHANNEL_ID.name)
-        .setSmallIcon(R.drawable.el_gato)
+        .setSmallIcon(R.drawable.upload)
         .setContentTitle(context.resources.getString(R.string.notification_sync_message))
         .setContentText(
             context.resources.getString(
@@ -119,7 +119,7 @@ fun updateUploadNotificationProgress(context: Context, progress: Int, max: Int) 
     val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     val uploadNotification = NotificationCompat.Builder(context, Notification.UPLOAD_CHANNEL_ID.name)
-        .setSmallIcon(R.drawable.el_gato)
+        .setSmallIcon(R.drawable.upload)
         .setContentTitle(context.resources.getString(R.string.notification_upload_message))
         .setContentText(
             context.resources.getString(
