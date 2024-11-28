@@ -2,6 +2,7 @@ package com.example.chronolens.workers
 
 import android.app.NotificationManager
 import android.content.Context
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.chronolens.models.LocalMedia
@@ -34,9 +35,13 @@ class BackgroundUploadWorker(ctx: Context, params: WorkerParameters) :
                 EventBus.logoutEvent.emit(Unit)
                 return Result.failure()
             }
+
             // Sync Phase
             showSyncNotification(applicationContext)
-            val localMedia: List<LocalMedia> = syncManager.getLocalAssets(listOf(),applicationContext) // TODO !!!!
+            val albums = mediaGridRepository.getUserAlbums() ?: listOf()
+            val localMedia: List<LocalMedia> =
+                syncManager.getLocalAssets(albums, applicationContext)
+            Log.i("BACKGROUND",localMedia.toString())
             val localMediaIds: List<Long> = localMedia.map { it.id }
             val remoteAssets: Set<String> =
                 syncManager.getRemoteAssets().map { it.checksum!! }.toSet()
@@ -66,7 +71,7 @@ class BackgroundUploadWorker(ctx: Context, params: WorkerParameters) :
                 calculated++
                 updateSyncNotificationProgress(applicationContext, calculated, localMedia.size)
             }
-
+            Log.i("BACKGROUND2",mediaToUpload.toString())
             notificationManager.cancel(Notification.SYNC_CHANNEL_ID.ordinal)
 
             // No media to upload
@@ -77,15 +82,20 @@ class BackgroundUploadWorker(ctx: Context, params: WorkerParameters) :
             showUploadNotification(applicationContext, 0, mediaToUpload.size)
 
             // Upload Phase Logic
-            var uploaded = 0
-            mediaToUpload.forEach {
-                mediaGridRepository.uploadMedia(listOf(it)) // TODO: progress
-                uploaded++
-                updateUploadNotificationProgress(applicationContext, uploaded, mediaToUpload.size)
-            }
+            val results = mediaGridRepository.uploadMedia(
+                localMedia = mediaToUpload,
+                setProgress = {
+                    updateUploadNotificationProgress(
+                        applicationContext,
+                        it,
+                        mediaToUpload.size
+                    )
+                }
+            )
 
+            val totalUploaded = results.filter { it.first!=null }.size
             notificationManager.cancel(Notification.UPLOAD_CHANNEL_ID.ordinal)
-            showFinishedNotification(applicationContext, uploaded)
+            showFinishedNotification(applicationContext, totalUploaded)
 
             return Result.success()
         } else {

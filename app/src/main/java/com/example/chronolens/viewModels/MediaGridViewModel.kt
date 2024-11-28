@@ -2,10 +2,10 @@ package com.example.chronolens.viewModels
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
-import com.example.chronolens.R
 import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
@@ -108,6 +108,7 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
     private val syncManager = SyncManager(mediaGridRepository)
     private var remoteAssets: List<RemoteMedia> = mutableListOf()
     private var localAssets: List<LocalMedia> = mutableListOf()
+    val lazyGridState = LazyGridState()
 
 
     fun init(context: Context) {
@@ -124,8 +125,8 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
     }
 
     fun getUserAlbums(): List<String>? {
-        val albums = mediaGridRepository.sharedPreferences.getStringSet(Prefs.ALBUMS, null)
-        return albums?.toList()
+        return mediaGridRepository.getUserAlbums()
+
     }
 
     fun setAlbums(albums: List<String>) {
@@ -133,7 +134,6 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
             mediaGridRepository.sharedPreferences.edit()
                 .putStringSet(Prefs.ALBUMS, albums.toSet())
                 .apply()
-            Log.i("ALBUMS",getUserAlbums().toString())
         }
     }
 
@@ -570,7 +570,7 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
         viewModelScope.launch {
             setIsUploading(true)
             val remoteIds = mediaGridRepository.uploadMedia(
-                localMedia = mediaList.map { it as LocalMedia },
+                localMedia = mediaList.map { it as LocalMedia }.filter { it.remoteId == null },
                 setProgress = { setUploadProgress(it, mediaList.size) }
             )
             updateMediaUploads(remoteIds)

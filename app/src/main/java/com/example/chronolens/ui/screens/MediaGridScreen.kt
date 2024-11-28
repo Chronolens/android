@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
@@ -33,6 +34,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,6 +80,8 @@ fun MediaGridScreen(
         refreshThreshold = refreshPaddingValues
     )
 
+    val lazyGridState = viewModel.lazyGridState
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -86,6 +90,7 @@ fun MediaGridScreen(
             .then(modifier)
     ) {
         LazyVerticalGrid(
+            state = lazyGridState,
             columns = GridCells.Fixed(4),
             modifier = Modifier.fillMaxSize()
         ) {

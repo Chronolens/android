@@ -66,6 +66,12 @@
     <string name="select_all">Select All</string>
     <string name="albums_set">Albums Set</string>
 
+    <string name="sync_state_synced">Synced</string>
+    <string name="sync_state_fetching_remote">Fetching Remote</string>
+    <string name="sync_state_fetching_local">Fetching Local</string>
+    <string name="sync_state_fetching_local_progress">%d of %d</string>
+    <string name="sync_state_merging">Merging</string>
+
     <string name="login_screen">Login Screen</string>
     <string name="media_gallery">Media Gallery</string>
     <string name="media_viewer">Media Viewer</string>

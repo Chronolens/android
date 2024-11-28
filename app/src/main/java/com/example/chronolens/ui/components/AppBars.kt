@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,6 +33,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +56,7 @@ import com.example.chronolens.viewModels.MediaGridState
 import com.example.chronolens.viewModels.SelectingType
 import com.example.chronolens.viewModels.SyncState
 import com.example.chronolens.viewModels.UserLoginState
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChronolensBottomBar(
@@ -95,7 +98,8 @@ fun ChronolensBottomBar(
                         NavigationBottomBar(
                             currentScreen = currentScreen,
                             nav = nav,
-                            buttonWidth = buttonWidth
+                            buttonWidth = buttonWidth,
+                            lazyGridState = mediaGridViewModel.lazyGridState
                         )
                     }
                 }
@@ -205,11 +209,13 @@ private fun SelectingBottomBar(
 private fun NavigationBottomBar(
     currentScreen: ChronolensNav,
     nav: NavHostController,
-    buttonWidth: Dp
+    buttonWidth: Dp,
+    lazyGridState: LazyGridState
 ) {
 
     val tertiaryColor = MaterialTheme.colorScheme.tertiary
     val defaultIconColor = MaterialTheme.colorScheme.onSecondary
+    val coroutineScope = rememberCoroutineScope()
 
     Row(
         modifier = Modifier.fillMaxSize(),
@@ -219,9 +225,17 @@ private fun NavigationBottomBar(
 
         IconButton(
             onClick = {
-                nav.navigate(ChronolensNav.MediaGrid.name) {
-                    popUpTo(0) { inclusive = true }
-                    launchSingleTop = true
+                if (currentScreen == ChronolensNav.MediaGrid) {
+                    coroutineScope.launch {
+                        // TODO: with or without animation?
+//                        lazyGridState.scrollToItem(0)
+                        lazyGridState.animateScrollToItem(0)
+                    }
+                } else {
+                    nav.navigate(ChronolensNav.MediaGrid.name) {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             },
             modifier = Modifier.width(buttonWidth)
@@ -350,9 +364,23 @@ fun ChronolensTopAppBar(
                     offset = DpOffset(x = 0.dp, y = 0.dp)
                 ) {
                     Column(modifier = Modifier.padding(8.dp)) {
-                        Text(mediaGridState.value.syncState.name)
-                        if (mediaGridState.value.syncState == SyncState.FetchingLocal) {
-                            Text(mediaGridState.value.syncProgress.toString())
+                        // TODO: pretty print here
+                        when (mediaGridState.value.syncState) {
+                            SyncState.Synced -> Text(stringResource(R.string.sync_state_synced))
+                            SyncState.FetchingRemote -> Text(stringResource(R.string.sync_state_fetching_remote))
+                            SyncState.FetchingLocal -> {
+                                val prog = mediaGridState.value.syncProgress
+                                Text(stringResource(R.string.sync_state_fetching_local))
+                                Text(
+                                    stringResource(
+                                        R.string.sync_state_fetching_local_progress,
+                                        prog.first,
+                                        prog.second
+                                    )
+                                )
+                            }
+
+                            SyncState.Merging -> Text(stringResource(R.string.sync_state_merging))
                         }
                         if (mediaGridState.value.isUploading) {
                             val (progress, max) = mediaGridState.value.uploadProgress
@@ -451,7 +479,6 @@ fun getScreenTitle(nav: ChronolensNav): String {
         ChronolensNav.BackgroundUpload -> stringResource(R.string.background_uploads)
         ChronolensNav.ActivityHistory -> stringResource(R.string.activity_history)
         ChronolensNav.MachineLearning -> stringResource(R.string.machine_learning)
-        ChronolensNav.Error -> stringResource(R.string.error)
         ChronolensNav.AlbumsPicker -> "Album Selection"
     }
 }
