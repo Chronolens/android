@@ -46,7 +46,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.example.chronolens.R
-import com.example.chronolens.ui.components.AlertConfirmDialog
 import com.example.chronolens.ui.theme.defaultButtonColors
 import com.example.chronolens.viewModels.WorkManagerState
 import com.example.chronolens.viewModels.WorkManagerViewModel
