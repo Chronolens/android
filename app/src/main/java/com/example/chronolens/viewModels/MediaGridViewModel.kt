@@ -69,7 +69,7 @@ data class FullscreenImageState(
     val currentFullMedia: FullMedia? = null
 )
 
-// We have to null all these values after the user leaves the screen, there's a weird bug
+// TODO: We have to null all these values after the user leaves the screen, there's a weird bug
 // that randomly displays one of the images from the previous screen
 data class PersonPhotoGridState(
     val person: Person? = null,
@@ -439,10 +439,6 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
         return mediaGridRepository.apiGetPreview(id)
     }
 
-
-    suspend fun getRemoteAssetFullImage(id: String): FullMedia? {
-        return mediaGridRepository.apiGetFullImage(id)
-    }
 
 
     private fun updateMediaUploads(updates: List<Pair<String?, String>>) {
