@@ -11,6 +11,7 @@ import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
+import com.example.chronolens.models.UnknownPerson
 import com.example.chronolens.repositories.MediaGridRepository
 import com.example.chronolens.utils.APIUtils
 import com.example.chronolens.utils.Prefs
@@ -48,10 +49,13 @@ data class MediaGridState(
     val selected: Map<String, MediaAsset> = mapOf(),
     val isSelecting: Boolean = false,
     val selectingType: SelectingType = SelectingType.None,
-    val people: List<Person> = listOf(),
     val syncState: SyncState = SyncState.Synced,
     val syncProgress: Pair<Int, Int> = Pair(0, 0),
     val isUploading: Boolean = false,
+    val isSelectingPerson: Boolean = false,
+    val people: List<Person> = listOf(),
+    val selectedPeople: Map<Int, Person> = mapOf(),
+
     val uploadProgress: Pair<Int, Int> = Pair(0, 0),
     val isDownloading: Boolean = false,
     val downloadProgress: Pair<Int, Int> = Pair(0, 0)
@@ -98,6 +102,9 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
     private val _clipSearchState = MutableStateFlow(ClipSearchState())
     val clipSearchState: StateFlow<ClipSearchState> = _clipSearchState.asStateFlow()
 
+    private val _showNameDialog = MutableStateFlow(false)
+    val showNameDialog: StateFlow<Boolean> = _showNameDialog.asStateFlow()
+
     private val syncManager = SyncManager(mediaGridRepository)
     private var remoteAssets: List<RemoteMedia> = mutableListOf()
     private var localAssets: List<LocalMedia> = mutableListOf()
@@ -143,6 +150,7 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
         viewModelScope.launch {
             setIsLoading(true)
             loadMediaGrid(context)
+            loadPeople()
             setIsLoading(false)
         }
     }
@@ -275,6 +283,85 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
         }
     }
 
+    fun groupClusters(clusterIds: List<Int>, personName: String) {
+        viewModelScope.launch {
+            val success = mediaGridRepository.apiCreateFace(clusterIds, personName)
+            if (success) {
+                loadPeople()
+            }
+        }
+    }
+
+    fun deselectPeople() {
+        viewModelScope.launch {
+            _mediaGridState.update {
+                it.copy(
+                    selectedPeople = emptyMap(),
+                    isSelectingPerson = false
+                )
+            }
+        }
+    }
+
+    fun togglePersonSelection(person: Person) {
+        viewModelScope.launch {
+            _mediaGridState.update { currentState ->
+                val updatedSelectedPeople = currentState.selectedPeople.toMutableMap()
+                var isSelectingPerson = currentState.isSelectingPerson
+
+                if (updatedSelectedPeople.containsKey(person.personId)) {
+
+                    updatedSelectedPeople.remove(person.personId)
+                    if (updatedSelectedPeople.isEmpty()) {
+
+                        isSelectingPerson = false
+                    }
+                } else {
+
+                    updatedSelectedPeople[person.personId] = person
+                    isSelectingPerson = true
+                }
+
+                currentState.copy(
+                    selectedPeople = updatedSelectedPeople,
+                    isSelectingPerson = isSelectingPerson
+                )
+            }
+        }
+    }
+
+    fun confirmPersonClustering() {
+        _showNameDialog.value = true
+    }
+
+    fun onNameConfirmed(personName: String) {
+        viewModelScope.launch {
+            val selectedPeople = mediaGridState.value.selectedPeople
+            if (selectedPeople.isNotEmpty()) {
+                val clusterIds = selectedPeople
+                    .values
+                    .filterIsInstance<UnknownPerson>()
+                    .map { it.personId }
+
+                if (clusterIds.isNotEmpty()) {
+                    groupClusters(clusterIds, personName)
+
+                    _mediaGridState.update {
+                        it.copy(
+                            selectedPeople = emptyMap(),
+                            isSelectingPerson = false
+                        )
+                    }
+                }
+            }
+            _showNameDialog.value = false
+
+        }
+    }
+
+    fun dismissNameDialog() {
+        _showNameDialog.value = false
+    }
 
     fun clearSearchResults() {
         viewModelScope.launch {
@@ -392,9 +479,9 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
 
     private fun loadPeople() {
         viewModelScope.launch {
-            val peopleThumbnails = mediaGridRepository.apiGetPeople()
+            val peopleList = mediaGridRepository.apiGetPeople()
             _mediaGridState.update { currState ->
-                currState.copy(people = peopleThumbnails)
+                currState.copy(people = peopleList)
             }
         }
     }

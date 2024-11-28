@@ -275,7 +275,6 @@ fun ImageItem(
                         .padding(horizontal = 4.dp, vertical = 4.dp)
                 )
             }
-
         }
     }
 }

@@ -735,5 +735,48 @@ class APIUtils {
             }
         }
 
+
+
+        suspend fun createFace(
+            sharedPreferences: SharedPreferences,
+            ids: List<Int>,
+            name: String
+        ): Boolean = withContext(Dispatchers.IO) {
+            val server = sharedPreferences.getString(Prefs.SERVER, null)
+            val accessToken = sharedPreferences.getString(Prefs.ACCESS_TOKEN, null)
+
+            if (server == null || accessToken == null) {
+                EventBus.logoutEvent.emit(Unit)
+                return@withContext false
+            }
+            var connection: HttpURLConnection? = null
+            try {
+                val url = URL("$server/create_face")
+                Log.i("APIUtils", url.toString())
+                val payload = JSONObject().apply {
+                    put("ids", JSONArray(ids))
+                    put("name", name)
+                }
+                val body = payload.toString()
+                Log.i("APIUtils", body)
+                connection = (url.openConnection() as HttpURLConnection).apply {
+                    setRequestProperty("Authorization", "Bearer $accessToken")
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    requestMethod = "POST"
+                    doOutput = true
+                    outputStream.write(body.toByteArray())
+                }
+
+                val responseCode = connection.responseCode
+                responseCode == HttpURLConnection.HTTP_OK
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            } finally {
+                connection?.disconnect()
+            }
+        }
     }
 }

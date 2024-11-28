@@ -58,8 +58,7 @@ fun FullscreenMediaView(
     val boxHeight = 300.dp
 
     val mediaAsset = fullscreenMediaState.value.currentMediaAsset
-    // FIXME: throws ANR
-    val fullMedia = fullscreenMediaState.value.currentFullMedia!!
+    val fullMedia = fullscreenMediaState.value.currentFullMedia
 
     var isBoxVisible by remember { mutableStateOf(false) }
 
@@ -72,8 +71,12 @@ fun FullscreenMediaView(
             .fillMaxSize()
             .background(Color.Black)
     ) {
+        if (mediaAsset == null || fullMedia == null) {
+            CircularProgressIndicator()
+            return@Box
+        }
         LoadFullImage(
-            mediaAsset = mediaAsset!!,
+            mediaAsset = mediaAsset,
             viewModel = viewModel,
             hideBox = { isBoxVisible = false },
             showBox = { isBoxVisible = true },
@@ -113,7 +116,6 @@ fun FullscreenMediaView(
 
             if (mediaAsset is LocalMedia) {
                 ShareButton(mediaAsset)
-//              Spacer(modifier = Modifier.width(16.dp))
             }
 
             UploadOrRemoveButton(

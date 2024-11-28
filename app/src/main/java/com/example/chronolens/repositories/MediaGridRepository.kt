@@ -128,6 +128,10 @@ class MediaGridRepository(
         return APIUtils.loadNextClipSearchPage(sharedPreferences, search, page, pageSize)
     }
 
+    suspend fun apiCreateFace(clusterIds: List<Int>, personName: String): Boolean {
+        return APIUtils.createFace(sharedPreferences, clusterIds, personName)
+    }
+
     fun getUserAlbums(): List<String>? {
         val albums = sharedPreferences.getStringSet(Prefs.ALBUMS, null)
         return albums?.toList()
