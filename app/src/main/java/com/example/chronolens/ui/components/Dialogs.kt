@@ -1,13 +1,18 @@
 package com.example.chronolens.ui.components
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material.MaterialTheme
@@ -15,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -31,7 +37,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.chronolens.R
+import com.example.chronolens.ui.theme.defaultButtonColors
 
+
+
+// TODO : standardize deisgn with the other alerts
 @Composable
 fun AlertConfirmDialog(
     title: String,
@@ -102,40 +112,61 @@ fun AlbumsPickerDialog(
         allSelected.value = selectedAlbums.none { !it.value }
     }
 
-    Dialog(onDismissRequest = { }) {
-        Card {
+    Dialog(onDismissRequest = { visible.value = false }) {
+        Card(
+            modifier = Modifier
+                .wrapContentHeight() 
+                .padding(horizontal = 20.dp)
+        ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(15.dp)
+                modifier = Modifier.padding(16.dp)
             ) {
+                
                 Text(
                     text = title,
                     style = MaterialTheme.typography.h5,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(20.dp))
-                AlbumColum(
+                Spacer(modifier = Modifier.height(16.dp))
+
+                AlbumColumn(
                     selectedAlbums = selectedAlbums,
                     allSelected = allSelected,
-                    albums = albums
+                    albums = albums,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
                 )
-                Spacer(modifier = Modifier.height(20.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                ) {
+                    Button(
                         onClick = {
                             visible.value = false
                             val selected = selectedAlbums.filter { it.value }.keys.toList()
                             confirmOption(selected)
-                        }
+                        },
+                        colors = defaultButtonColors(),
+                        shape = RoundedCornerShape(4.dp)
                     ) {
-                        Text(text = stringResource(R.string.confirm), fontWeight = FontWeight.Bold)
+                        Text(text = stringResource(R.string.confirm))
                     }
                 }
             }
         }
     }
 }
+
+
 
 @SuppressLint("UnrememberedMutableState")
 @Preview(showSystemUi = true)
@@ -144,9 +175,11 @@ fun Prev() {
     Box(modifier = Modifier.fillMaxSize()) {
         AlbumsPickerDialog(
             title = "Upload All Media Now",
-            albums = listOf("Chronolens", "Download", "Pictures", "Other"),
+            albums = listOf("Chronolens", "Download", "Pictures", "Other"),//, "Screenshots", "Screenshots", "Screenshots", "Screenshots", "Screenshots", "Screenshots", "Screenshots", "Screenshots", "Screenshots", "Screenshots", "Screenshots", "Screenshots", "Screenshots"),
             confirmOption = {},
             visible = mutableStateOf(true)
         )
     }
 }
+
+//http://10.0.0.50:8090
