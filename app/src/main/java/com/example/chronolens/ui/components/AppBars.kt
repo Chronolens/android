@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -334,12 +333,14 @@ fun ChronolensTopAppBar(
                             mediaGridViewModel = mediaGridViewModel
                         )
                     }
+
                     mediaGridState.value.isSelecting -> {
                         SelectingMediaTopAppBarTitle(
                             state = mediaGridState,
                             mediaGridViewModel = mediaGridViewModel
                         )
                     }
+
                     else -> {
                         Text(text = getScreenTitle(currentScreen))
                     }
@@ -370,7 +371,6 @@ fun ChronolensTopAppBar(
                             SyncState.FetchingRemote -> Text(stringResource(R.string.sync_state_fetching_remote))
                             SyncState.FetchingLocal -> {
                                 val prog = mediaGridState.value.syncProgress
-                                Text(stringResource(R.string.sync_state_fetching_local))
                                 Text(
                                     stringResource(
                                         R.string.sync_state_fetching_local_progress,
@@ -431,6 +431,7 @@ private fun SelectingMediaTopAppBarTitle(
             SelectingType.Remote -> {
                 Text(stringResource(R.string.selecting_remotes))
             }
+
             else -> {
                 Text(stringResource(R.string.selecting_locals))
             }

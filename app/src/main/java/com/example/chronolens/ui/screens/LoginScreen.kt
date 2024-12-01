@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -268,12 +266,12 @@ fun CustomTextField(
                     }
                     if (isPassword) {
                         Icon(
-                            imageVector = Icons.Default.AccountBox,
+                            painter = if (passwordVisible!!.value) painterResource(R.drawable.eye) else painterResource(R.drawable.eyeslash),
                             "",
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
                                 .clickable {
-                                    passwordVisible!!.value = !passwordVisible.value
+                                    passwordVisible.value = !passwordVisible.value
                                 }
                         )
                     }
