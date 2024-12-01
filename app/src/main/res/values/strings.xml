@@ -68,8 +68,7 @@
 
     <string name="sync_state_synced">Synced</string>
     <string name="sync_state_fetching_remote">Fetching Remote</string>
-    <string name="sync_state_fetching_local">Fetching Local</string>
-    <string name="sync_state_fetching_local_progress">%d of %d</string>
+    <string name="sync_state_fetching_local_progress">Fetching Local (%d,%d)</string>
     <string name="sync_state_merging">Merging</string>
 
     <string name="login_screen">Login Screen</string>
