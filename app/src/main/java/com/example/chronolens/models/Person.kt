@@ -143,3 +143,11 @@ data class UnknownPerson(
         }
     }
 }
+
+
+data class PersonKey(val id: Int, val type: PersonType)
+
+enum class PersonType {
+    Known, Unknown
+}
+
