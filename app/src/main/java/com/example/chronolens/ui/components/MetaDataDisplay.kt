@@ -132,7 +132,10 @@ fun PhotoGPSInfo(latitude: String?, longitude: String?) {
                 color = Color.White
             )
 
-            val locationText = "${latitude ?: "N/A"} • ${longitude ?: "N/A"}"
+            val formattedLatitude = latitude?.toFloatOrNull()?.let { "%.4f".format(it) } ?: "N/A"
+            val formattedLongitude = longitude?.toFloatOrNull()?.let { "%.4f".format(it) } ?: "N/A"
+
+            val locationText = "$formattedLatitude • $formattedLongitude"
 
             Text(
                 text = locationText,
@@ -142,6 +145,7 @@ fun PhotoGPSInfo(latitude: String?, longitude: String?) {
         }
     }
 }
+
 
 
 @Composable

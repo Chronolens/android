@@ -52,6 +52,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.Person
+import com.example.chronolens.models.PersonKey
+import com.example.chronolens.models.PersonType
 import com.example.chronolens.models.UnknownPerson
 import com.example.chronolens.utils.ChronolensNav
 import com.example.chronolens.viewModels.MediaGridViewModel
@@ -135,7 +137,12 @@ fun PersonItem(
     state: State<MediaGridState>
 ) {
     val isSelectable = person is UnknownPerson
-    val isSelected = state.value.selectedPeople.containsKey(person.personId as Any)
+    val isSelected = state.value.selectedPeople.containsKey(
+        PersonKey(
+            id = person.personId,
+            type = if (person is KnownPerson) PersonType.Known else PersonType.Unknown
+        )
+    )
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
