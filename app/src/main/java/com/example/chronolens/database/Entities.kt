@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "checksums")
 data class Checksum(
-    @PrimaryKey val localId: String,
+    @PrimaryKey val localId: Long,
     val checksum: String
 )
 

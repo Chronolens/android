@@ -2,6 +2,7 @@ package com.example.chronolens.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,14 +19,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -33,6 +34,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -42,14 +44,17 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.chronolens.R
+import com.example.chronolens.ui.components.AlbumsPickerDialog
 import com.example.chronolens.ui.theme.defaultButtonColors
+import com.example.chronolens.viewModels.MediaGridViewModel
 import com.example.chronolens.viewModels.UserLoginState
 import com.example.chronolens.viewModels.UserState
 import com.example.chronolens.viewModels.UserViewModel
 
 @Composable
 fun LoginScreen(
-    viewModel: UserViewModel,
+    userViewModel: UserViewModel,
+    mediaGridViewModel: MediaGridViewModel,
     userState: State<UserState>,
     grantAccess: () -> Unit,
     modifier: Modifier
@@ -59,6 +64,7 @@ fun LoginScreen(
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
+    val context = LocalContext.current
 
     val brush = with(LocalDensity.current) {
         Brush.linearGradient(
@@ -68,19 +74,49 @@ fun LoginScreen(
         )
     }
 
+    val server = remember { mutableStateOf(userViewModel.getServer()) }
+    val username = remember { mutableStateOf(userViewModel.getUsername()) }
+    val password = remember { mutableStateOf("") }
+    val passwordVisible = remember { mutableStateOf(false) }
+    val dialogVisible = remember { mutableStateOf(false) }
+
+    if (dialogVisible.value) {
+        AlbumsPickerDialog(
+            visible = dialogVisible,
+            confirmOption = {
+                mediaGridViewModel.setAlbums(it)
+                grantAccess()
+            },
+            title = stringResource(R.string.select_albums),
+            albums = mediaGridViewModel.getAvailableAlbums(context)
+        )
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(brush)
             .then(modifier)
-
     ) {
         when (userState.value.userLoginState) {
             UserLoginState.Loading -> DisplayLoading()
-            UserLoginState.LoggedIn -> grantAccess()
+            UserLoginState.LoggedIn -> {
+                if (mediaGridViewModel.getUserAlbums() == null) {
+                    dialogVisible.value = true
+                } else {
+                    grantAccess()
+                }
+            }
+
             else -> {
-                LoginPrompt(viewModel, userState)
+                LoginPrompt(
+                    viewModel = userViewModel,
+                    userState = userState,
+                    server = server,
+                    username = username,
+                    password = password,
+                    passwordVisible = passwordVisible
+                )
             }
         }
     }
@@ -90,13 +126,13 @@ fun LoginScreen(
 @Composable
 fun LoginPrompt(
     viewModel: UserViewModel,
-    userState: State<UserState>
+    userState: State<UserState>,
+    server: MutableState<String>,
+    username: MutableState<String>,
+    password: MutableState<String>,
+    passwordVisible: MutableState<Boolean>
 ) {
     val colorScheme = MaterialTheme.colorScheme
-
-    var server by remember { mutableStateOf(viewModel.getServer()) }
-    var username by remember { mutableStateOf(viewModel.getUsername()) }
-    var password by remember { mutableStateOf("") }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -116,9 +152,9 @@ fun LoginPrompt(
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomTextField(
-            value = server,
-            onValueChange = { server = it },
-            label = "Server",
+            value = server.value,
+            onValueChange = { server.value = it },
+            label = stringResource(R.string.server),
             isError = userState.value.userLoginState == UserLoginState.CredentialsWrong,
             keyboardType = KeyboardType.Uri,
             imeAction = ImeAction.Next
@@ -127,9 +163,9 @@ fun LoginPrompt(
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomTextField(
-            value = username,
-            onValueChange = { username = it },
-            label = "Username",
+            value = username.value,
+            onValueChange = { username.value = it },
+            label = stringResource(R.string.username),
             isError = userState.value.userLoginState == UserLoginState.CredentialsWrong,
             keyboardType = KeyboardType.Text,
             imeAction = ImeAction.Next
@@ -138,22 +174,22 @@ fun LoginPrompt(
         Spacer(modifier = Modifier.height(12.dp))
 
         CustomTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = "Password",
+            value = password.value,
+            onValueChange = { password.value = it },
+            label = stringResource(R.string.password),
             isPassword = true,
             isError = userState.value.userLoginState == UserLoginState.CredentialsWrong,
             keyboardType = KeyboardType.Password,
-            imeAction = ImeAction.Done
+            imeAction = ImeAction.Done,
+            passwordVisible = passwordVisible
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
             onClick = {
-                viewModel.login(server, username, password)
-                username = ""
-                password = ""
+                viewModel.login(server.value, username.value, password.value)
+                password.value = ""
             },
             enabled = userState.value.userLoginState != UserLoginState.Loading,
             shape = RoundedCornerShape(4.dp),
@@ -165,7 +201,7 @@ fun LoginPrompt(
         ) {
 
             Text(
-                "Log In",
+                stringResource(R.string.login),
                 color = colorScheme.secondaryContainer,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -183,13 +219,12 @@ fun CustomTextField(
     isPassword: Boolean = false,
     isError: Boolean = false,
     keyboardType: KeyboardType,
-    imeAction: ImeAction
+    imeAction: ImeAction,
+    passwordVisible: MutableState<Boolean>? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val labelColor = colorScheme.onBackground.copy(alpha = 0.7f)
-
     val typography = MaterialTheme.typography
-
 
     Column(
         modifier = Modifier
@@ -204,12 +239,11 @@ fun CustomTextField(
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
         )
 
-
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
-            visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+            visualTransformation = if (isPassword && !passwordVisible!!.value) PasswordVisualTransformation() else VisualTransformation.None,
             keyboardOptions = KeyboardOptions(
                 keyboardType = keyboardType,
                 imeAction = imeAction
@@ -230,11 +264,21 @@ fun CustomTextField(
                             style = typography.bodyMedium
                         )
                     }
+                    if (isPassword) {
+                        Icon(
+                            painter = if (passwordVisible!!.value) painterResource(R.drawable.eye) else painterResource(R.drawable.eyeslash),
+                            "",
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .clickable {
+                                    passwordVisible.value = !passwordVisible.value
+                                }
+                        )
+                    }
                     innerTextField()
                 }
-            }
+            },
         )
-
 
         HorizontalDivider(
             modifier = Modifier

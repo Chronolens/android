@@ -7,7 +7,7 @@ object Prefs {
         const val EXPIRES_AT = "EXPIRES_AT"
         const val LAST_SYNC = "LAST_SYNC"
         const val USERNAME = "USERNAME"
-}
+        const val ALBUMS = "ALBUMS"}
 
 object Json {
         const val ACCESS_TOKEN = "access_token"
@@ -15,9 +15,17 @@ object Json {
         const val EXPIRES_AT = "expires_at"
         const val UPLOADED = "uploaded"
         const val DELETED = "deleted"
+
         const val ID = "id"
         const val HASH = "hash"
         const val CREATED_AT = "created_at"
+
+        const val USERNAME = "username"
+        const val PASSWORD = "password"
+
+        const val KNOWN_PEOPLE = "faces"
+        const val UNKNOWN_PEOPLE = "clusters"
+
 }
 
 object Work {

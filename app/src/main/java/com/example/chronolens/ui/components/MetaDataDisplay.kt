@@ -19,32 +19,79 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.chronolens.R
+import com.example.chronolens.models.FullMedia
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 
 @Composable
-fun MetadataDisplay(metadata: Map<String, String?>, timestamp: Long) {
+fun MetadataDisplay(fullMedia: FullMedia) {
+    var hasDetails = false
+
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp, start = 16.dp, end = 16.dp)
     ) {
-        item {
-            val formattedDate = SimpleDateFormat("dd MMMM yyyy - HH:mm", Locale.getDefault())
-                .format(Date(timestamp))
+        fullMedia.createdAt?.let { timestamp ->
+            hasDetails = true
+            item {
+                val formattedDate = SimpleDateFormat("dd MMMM yyyy - HH:mm", Locale.getDefault())
+                    .format(Date(timestamp))
 
-            Text(
-                text = formattedDate,
-                style = MaterialTheme.typography.titleLarge,
-                color = Color.White
-            )
+                Text(
+                    text = formattedDate,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White
+                )
+            }
         }
 
+        if (fullMedia.make != null || fullMedia.model != null || fullMedia.exposureTime != null ||
+            fullMedia.fNumber != null || fullMedia.photographicSensitivity != null) {
 
+            hasDetails = true
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                CameraDetails(
+                    phoneMake = fullMedia.make,
+                    phoneModel = fullMedia.model,
+                    exposureTime = fullMedia.exposureTime,
+                    fNumber = fullMedia.fNumber,
+                    iso = fullMedia.photographicSensitivity
+                )
+            }
+        }
 
-        if (metadata.isEmpty()) {
+        if (fullMedia.imageWidth != null || fullMedia.imageLength != null ||
+            fullMedia.fileName != null || fullMedia.fileSize != null) {
+
+            hasDetails = true
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                PhotoDetails(
+                    photoWidthValue = fullMedia.imageWidth?.toString(),
+                    photoHeightValue = fullMedia.imageLength?.toString(),
+                    photoNameValue = fullMedia.fileName,
+                    photoSizeValue = fullMedia.fileSize?.toString()
+                )
+            }
+        }
+
+        if (fullMedia.latitude != null || fullMedia.longitude != null) {
+
+            hasDetails = true
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                PhotoGPSInfo(
+                    latitude = fullMedia.latitude?.toString(),
+                    longitude = fullMedia.longitude?.toString()
+                )
+            }
+        }
+
+        if (!hasDetails) {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -54,64 +101,12 @@ fun MetadataDisplay(metadata: Map<String, String?>, timestamp: Long) {
                 )
             }
         }
-
-
-
-
-        if (metadata["make"] != null
-            || metadata["model"] != null
-            || metadata["exposureTime"] != null
-            || metadata["fNumber"] != null
-            || metadata["iso"] != null
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                CameraDetails(
-                    metadata["make"],
-                    metadata["model"],
-                    metadata["exposureTime"],
-                    metadata["fNumber"],
-                    metadata["iso"]
-                )
-            }
-        }
-
-        if (metadata["imageWidth"] != null || metadata["imageHeight"] != null || metadata["fileName"] != null || metadata["fileSize"] != null) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                PhotoDetails(
-                    metadata["imageWidth"],
-                    metadata["imageHeight"],
-                    metadata["fileName"],
-                    metadata["fileSize"]
-                )
-            }
-        }
-
-        if (metadata["latitude"] != null || metadata["longitude"] != null) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                PhotoGPSInfo(metadata["latitude"], metadata["longitude"])
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Map area",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White
-                )
-            }
-        }
-
-
-//        // list all metadata
-//        metadata.forEach { (key, value) ->
-//            if (value != null) {
-//                item {
-//                    MetadataItem(key, value)
-//                }
-//            }
-//        }
     }
 }
+
+
+
+
 
 @Composable
 fun PhotoGPSInfo(latitude: String?, longitude: String?) {
@@ -246,26 +241,3 @@ fun PhotoDetails(
     }
 }
 
-
-@Composable
-fun MetadataItem(key: String, value: String?) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = key,
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.White,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = value ?: "N/A",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}

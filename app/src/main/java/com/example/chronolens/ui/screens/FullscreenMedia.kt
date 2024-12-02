@@ -26,32 +26,27 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
+import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.ui.components.BackButton
 import com.example.chronolens.ui.components.BookmarkButton
-import com.example.chronolens.ui.components.DeleteOrTransferButton
+import com.example.chronolens.ui.components.DeleteOrDownloadButton
 import com.example.chronolens.ui.components.MenuButton
 import com.example.chronolens.ui.components.MetadataDisplay
 import com.example.chronolens.ui.components.ShareButton
 import com.example.chronolens.ui.components.UploadOrRemoveButton
-import com.example.chronolens.utils.loadExifData
 import com.example.chronolens.viewModels.FullscreenImageState
-import com.example.chronolens.viewModels.MediaGridScreenViewModel
+import com.example.chronolens.viewModels.MediaGridViewModel
 import com.example.chronolens.viewModels.MediaGridState
 
 // TODO: Restrict photo vertical position while zooming in with double tap
-
-// TODO: METADATA SLIDING BOX SWIPE IS TAKING OVER ZOOMING GESTURES
-
 // TODO: Move the photo slightly up when the metadata box is visible
-
-
 
 @Composable
 fun FullscreenMediaView(
-    viewModel: MediaGridScreenViewModel,
+    viewModel: MediaGridViewModel,
     mediaGridState: State<MediaGridState>,
     fullscreenMediaState: State<FullscreenImageState>,
     navController: NavHostController,
@@ -63,30 +58,31 @@ fun FullscreenMediaView(
 
     val boxHeight = 300.dp
 
-    val mediaAsset = fullscreenMediaState.value.currentMedia
+    val mediaAsset = fullscreenMediaState.value.currentMediaAsset
+    val fullMedia = fullscreenMediaState.value.currentFullMedia
+
     var isBoxVisible by remember { mutableStateOf(false) }
-    var metadata by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
 
     val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val boxOffsetY by animateDpAsState(targetValue = if (isBoxVisible) 0.dp else boxHeight + systemNavBarHeight)
 
-    if (mediaAsset is LocalMedia) {
-        metadata = loadExifData(mediaAsset.path)
-    }
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
+        if (mediaAsset == null || fullMedia == null) {
+            CircularProgressIndicator()
+            return@Box
+        }
         LoadFullImage(
-            mediaAsset!!,
-            viewModel,
-            { isBoxVisible = false },
-            { isBoxVisible = true },
-            isBoxVisible
+            mediaAsset = mediaAsset,
+            hideBox = { isBoxVisible = false },
+            showBox = { isBoxVisible = true },
+            isBoxVisible = isBoxVisible,
+            fullMedia = fullMedia
         )
-
 
 
         // Top Bar
@@ -103,24 +99,32 @@ fun FullscreenMediaView(
         }
 
 
-
         // Bottom Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 4.dp)
                 .align(Alignment.BottomCenter),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            DeleteOrTransferButton(mediaAsset)
-            Spacer(modifier = Modifier.width(16.dp))
+            DeleteOrDownloadButton(
+                asset = mediaAsset,
+                viewModel = viewModel,
+                state = fullscreenMediaState
+            )
+//          Spacer(modifier = Modifier.width(16.dp))
 
-            ShareButton()
-            Spacer(modifier = Modifier.width(16.dp))
+            if (mediaAsset is LocalMedia) {
+                ShareButton(mediaAsset)
+            }
 
-            UploadOrRemoveButton(mediaAsset, viewModel)
-            Spacer(modifier = Modifier.width(16.dp))
+            UploadOrRemoveButton(
+                asset = mediaAsset,
+                viewModel = viewModel,
+                state = fullscreenMediaState
+            )
+//          Spacer(modifier = Modifier.width(16.dp))
 
             MenuButton({ isBoxVisible = true })
         }
@@ -145,28 +149,25 @@ fun FullscreenMediaView(
                 .offset(y = boxOffsetY)
                 .background(brush)
         ) {
-            MetadataDisplay(metadata, mediaAsset.timestamp)
+            MetadataDisplay(fullMedia)
         }
     }
 }
 
 
-
-
 @Composable
 fun LoadFullImage(
     mediaAsset: MediaAsset,
-    viewModel: MediaGridScreenViewModel,
     hideBox: () -> Unit,
     showBox: () -> Unit,
-    isBoxVisible: Boolean
+    isBoxVisible: Boolean,
+    fullMedia: FullMedia
 ) {
 
     if (mediaAsset is RemoteMedia) {
         var imageUrl by remember { mutableStateOf<String?>(null) }
         LaunchedEffect(mediaAsset) {
-            val url = viewModel.getRemoteAssetFullImageUrl(mediaAsset.id)
-            imageUrl = url
+            imageUrl = fullMedia.mediaUrl
         }
         if (imageUrl != null) {
             ImageDisplay(
@@ -176,7 +177,10 @@ fun LoadFullImage(
                 isBoxVisible = isBoxVisible
             )
         } else {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { // TODO DOES NOTHING?
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
                 CircularProgressIndicator()
             }
         }

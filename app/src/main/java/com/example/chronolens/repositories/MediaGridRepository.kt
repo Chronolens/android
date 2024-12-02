@@ -7,10 +7,12 @@ import com.example.chronolens.database.Checksum
 import com.example.chronolens.database.ChecksumDao
 import com.example.chronolens.database.RemoteAssetDao
 import com.example.chronolens.database.RemoteAssetDb
+import com.example.chronolens.models.FullMedia
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.Person
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.utils.ChecksumUtils
+import com.example.chronolens.utils.Prefs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -21,8 +23,11 @@ class MediaGridRepository(
     val contentResolver: ContentResolver
 ) {
 
-    suspend fun apiUploadFileStream(localMedia: LocalMedia) :String? {
-        return APIUtils.uploadMedia(sharedPreferences, localMedia)
+    suspend fun uploadMedia(
+        localMedia: List<LocalMedia>,
+        setProgress: (Int) -> Unit = {}
+    ): List<Pair<String?, String>> {
+        return APIUtils.uploadMedia(sharedPreferences, localMedia, setProgress)
     }
 
     suspend fun apiSyncFullRemote(): List<RemoteMedia> {
@@ -39,7 +44,7 @@ class MediaGridRepository(
         }
     }
 
-    suspend fun apiGetFullImage(id: String): String {
+    suspend fun apiGetFullImage(id: String): FullMedia? {
         return withContext(Dispatchers.IO) {
             APIUtils.getFullImage(sharedPreferences, id)
         }
@@ -49,16 +54,8 @@ class MediaGridRepository(
         return APIUtils.getPeople(sharedPreferences)
     }
 
-    suspend fun dbStoreChecksumInDatabase(localId: String, checksum: String) {
-        val newChecksum = Checksum(localId, checksum)
-        checksumDao.insertChecksum(newChecksum)
-    }
 
-    suspend fun dbCheckChecksumInDatabase(localId: String): String? {
-        return checksumDao.getChecksum(localId)?.checksum
-    }
-
-    suspend fun dbGetChecksumsFromList(ids: List<String>): List<Checksum> {
+    suspend fun dbGetChecksumsFromList(ids: List<Long>): List<Checksum> {
         val batchSize = 500
         val results = mutableListOf<Checksum>()
         ids.chunked(batchSize).forEach { chunk ->
@@ -90,7 +87,7 @@ class MediaGridRepository(
         }
     }
 
-    suspend fun getOrComputeChecksum(id: String, path: String): String {
+    suspend fun getOrComputeChecksum(id: Long, path: String): String {
         var checksum = checksumDao.getChecksum(id)?.checksum
 
         if (checksum == null) {
@@ -101,14 +98,42 @@ class MediaGridRepository(
         return checksum
     }
 
-    suspend fun computeAndStoreChecksum(id: String, path: String): String {
+    suspend fun computeAndStoreChecksum(id: Long, path: String): String {
         val checksum = ChecksumUtils().computeChecksum(path)
         val checksumDb = Checksum(id, checksum)
         checksumDao.insertChecksum(checksumDb)
         return checksum
     }
 
-    suspend fun apiGetClusterPreviewsPage(clusterId: Int, page: Int, pageSize: Int, requestType: String): List<Map<String, String>>? {
-        return APIUtils.getClusterPreviewsPage(sharedPreferences, clusterId, page, pageSize, requestType)
+    suspend fun apiGetClusterPreviewsPage(
+        clusterId: Int,
+        page: Int,
+        pageSize: Int,
+        requestType: String
+    ): List<Pair<String, String>>? {
+        return APIUtils.getClusterPreviewsPage(
+            sharedPreferences,
+            clusterId,
+            page,
+            pageSize,
+            requestType
+        )
+    }
+
+    suspend fun apiGetNextClipSearchPage(
+        search: String,
+        page: Int,
+        pageSize: Int
+    ): List<Pair<String, String>>? {
+        return APIUtils.loadNextClipSearchPage(sharedPreferences, search, page, pageSize)
+    }
+
+    suspend fun apiCreateFace(clusterIds: List<Int>, personName: String): Boolean {
+        return APIUtils.createFace(sharedPreferences, clusterIds, personName)
+    }
+
+    fun getUserAlbums(): List<String>? {
+        val albums = sharedPreferences.getStringSet(Prefs.ALBUMS, null)
+        return albums?.toList()
     }
 }

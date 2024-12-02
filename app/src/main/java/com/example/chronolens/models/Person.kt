@@ -35,18 +35,26 @@ abstract class Person(
         }
 
         fun resizeAndCropBitmap(photoBitmap: Bitmap?, boundingBox: List<Int>): Bitmap? {
-            val bboxWidth = boundingBox[2] - boundingBox[0]
-            val bboxHeight = boundingBox[3] - boundingBox[1]
+            if (photoBitmap == null) return null
 
-            val croppedBitmap = photoBitmap?.let {
-                Bitmap.createBitmap(it, boundingBox[0], boundingBox[1], bboxWidth, bboxHeight)
-            }
-            photoBitmap?.recycle()
+            val adjustedBoundingBox = boundingBox.toMutableList()
+            adjustBoundingBox(adjustedBoundingBox)
 
-            return croppedBitmap?.let {
-                Bitmap.createScaledBitmap(it, 256, 256, false).also { croppedBitmap.recycle() }
+            val left = adjustedBoundingBox[0].coerceAtLeast(0)
+            val top = adjustedBoundingBox[1].coerceAtLeast(0)
+            val right = adjustedBoundingBox[2].coerceAtMost(photoBitmap.width)
+            val bottom = adjustedBoundingBox[3].coerceAtMost(photoBitmap.height)
+
+            val bboxWidth = right - left
+            val bboxHeight = bottom - top
+
+            val croppedBitmap = Bitmap.createBitmap(photoBitmap, left, top, bboxWidth, bboxHeight)
+
+            return Bitmap.createScaledBitmap(croppedBitmap, 256, 256, false).also {
+                croppedBitmap.recycle()
             }
         }
+
 
         suspend fun fetchImage(url: String): Bitmap? {
             return withContext(Dispatchers.IO) {
@@ -81,7 +89,7 @@ data class KnownPerson(
         suspend fun fromJson(personJson: JSONObject): KnownPerson {
             val personId = personJson.optInt("face_id")
             val name = personJson.optString("name", "")
-            val photoLink = personJson.optString("photo_link", "")
+            val photoLink = personJson.optString("photo_url", "")
             val boundingBoxArray = personJson.optJSONArray("bbox")
 
             val boundingBox = mutableListOf<Int>().apply {
@@ -117,7 +125,7 @@ data class UnknownPerson(
     companion object {
         suspend fun fromJson(personJson: JSONObject): UnknownPerson {
             val personId = personJson.optInt("cluster_id")
-            val photoLink = personJson.optString("photo_link", "")
+            val photoLink = personJson.optString("photo_url", "")
             val boundingBoxArray = personJson.optJSONArray("bbox")
 
             val boundingBox = mutableListOf<Int>().apply {

@@ -1,11 +1,9 @@
 package com.example.chronolens.database
 
-import android.content.Context
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-
 
 @Dao
 interface ChecksumDao {
@@ -13,10 +11,10 @@ interface ChecksumDao {
     suspend fun insertChecksum(checksum: Checksum)
 
     @Query("SELECT * FROM checksums WHERE localId = :localId LIMIT 1")
-    suspend fun getChecksum(localId: String): Checksum?
+    suspend fun getChecksum(localId: Long): Checksum?
 
     @Query("SELECT * FROM checksums WHERE localId IN (:ids)")
-    suspend fun getChecksumsFromList(ids: List<String>): List<Checksum>
+    suspend fun getChecksumsFromList(ids: List<Long>): List<Checksum>
 }
 
 @Dao
@@ -29,4 +27,8 @@ interface RemoteAssetDao {
 
     @Query("SELECT * FROM remote_assets")
     suspend fun getRemoteAssets(): List<RemoteAssetDb>
+
+    @Query("DELETE FROM remote_assets")
+    suspend fun deleteAllRemoteAssets()
+
 }

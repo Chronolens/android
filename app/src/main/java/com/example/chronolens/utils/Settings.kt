@@ -1,5 +1,7 @@
 package com.example.chronolens.utils
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
 import com.example.chronolens.R
 import com.example.chronolens.models.SettingsItem
 
@@ -23,6 +25,12 @@ object Settings {
             description = R.string.settings_activity_history_desc,
             icon = R.drawable.list,
             nav = ChronolensNav.ActivityHistory
+        ),
+        SettingsItem(
+            title = R.string.settings_choose_albuns_title,
+            description = R.string.settings_choose_albuns_desc,
+            icon = R.drawable.foldersimple,// TODO: change icon??
+            nav = ChronolensNav.AlbumsPicker
         )
     )
 

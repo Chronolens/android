@@ -9,7 +9,7 @@ import com.example.chronolens.ChronoLensApplication
 object ViewModelProvider {
     val Factory = viewModelFactory {
         initializer {
-            MediaGridScreenViewModel(inventoryApplication().container.mediaGridRepository)
+            MediaGridViewModel(inventoryApplication().container.mediaGridRepository)
         }
         initializer {
             UserViewModel(inventoryApplication().container.userRepository)

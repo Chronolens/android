@@ -15,7 +15,7 @@ abstract class MediaAsset(
 data class LocalMedia(
     var remoteId: String?,
     var path: String,
-    var id: String,
+    var id: Long,
     var mimeType: String,
     override var checksum: String?,
     override var timestamp: Long,
@@ -38,6 +38,7 @@ data class RemoteMedia(
     override fun eq(other: MediaAsset): Boolean {
         return (other is RemoteMedia) && (other.id == id)
     }
+
 
     companion object {
         fun fromJson(obj: JSONObject): RemoteMedia {
