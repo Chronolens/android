@@ -7,9 +7,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.BitmapImage
 import com.example.chronolens.models.FullMedia
+import com.example.chronolens.models.KnownPerson
 import com.example.chronolens.models.LocalMedia
 import com.example.chronolens.models.MediaAsset
 import com.example.chronolens.models.Person
+import com.example.chronolens.models.PersonKey
+import com.example.chronolens.models.PersonType
 import com.example.chronolens.models.RemoteMedia
 import com.example.chronolens.models.UnknownPerson
 import com.example.chronolens.repositories.MediaGridRepository
@@ -54,8 +57,7 @@ data class MediaGridState(
     val isUploading: Boolean = false,
     val isSelectingPerson: Boolean = false,
     val people: List<Person> = listOf(),
-    val selectedPeople: Map<Int, Person> = mapOf(),
-
+    val selectedPeople: Map<PersonKey, Person> = mapOf(),
     val uploadProgress: Pair<Int, Int> = Pair(0, 0),
     val isDownloading: Boolean = false,
     val downloadProgress: Pair<Int, Int> = Pair(0, 0)
@@ -309,16 +311,24 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
                 val updatedSelectedPeople = currentState.selectedPeople.toMutableMap()
                 var isSelectingPerson = currentState.isSelectingPerson
 
-                if (updatedSelectedPeople.containsKey(person.personId)) {
+                val newPersonKey = PersonKey(
+                    id = person.personId,
+                    type = if (person is KnownPerson) PersonType.Known else PersonType.Unknown
+                )
+                val newPersonType = newPersonKey.type
 
-                    updatedSelectedPeople.remove(person.personId)
+                val currentType = updatedSelectedPeople.keys.firstOrNull()?.type
+                if (currentType != null && currentType != newPersonType) {
+                    return@update currentState
+                }
+
+                if (updatedSelectedPeople.containsKey(newPersonKey)) {
+                    updatedSelectedPeople.remove(newPersonKey)
                     if (updatedSelectedPeople.isEmpty()) {
-
                         isSelectingPerson = false
                     }
                 } else {
-
-                    updatedSelectedPeople[person.personId] = person
+                    updatedSelectedPeople[newPersonKey] = person
                     isSelectingPerson = true
                 }
 
@@ -329,6 +339,9 @@ class MediaGridViewModel(private val mediaGridRepository: MediaGridRepository) :
             }
         }
     }
+
+
+
 
     fun confirmPersonClustering() {
         _showNameDialog.value = true
