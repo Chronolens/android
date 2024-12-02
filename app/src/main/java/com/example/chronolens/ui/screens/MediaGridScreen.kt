@@ -267,15 +267,15 @@ fun ImageItem(
             }
 
             if (state.value.selected.containsKey(mediaAsset.checksum!!)) {
-                Icon(
-                    imageVector = ImageVector.vectorResource(id = R.drawable.checkcircle),
-                    contentDescription = null,
-                    tint = colorScheme.tertiary,
+                Box(
                     modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .align(Alignment.TopStart)
-                        .padding(horizontal = 4.dp, vertical = 4.dp)
+                        .matchParentSize()
+                        .background(Color.Transparent)
+                        .border(
+                            width = 3.dp,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            shape = RectangleShape
+                        )
                 )
             }
         }
